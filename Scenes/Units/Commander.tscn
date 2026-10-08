@@ -52,7 +52,7 @@ height = 1.2
 [sub_resource type="BoxMesh" id="BoxMesh_mkjwt"]
 size = Vector3(0.2, 2, 0.2)
 
-[node name="Commander" type="CharacterBody3D" groups=["SideA"]]
+[node name="Commander" type="CharacterBody3D" ]
 script = ExtResource("1_script")
 
 [node name="HealthComponent" type="Node" parent="."]

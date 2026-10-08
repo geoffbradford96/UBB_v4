@@ -1,3 +1,14 @@
+﻿extends CharacterBody3D
+
+@export var damage: float = 5.0
+@export var attack_range: float = 10.0
+@export var attack_rate: float = 1.0
+
+var current_target: Node3D = null
+var attack_timer: float = 0.0
+
+var projectile_scene = preload("res://Scenes/Projectile.tscn")
+
 extends CharacterBody3D
 
 @export var damage: float = 5.0
@@ -8,6 +19,9 @@ var current_target: Node3D = null
 var attack_timer: float = 0.0
 
 var projectile_scene = preload("res://Scenes/Projectile.tscn")
+
+func _ready():
+    add_to_group("Targetable")
 
 func _physics_process(delta):
 	# Structures don't walk, but they do fall to the floor!
@@ -80,4 +94,5 @@ func find_new_target():
 			if d < effective_range and d < closest:
 				closest = d
 				current_target = e
+
 

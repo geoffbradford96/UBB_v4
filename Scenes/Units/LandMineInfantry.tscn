@@ -55,7 +55,7 @@ _data = {
 &"walk": SubResource("Animation_tl2qt")
 }
 
-[node name="LandMineInfantry" type="CharacterBody3D" groups=["SideA"]]
+[node name="LandMineInfantry" type="CharacterBody3D" ]
 script = ExtResource("1_cmv6j")
 
 [node name="HealthComponent" type="Node" parent="."]

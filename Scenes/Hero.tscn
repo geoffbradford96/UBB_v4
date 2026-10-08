@@ -7,7 +7,7 @@
 
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_hero"]
 
-[node name="Hero" type="CharacterBody3D" groups=["SideA"]]
+[node name="Hero" type="CharacterBody3D" ]
 script = ExtResource("1_hero")
 
 [node name="HealthComponent" type="Node" parent="."]

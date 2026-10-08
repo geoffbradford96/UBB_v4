@@ -47,7 +47,7 @@ _data = {
 &"walk": SubResource("Animation_vf814")
 }
 
-[node name="SupportingFire" type="CharacterBody3D" groups=["SideA"]]
+[node name="SupportingFire" type="CharacterBody3D" ]
 script = ExtResource("1_script")
 
 [node name="HealthComponent" type="Node" parent="."]

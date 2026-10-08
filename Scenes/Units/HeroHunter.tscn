@@ -47,7 +47,7 @@ _data = {
 &"walk": SubResource("Animation_wlvli")
 }
 
-[node name="HeroHunter" type="CharacterBody3D" groups=["SideA"]]
+[node name="HeroHunter" type="CharacterBody3D" ]
 script = ExtResource("1_script")
 
 [node name="HealthComponent" type="Node" parent="."]

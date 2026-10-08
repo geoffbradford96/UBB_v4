@@ -27,7 +27,7 @@ size = Vector3(3, 0.5, 1)
 [sub_resource type="BoxMesh" id="BoxMesh_y85fm"]
 size = Vector3(3, 0.5, 1)
 
-[node name="VoidOverlord" type="CharacterBody3D" groups=["SideA"]]
+[node name="VoidOverlord" type="CharacterBody3D" ]
 script = ExtResource("1_script")
 
 [node name="HealthComponent" type="Node" parent="."]

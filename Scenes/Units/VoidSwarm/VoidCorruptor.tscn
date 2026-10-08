@@ -40,7 +40,7 @@ material = SubResource("StandardMaterial3D_1")
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_dlche"]
 material = SubResource("StandardMaterial3D_1")
 
-[node name="VoidCorruptor" type="CharacterBody3D" groups=["SideA"]]
+[node name="VoidCorruptor" type="CharacterBody3D" ]
 script = ExtResource("1_script")
 
 [node name="HealthComponent" type="Node" parent="."]

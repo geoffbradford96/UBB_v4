@@ -49,7 +49,7 @@ _data = {
 &"walk": SubResource("Animation_3gk1k")
 }
 
-[node name="HeavyTank" type="CharacterBody3D" groups=["SideA"]]
+[node name="HeavyTank" type="CharacterBody3D" ]
 script = ExtResource("1_fj6dw")
 speed = 2.0
 damage = 60.0

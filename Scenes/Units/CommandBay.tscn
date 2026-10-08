@@ -47,7 +47,7 @@ _data = {
 &"walk": SubResource("Animation_mwtxp")
 }
 
-[node name="CommandBay" type="CharacterBody3D" groups=["SideA"]]
+[node name="CommandBay" type="CharacterBody3D" ]
 script = ExtResource("1_script")
 
 [node name="HealthComponent" type="Node" parent="."]

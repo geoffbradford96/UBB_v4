@@ -48,7 +48,7 @@ albedo_color = Color(0.2, 0.2, 0.2, 1)
 [sub_resource type="BoxMesh" id="BoxMesh_sxsch"]
 size = Vector3(1.5, 0.1, 0.1)
 
-[node name="Plane" type="CharacterBody3D" groups=["SideA"]]
+[node name="Plane" type="CharacterBody3D" ]
 script = ExtResource("1_script")
 
 [node name="HealthComponent" type="Node" parent="."]

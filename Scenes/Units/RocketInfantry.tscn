@@ -61,7 +61,7 @@ _data = {
 &"walk": SubResource("Animation_3gau6")
 }
 
-[node name="RocketInfantry" type="CharacterBody3D" groups=["SideA"]]
+[node name="RocketInfantry" type="CharacterBody3D" ]
 script = ExtResource("1_tn7wr")
 speed = 1.8
 

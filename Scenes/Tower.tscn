@@ -11,7 +11,7 @@ size = Vector3(4, 8, 4)
 radius = 15.0
 height = 20.0
 
-[node name="Tower" type="StaticBody3D" groups=["SideB"]]
+[node name="Tower" type="StaticBody3D" ]
 script = ExtResource("1_script")
 projectile_scene = ExtResource("2_proj")
 

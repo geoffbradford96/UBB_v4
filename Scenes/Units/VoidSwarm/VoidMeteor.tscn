@@ -38,7 +38,7 @@ roughness = 0.1
 
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_t7xo1"]
 
-[node name="VoidMeteor" type="Area3D" groups=["SideA"]]
+[node name="VoidMeteor" type="Area3D" ]
 script = ExtResource("1_script")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
