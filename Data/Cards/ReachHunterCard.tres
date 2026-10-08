@@ -18,6 +18,7 @@ image = SubResource("Image_o3v8y")
 [resource]
 script = ExtResource("1_2kdne")
 card_name = "ReachHunter"
-cost = 40.0
+max_hp = 110.0
+cost = 4.5
 unit_scene = ExtResource("2_c4p31")
 card_art = SubResource("ImageTexture_4btdq")

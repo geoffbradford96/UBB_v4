@@ -52,6 +52,7 @@ _data = {
 
 [node name="ReachHunter" type="CharacterBody3D"]
 script = ExtResource("1_j84kc")
+max_health = 110.0
 damage = 55.0
 
 [node name="@CollisionShape3D@42" type="CollisionShape3D" parent="."]

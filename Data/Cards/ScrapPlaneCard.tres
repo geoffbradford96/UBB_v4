@@ -18,6 +18,7 @@ image = SubResource("Image_vmmk0")
 [resource]
 script = ExtResource("1_vmmk0")
 card_name = "ScrapPlane"
-cost = 30.0
+max_hp = 200.0
+cost = 5.0
 unit_scene = ExtResource("2_bv466")
 card_art = SubResource("ImageTexture_fkmth")

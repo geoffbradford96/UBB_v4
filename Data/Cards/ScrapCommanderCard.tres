@@ -19,6 +19,7 @@ image = SubResource("Image_knbjy")
 script = ExtResource("1_knbjy")
 card_name = "ScrapCommander"
 card_type = "Commander"
+max_hp = 100.0
 cost = 0.0
 unit_scene = ExtResource("2_a7hfx")
 card_art = SubResource("ImageTexture_qe687")

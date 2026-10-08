@@ -53,6 +53,7 @@ height = 3.0
 
 [node name="ScrapTank" type="CharacterBody3D"]
 script = ExtResource("1_f4a0j")
+max_health = 550.0
 
 [node name="@CollisionShape3D@10" type="CollisionShape3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)

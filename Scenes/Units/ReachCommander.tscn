@@ -52,6 +52,7 @@ size = Vector3(0.2, 2, 0.2)
 
 [node name="ReachCommander" type="CharacterBody3D"]
 script = ExtResource("1_b5afs")
+max_health = 100.0
 attack_damage = 100.0
 
 [node name="@CollisionShape3D@4" type="CollisionShape3D" parent="."]

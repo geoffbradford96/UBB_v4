@@ -47,6 +47,7 @@ size = Vector3(1.5, 0.1, 0.1)
 
 [node name="ReachPlane" type="CharacterBody3D"]
 script = ExtResource("1_brdoy")
+max_health = 220.0
 damage = 45.0
 
 [node name="@CollisionShape3D@39" type="CollisionShape3D" parent="."]

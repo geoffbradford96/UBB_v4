@@ -18,6 +18,7 @@ image = SubResource("Image_11jlr")
 [resource]
 script = ExtResource("1_11jlr")
 card_name = "ScrapTank"
-cost = 40.0
+max_hp = 550.0
+cost = 6.0
 unit_scene = ExtResource("2_3kvop")
 card_art = SubResource("ImageTexture_yth77")

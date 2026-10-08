@@ -47,6 +47,7 @@ size = Vector3(1.5, 0.1, 0.1)
 
 [node name="ScrapPlane" type="CharacterBody3D"]
 script = ExtResource("1_8lokl")
+max_health = 200.0
 damage = 20.0
 
 [node name="@CollisionShape3D@16" type="CollisionShape3D" parent="."]

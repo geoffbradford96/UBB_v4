@@ -52,7 +52,7 @@ _data = {
 
 [node name="ReachMelee" type="CharacterBody3D"]
 script = ExtResource("1_8wmqq")
-max_health = 120.0
+max_health = 140.0
 attack_damage = 18.0
 
 [node name="@CollisionShape3D@28" type="CollisionShape3D" parent="."]

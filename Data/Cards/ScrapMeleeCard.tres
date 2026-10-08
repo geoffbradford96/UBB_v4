@@ -18,7 +18,8 @@ image = SubResource("Image_nb152")
 [resource]
 script = ExtResource("1_nb152")
 card_name = "ScrapMelee"
-cost = 10.0
+max_hp = 130.0
+cost = 2.0
 spawn_count = 5
 unit_scene = ExtResource("2_54kcu")
 card_art = SubResource("ImageTexture_1ctpi")

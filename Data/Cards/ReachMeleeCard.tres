@@ -18,7 +18,8 @@ image = SubResource("Image_bv3pw")
 [resource]
 script = ExtResource("1_wmgrc")
 card_name = "ReachMelee"
-cost = 25.0
+max_hp = 140.0
+cost = 2.5
 spawn_count = 5
 unit_scene = ExtResource("2_sgm1p")
 card_art = SubResource("ImageTexture_rmqgt")

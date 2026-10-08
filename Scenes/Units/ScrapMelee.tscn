@@ -59,7 +59,7 @@ _data = {
 
 [node name="ScrapMelee" type="CharacterBody3D"]
 script = ExtResource("1_mrbg0")
-max_health = 60.0
+max_health = 130.0
 attack_damage = 8.0
 
 [node name="@CollisionShape3D@2" type="CollisionShape3D" parent="."]

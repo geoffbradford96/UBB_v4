@@ -18,7 +18,8 @@ image = SubResource("Image_2r1ph")
 [resource]
 script = ExtResource("1_2r1ph")
 card_name = "ScrapRanged"
-cost = 12.0
+max_hp = 110.0
+cost = 3.0
 spawn_count = 5
 unit_scene = ExtResource("2_sxd0o")
 card_art = SubResource("ImageTexture_lq5c7")

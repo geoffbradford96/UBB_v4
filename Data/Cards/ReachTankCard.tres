@@ -18,6 +18,7 @@ image = SubResource("Image_qr5cj")
 [resource]
 script = ExtResource("1_ha4lw")
 card_name = "ReachTank"
-cost = 90.0
+max_hp = 650.0
+cost = 6.5
 unit_scene = ExtResource("2_smh05")
 card_art = SubResource("ImageTexture_pvky5")

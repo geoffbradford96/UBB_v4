@@ -18,7 +18,8 @@ image = SubResource("Image_tq34b")
 [resource]
 script = ExtResource("1_1t3xm")
 card_name = "ReachRanged"
-cost = 30.0
+max_hp = 120.0
+cost = 3.5
 spawn_count = 5
 unit_scene = ExtResource("2_vi8n8")
 card_art = SubResource("ImageTexture_m7qvu")

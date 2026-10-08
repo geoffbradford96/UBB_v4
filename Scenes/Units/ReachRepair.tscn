@@ -52,6 +52,7 @@ _data = {
 
 [node name="ReachRepair" type="CharacterBody3D"]
 script = ExtResource("1_odenh")
+max_health = 110.0
 
 [node name="@CollisionShape3D@45" type="CollisionShape3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)

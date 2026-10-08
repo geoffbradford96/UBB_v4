@@ -59,6 +59,7 @@ _data = {
 
 [node name="ScrapRanged" type="CharacterBody3D"]
 script = ExtResource("1_i0kyc")
+max_health = 110.0
 damage = 15.0
 
 [node name="@CollisionShape3D@6" type="CollisionShape3D" parent="."]
