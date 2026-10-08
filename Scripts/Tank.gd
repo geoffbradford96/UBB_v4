@@ -11,6 +11,14 @@ extends CharacterBody3D
 var current_target: Node3D = null
 var attack_timer: float = 0.0
 
+var base_speed: float
+var base_attack_speed: float
+
+func _ready():
+	base_speed = speed
+	if "attack_speed" in self:
+		base_attack_speed = self.get("attack_speed")
+
 func _physics_process(delta):
 	if not is_on_floor():
 		velocity.y -= 9.8 * delta
@@ -44,9 +52,11 @@ func _physics_process(delta):
 			query.transform = global_transform
 			var results = space_state.intersect_shape(query)
 			var separation = Vector3.ZERO
+			var reach_count = 0
 			for res in results:
 				var col = res.collider
 				if col != self and col.is_in_group(my_team):
+					if "Reach" in self.name and "Reach" in col.name: reach_count += 1
 					var push = global_position - col.global_position
 					push.y = 0
 					var dist_to_col = push.length()

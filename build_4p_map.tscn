@@ -1,4 +1,0 @@
-[gd_scene load_steps=2 format=3 uid="uid://mapbuilder"]
-[ext_resource type="Script" path="res://build_4p_map_scene.gd" id="1_script"]
-[node name="MapBuilder" type="Node"]
-script = ExtResource("1_script")

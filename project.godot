@@ -176,7 +176,6 @@ p4_next_card={
 "events": [Object(InputEventJoypadButton,"resource_local_to_scene":false,"resource_name":"","device":3,"button_index":10,"pressure":0.0,"pressed":false,"script":null)
 ]
 }
-
 p5_up={
 "deadzone": 0.5,
 "events": [Object(InputEventJoypadMotion,"resource_local_to_scene":false,"resource_name":"","device":4,"axis":1,"axis_value":-1.0,"script":null)
