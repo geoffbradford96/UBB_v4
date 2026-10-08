@@ -18,7 +18,6 @@ func _ready():
 	mode_option.add_item("Destroy Base")
 	mode_option.add_item("King of the Hill")
 	
-	_update_players_dropdown(0)
 	
 	diff_option.add_item("Easy")
 	diff_option.add_item("Medium")
@@ -39,6 +38,7 @@ func _ready():
 	timer_option.add_item("55 Minutes")  # 11
 	timer_option.add_item("60 Minutes")  # 12
 	timer_option.select(2) # Default 10 min
+	_update_players_dropdown(0)
 	
 func _update_players_dropdown(map_index: int):
 	players_option.clear()
