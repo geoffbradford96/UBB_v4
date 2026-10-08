@@ -1,7 +1,6 @@
-[gd_scene load_steps=2 format=3 uid="uid://army1234"]
+[gd_scene load_steps=2 format=3]
 
 [ext_resource type="Script" path="res://Scripts/ArmyGathering.gd" id="1_script"]
-[ext_resource type="PackedScene" uid="uid://cardui123" path="res://Scenes/CardUI.tscn" id="2_card"]
 
 [node name="ArmyGathering" type="Control"]
 layout_mode = 3

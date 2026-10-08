@@ -1,7 +1,7 @@
-[gd_scene load_steps=3 format=3 uid="uid://ingameui123"]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://Scripts/InGameUI.gd" id="1_script"]
-[ext_resource type="PackedScene" uid="uid://cardui123" path="res://Scenes/CardUI.tscn" id="2_card"]
+[ext_resource type="PackedScene" path="res://Scenes/CardUI.tscn" id="2_card"]
 [ext_resource type="Script" path="res://Scripts/MinimapInput.gd" id="3_minimap"]
 
 [node name="InGameUI" type="Control"]

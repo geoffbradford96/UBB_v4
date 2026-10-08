@@ -9,22 +9,7 @@ var current_target: Node3D = null
 var action_timer: float = 0.0
 
 func _physics_process(delta):
-	# Reach Synergy Inject
-	var reach_count = 0
-	if "Reach" in self.name:
-		var my_team = ""
-		for g in get_groups():
-			if g.begins_with("Side"): my_team = g
-		for node in get_tree().get_nodes_in_group(my_team):
-			if node != self and "Reach" in node.name and global_position.distance_to(node.global_position) < 6.0:
-				reach_count += 1
-		var synergy = min(reach_count, 5) * 0.15
-		speed = base_speed * (1.0 + synergy)
-		if "attack_speed" in self: self.set("attack_speed", base_attack_val * (1.0 + synergy))
-		elif "attack_rate" in self: self.set("attack_rate", base_attack_val / (1.0 + synergy))
-		var r_mesh = get_node_or_null("MeshInstance3D")
-		if not r_mesh: r_mesh = get_node_or_null("VisualPivot")
-		if r_mesh: r_mesh.scale = r_mesh.scale.lerp(Vector3.ONE * (1.0 + (synergy * 0.6)), 0.1)
+	_apply_reach_synergy()
 
 	if not is_on_floor():
 		velocity.y -= 9.8 * delta
@@ -67,9 +52,9 @@ func _physics_process(delta):
 					if target_health:
 						if target_health.current_health < target_health.max_health:
 							target_health.heal(repair_amount)
-						var ap = get_node_or_null("AnimationPlayer")
-						if ap and ap.has_animation("repair"):
-							ap.play("repair")
+						var ap_action = get_node_or_null("AnimationPlayer")
+						if ap_action and ap_action.has_animation("repair"):
+							ap_action.play("repair")
 						
 						if target_health.current_health >= target_health.max_health:
 							current_target = null
@@ -160,4 +145,31 @@ func find_new_target():
 					closest = d
 					current_target = e
 
+# --- Reach faction synergy: faster move/attack + bigger model when clustered with other Reach units ---
+var _reach_base_speed: float = -1.0
+var _reach_base_atk: float = -1.0
 
+func _apply_reach_synergy():
+	if not "Reach" in name:
+		return
+	if _reach_base_speed < 0.0:
+		_reach_base_speed = get("speed") if "speed" in self else 0.0
+		if "attack_speed" in self: _reach_base_atk = get("attack_speed")
+		elif "attack_rate" in self: _reach_base_atk = get("attack_rate")
+	var my_team := ""
+	for g in get_groups():
+		if g.begins_with("Side"): my_team = g
+	if my_team == "":
+		return
+	var reach_count := 0
+	for node in get_tree().get_nodes_in_group(my_team):
+		if node != self and node is Node3D and "Reach" in node.name and global_position.distance_to(node.global_position) < 6.0:
+			reach_count += 1
+	var synergy: float = min(reach_count, 5) * 0.15
+	if "speed" in self: set("speed", _reach_base_speed * (1.0 + synergy))
+	if _reach_base_atk > 0.0:
+		if "attack_speed" in self: set("attack_speed", _reach_base_atk * (1.0 + synergy))
+		elif "attack_rate" in self: set("attack_rate", _reach_base_atk / (1.0 + synergy))
+	var r_mesh = get_node_or_null("MeshInstance3D")
+	if not r_mesh: r_mesh = get_node_or_null("VisualPivot")
+	if r_mesh: r_mesh.scale = r_mesh.scale.lerp(Vector3.ONE * (1.0 + synergy * 0.6), 0.1)

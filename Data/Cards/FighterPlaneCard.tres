@@ -1,16 +1,14 @@
-[gd_resource type="Resource" script_class="CardData" load_steps=3 format=3 uid="uid://cardplane123"]
+[gd_resource type="Resource" script_class="CardData" load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://Scripts/CardData.gd" id="1_script"]
-[ext_resource type="PackedScene" uid="uid://plane1234abcd" path="res://Scenes/Units/Plane.tscn" id="2_scene"]
+[ext_resource type="PackedScene" path="res://Scenes/Units/Plane.tscn" id="2_scene"]
 
 [resource]
 script = ExtResource("1_script")
 card_name = "FighterPlane"
 card_type = "Vehicle"
-description = "A fast-moving aircraft that rains down fire from above, ignoring ground obstacles."
 cost = 5.0
-is_spell = false
-spawn_count = 1
 max_hp = 200.0
 is_melee = false
+description = "A fast-moving aircraft that rains down fire from above, ignoring ground obstacles."
 unit_scene = ExtResource("2_scene")

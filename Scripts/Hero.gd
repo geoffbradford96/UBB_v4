@@ -2,7 +2,7 @@ extends CharacterBody3D
 
 @export var unit_attribute: String = "Organic"
 
-const SPEED = 5.0
+@export var speed: float = 5.0
 const ATTACK_RANGE = 2.0
 
 @export var is_player_controlled: bool = false
@@ -18,13 +18,7 @@ var mesh: Node3D
 var walk_time: float = 0.0
 var base_mesh_pos: Vector3 = Vector3.ZERO
 
-var base_speed: float
-var base_attack_val: float
-
 func _ready():
-	base_speed = speed
-	if "attack_speed" in self: base_attack_val = self.get("attack_speed")
-	elif "attack_rate" in self: base_attack_val = self.get("attack_rate")
 	mesh = get_node_or_null("MeshInstance3D")
 	if not mesh: mesh = get_node_or_null("VisualPivot")
 	if not mesh: mesh = get_node_or_null("Visuals")
@@ -40,22 +34,7 @@ func _ready():
 		base_mesh_pos = mesh.position
 
 func _physics_process(delta):
-	# Reach Synergy Inject
-	var reach_count = 0
-	if "Reach" in self.name:
-		var my_team = ""
-		for g in get_groups():
-			if g.begins_with("Side"): my_team = g
-		for node in get_tree().get_nodes_in_group(my_team):
-			if node != self and "Reach" in node.name and global_position.distance_to(node.global_position) < 6.0:
-				reach_count += 1
-		var synergy = min(reach_count, 5) * 0.15
-		speed = base_speed * (1.0 + synergy)
-		if "attack_speed" in self: self.set("attack_speed", base_attack_val * (1.0 + synergy))
-		elif "attack_rate" in self: self.set("attack_rate", base_attack_val / (1.0 + synergy))
-		var r_mesh = get_node_or_null("MeshInstance3D")
-		if not r_mesh: r_mesh = get_node_or_null("VisualPivot")
-		if r_mesh: r_mesh.scale = r_mesh.scale.lerp(Vector3.ONE * (1.0 + (synergy * 0.6)), 0.1)
+	_apply_reach_synergy()
 
 	# Apply gravity
 	if not is_on_floor():
@@ -69,16 +48,16 @@ func _physics_process(delta):
 		var direction = Vector3(input_dir.x, 0, input_dir.y).normalized()
 		
 		if direction:
-			velocity.x = direction.x * SPEED
-			velocity.z = direction.z * SPEED
+			velocity.x = direction.x * speed
+			velocity.z = direction.z * speed
 			is_moving = true
 			# Rotate to face direction
 			var look_target = global_position + direction
 			if global_position.distance_to(look_target) > 0.1:
 				look_at(look_target, Vector3.UP)
 		else:
-			velocity.x = move_toward(velocity.x, 0, SPEED)
-			velocity.z = move_toward(velocity.z, 0, SPEED)
+			velocity.x = move_toward(velocity.x, 0, speed)
+			velocity.z = move_toward(velocity.z, 0, speed)
 	else:
 		# Movement (AI Controlled)
 		if current_target != null:
@@ -90,7 +69,7 @@ func _physics_process(delta):
 				effective_range += 2.5
 			if dist > effective_range:
 				var next_path_pos = current_target.global_position
-				var new_velocity = global_position.direction_to(next_path_pos) * SPEED
+				var new_velocity = global_position.direction_to(next_path_pos) * speed
 				new_velocity.y = velocity.y
 				velocity = new_velocity
 				is_moving = true
@@ -100,24 +79,24 @@ func _physics_process(delta):
 				if global_position.distance_to(look_target) > 0.1:
 					look_at(look_target, Vector3.UP)
 			else:
-				velocity.x = move_toward(velocity.x, 0, SPEED)
-				velocity.z = move_toward(velocity.z, 0, SPEED)
+				velocity.x = move_toward(velocity.x, 0, speed)
+				velocity.z = move_toward(velocity.z, 0, speed)
 				
 				# Face target while attacking
 				var look_target = Vector3(current_target.global_position.x, global_position.y, current_target.global_position.z)
 				if global_position.distance_to(look_target) > 0.1:
 					look_at(look_target, Vector3.UP)
 		else:
-			velocity.x = move_toward(velocity.x, 0, SPEED)
-			velocity.z = move_toward(velocity.z, 0, SPEED)
+			velocity.x = move_toward(velocity.x, 0, speed)
+			velocity.z = move_toward(velocity.z, 0, speed)
 				
 	# Anti-stuck wall sliding
 	if is_on_wall():
 		var wall_normal = get_wall_normal()
 		var slide_vel = velocity.slide(wall_normal)
-		if slide_vel.length() < SPEED * 0.5:
+		if slide_vel.length() < speed * 0.5:
 			var perp = Vector3(wall_normal.z, 0, -wall_normal.x)
-			velocity += perp * SPEED * 1.5
+			velocity += perp * speed * 1.5
 	
 	move_and_slide()
 	
@@ -127,7 +106,7 @@ func _physics_process(delta):
 			pass
 		elif is_moving:
 			if ap.has_animation("walk") and ap.current_animation != "walk":
-				ap.play("walk", 0.2, SPEED * 0.5)
+				ap.play("walk", 0.2, speed * 0.5)
 		else:
 			if ap.has_animation("idle") and ap.current_animation != "idle":
 				ap.play("idle", 0.2)
@@ -135,7 +114,7 @@ func _physics_process(delta):
 	# Procedural Walk Animation (Bobbing)
 	if mesh:
 		if is_moving:
-			walk_time += delta * SPEED * 2.0
+			walk_time += delta * speed * 2.0
 			mesh.position.y = base_mesh_pos.y + abs(sin(walk_time)) * 0.3
 			mesh.rotation.z = sin(walk_time * 0.5) * 0.1
 		else:
@@ -189,3 +168,32 @@ func find_new_target():
 			if dist < closest_dist:
 				closest_dist = dist
 				current_target = e
+
+# --- Reach faction synergy: faster move/attack + bigger model when clustered with other Reach units ---
+var _reach_base_speed: float = -1.0
+var _reach_base_atk: float = -1.0
+
+func _apply_reach_synergy():
+	if not "Reach" in name:
+		return
+	if _reach_base_speed < 0.0:
+		_reach_base_speed = get("speed") if "speed" in self else 0.0
+		if "attack_speed" in self: _reach_base_atk = get("attack_speed")
+		elif "attack_rate" in self: _reach_base_atk = get("attack_rate")
+	var my_team := ""
+	for g in get_groups():
+		if g.begins_with("Side"): my_team = g
+	if my_team == "":
+		return
+	var reach_count := 0
+	for node in get_tree().get_nodes_in_group(my_team):
+		if node != self and node is Node3D and "Reach" in node.name and global_position.distance_to(node.global_position) < 6.0:
+			reach_count += 1
+	var synergy: float = min(reach_count, 5) * 0.15
+	if "speed" in self: set("speed", _reach_base_speed * (1.0 + synergy))
+	if _reach_base_atk > 0.0:
+		if "attack_speed" in self: set("attack_speed", _reach_base_atk * (1.0 + synergy))
+		elif "attack_rate" in self: set("attack_rate", _reach_base_atk / (1.0 + synergy))
+	var r_mesh = get_node_or_null("MeshInstance3D")
+	if not r_mesh: r_mesh = get_node_or_null("VisualPivot")
+	if r_mesh: r_mesh.scale = r_mesh.scale.lerp(Vector3.ONE * (1.0 + synergy * 0.6), 0.1)

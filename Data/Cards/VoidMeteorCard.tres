@@ -1,12 +1,13 @@
-[gd_resource type="Resource" script_class="CardData" load_steps=3 format=3 uid="uid://cardvoidmeteor"]
+[gd_resource type="Resource" script_class="CardData" load_steps=3 format=3]
+
 [ext_resource type="Script" path="res://Scripts/CardData.gd" id="1_script"]
-[ext_resource type="PackedScene" uid="uid://voidvoidmeteor" path="res://Scenes/Units/VoidSwarm/VoidMeteor.tscn" id="2_scene"]
+[ext_resource type="PackedScene" path="res://Scenes/Units/VoidSwarm/VoidMeteor.tscn" id="2_scene"]
+
 [resource]
 script = ExtResource("1_script")
 card_name = "VoidMeteor"
 card_type = "Spell"
-description = "Summons a cosmic anomaly that damages enemies in a radius."
 cost = 5.0
 is_spell = true
-spawn_count = 1
+description = "Summons a cosmic anomaly that damages enemies in a radius."
 unit_scene = ExtResource("2_scene")

@@ -149,7 +149,8 @@ func play_card(card: CardData, target_position: Vector3):
 	current_requisition -= card.cost
 	
 	hand.erase(card)
-	discard.append(card.card_name.replace(" ", "") + "Card")
+	var file_name = card.resource_path.get_file().trim_suffix(".tres").trim_suffix(".remap")
+	discard.append(file_name)
 	
 	print(my_team, " AI played ", card.card_name, " at ", target_position)
 	

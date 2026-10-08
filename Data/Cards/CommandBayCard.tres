@@ -1,11 +1,10 @@
-[gd_resource type="Resource" script_class="CardData" load_steps=3 format=3 uid="uid://card5abcd123"]
+[gd_resource type="Resource" script_class="CardData" load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://Scripts/CardData.gd" id="1_script"]
-[ext_resource type="PackedScene" uid="uid://unit5abcd123" path="res://Scenes/Units/CommandBay.tscn" id="2_scene"]
+[ext_resource type="PackedScene" path="res://Scenes/Units/CommandBay.tscn" id="2_scene"]
 
 [resource]
 script = ExtResource("1_script")
 card_name = "CommandBay"
 cost = 5.0
-is_spell = false
 unit_scene = ExtResource("2_scene")

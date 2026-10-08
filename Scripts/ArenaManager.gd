@@ -357,7 +357,7 @@ func _on_koth_tick():
 
 func _get_team_faction(team: String) -> String:
     for child in get_children():
-        if child.has_method("get_class") and "BotAI" in child.get_script().resource_path:
+        if child.get_script() and "BotAI" in child.get_script().resource_path:
             if child.my_team == team:
                 if child.ai_profile == "Void Charcon": return "Void"
                 if child.ai_profile == "The Great Beast Speaker": return "Rimworlders"
@@ -411,8 +411,14 @@ func apply_local_faction(team: String, faction: String):
             _build_structure_mesh(node, faction, "Tower" in node.name)
 
 func _build_structure_mesh(node, faction, is_tower):
+    if node is CSGShape3D:
+        var clear_mat = StandardMaterial3D.new()
+        clear_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+        clear_mat.albedo_color = Color(0, 0, 0, 0)
+        node.material_override = clear_mat
+        
     for c in node.get_children():
-        if c is MeshInstance3D:
+        if c is MeshInstance3D or (c is CSGShape3D and c != node):
             c.queue_free()
             
     var mesh_node = Node3D.new()
@@ -428,15 +434,21 @@ func _build_structure_mesh(node, faction, is_tower):
             mesh_node.add_child(cyl)
             var dome = MeshInstance3D.new()
             dome.mesh = SphereMesh.new(); dome.mesh.radius = 1.2
-            dome.material_override = mat_silver; dome.position.y = 4.0
+            var mat_gold = StandardMaterial3D.new(); mat_gold.albedo_color = Color(1.0, 0.8, 0.0); mat_gold.metallic = 1.0
+            dome.material_override = mat_gold; dome.position.y = 4.0
             mesh_node.add_child(dome)
         else:
             var box = MeshInstance3D.new()
             box.mesh = BoxMesh.new(); box.mesh.size = Vector3(5, 3, 5)
             var mat_gold = StandardMaterial3D.new()
-            mat_gold.albedo_color = Color(1.0, 0.8, 0.0); mat_gold.metallic = 1.0
+            mat_gold.albedo_color = Color(0.9, 0.9, 0.9); mat_gold.metallic = 0.9
             box.material_override = mat_gold; box.position.y = 1.5
             mesh_node.add_child(box)
+            var roof = MeshInstance3D.new()
+            roof.mesh = PrismMesh.new(); roof.mesh.size = Vector3(5.5, 2, 5.5)
+            var mat_blue = StandardMaterial3D.new(); mat_blue.albedo_color = Color(0.1, 0.3, 0.8); mat_blue.metallic = 0.5
+            roof.material_override = mat_blue; roof.position.y = 4.0
+            mesh_node.add_child(roof)
             
     elif faction == "Void":
         if is_tower:
@@ -452,16 +464,19 @@ func _build_structure_mesh(node, faction, is_tower):
             mesh_node.add_child(eye)
         else:
             var box = MeshInstance3D.new()
-            box.mesh = BoxMesh.new(); box.mesh.size = Vector3(6, 4, 6)
+            box.mesh = SphereMesh.new(); box.mesh.radius = 3.5; box.mesh.height = 4.0
             var mat_dark = StandardMaterial3D.new(); mat_dark.albedo_color = Color(0.1, 0.1, 0.1)
             box.material_override = mat_dark; box.position.y = 2.0
             mesh_node.add_child(box)
-            var scar = MeshInstance3D.new()
-            scar.mesh = BoxMesh.new(); scar.mesh.size = Vector3(4, 0.1, 4)
-            var mat_scar = StandardMaterial3D.new(); mat_scar.albedo_color = Color(0.8, 0, 1.0); mat_scar.emission_enabled = true; mat_scar.emission = Color(0.8, 0, 1.0)
-            scar.material_override = mat_scar; scar.position.y = 4.1
-            scar.rotation_degrees.y = 45
-            mesh_node.add_child(scar)
+            for i in range(4):
+                var spike = MeshInstance3D.new()
+                spike.mesh = CylinderMesh.new(); spike.mesh.top_radius = 0.0; spike.mesh.bottom_radius = 0.5; spike.mesh.height = 3.0
+                var mat_scar = StandardMaterial3D.new(); mat_scar.albedo_color = Color(0.8, 0, 1.0); mat_scar.emission_enabled = true; mat_scar.emission = Color(0.8, 0, 1.0)
+                spike.material_override = mat_scar; spike.position.y = 4.0
+                var angle = i * (3.14159 * 2.0 / 4.0)
+                spike.position.x = cos(angle) * 2.0; spike.position.z = sin(angle) * 2.0
+                spike.rotation_degrees.x = sin(angle) * 30; spike.rotation_degrees.z = -cos(angle) * 30
+                mesh_node.add_child(spike)
             
     elif faction == "Rimworlders":
         if is_tower:
@@ -477,7 +492,8 @@ func _build_structure_mesh(node, faction, is_tower):
                 mesh_node.add_child(stalk)
                 var head = MeshInstance3D.new()
                 head.mesh = SphereMesh.new(); head.mesh.radius = 0.6
-                head.material_override = mat_flesh; head.position.y = 1.5
+                var mat_eye = StandardMaterial3D.new(); mat_eye.albedo_color = Color(1.0, 0.0, 0.0); mat_eye.emission_enabled = true; mat_eye.emission = Color(1.0, 0.0, 0.0)
+                head.material_override = mat_eye; head.position.y = 1.5
                 stalk.add_child(head)
         else:
             var mat_beast = StandardMaterial3D.new(); mat_beast.albedo_color = Color(0.1, 0.6, 0.2); mat_beast.emission_enabled = true; mat_beast.emission = Color(0.0, 0.3, 0.1)
@@ -493,3 +509,72 @@ func _build_structure_mesh(node, faction, is_tower):
                 tent.position.x = cos(angle) * 2.5; tent.position.z = sin(angle) * 2.5; tent.position.y = 2.0
                 tent.rotation_degrees.x = sin(angle) * 45; tent.rotation_degrees.z = -cos(angle) * 45
                 mesh_node.add_child(tent)
+                
+    elif faction == "Pirates":
+        var mat_rust = StandardMaterial3D.new(); mat_rust.albedo_color = Color(0.6, 0.3, 0.1); mat_rust.metallic = 0.5; mat_rust.roughness = 0.9
+        var mat_metal = StandardMaterial3D.new(); mat_metal.albedo_color = Color(0.4, 0.4, 0.4); mat_metal.metallic = 0.9; mat_metal.roughness = 0.6
+        if is_tower:
+            var base_cyl = MeshInstance3D.new()
+            base_cyl.mesh = CylinderMesh.new(); base_cyl.mesh.height = 2.0; base_cyl.mesh.bottom_radius = 1.5; base_cyl.mesh.top_radius = 1.2
+            base_cyl.material_override = mat_rust; base_cyl.position.y = 1.0
+            mesh_node.add_child(base_cyl)
+            var pole = MeshInstance3D.new()
+            pole.mesh = CylinderMesh.new(); pole.mesh.height = 3.0; pole.mesh.bottom_radius = 0.3; pole.mesh.top_radius = 0.3
+            pole.material_override = mat_metal; pole.position.y = 3.5
+            mesh_node.add_child(pole)
+            var turret = MeshInstance3D.new()
+            turret.mesh = BoxMesh.new(); turret.mesh.size = Vector3(1.5, 1.0, 1.5)
+            turret.material_override = mat_rust; turret.position.y = 5.0
+            mesh_node.add_child(turret)
+            var barrel = MeshInstance3D.new()
+            barrel.mesh = CylinderMesh.new(); barrel.mesh.height = 2.0; barrel.mesh.bottom_radius = 0.2; barrel.mesh.top_radius = 0.2
+            barrel.material_override = mat_metal; barrel.position.y = 5.0; barrel.position.z = 1.0; barrel.rotation_degrees.x = 90
+            mesh_node.add_child(barrel)
+        else:
+            var hull = MeshInstance3D.new()
+            hull.mesh = BoxMesh.new(); hull.mesh.size = Vector3(6, 2.5, 4)
+            hull.material_override = mat_rust; hull.position.y = 1.25
+            mesh_node.add_child(hull)
+            var cabin = MeshInstance3D.new()
+            cabin.mesh = BoxMesh.new(); cabin.mesh.size = Vector3(3, 2, 3)
+            cabin.material_override = mat_metal; cabin.position.y = 3.5; cabin.position.x = -1.0
+            mesh_node.add_child(cabin)
+            var pipe = MeshInstance3D.new()
+            pipe.mesh = CylinderMesh.new(); pipe.mesh.height = 3.0; pipe.mesh.bottom_radius = 0.4; pipe.mesh.top_radius = 0.4
+            var mat_smoke = StandardMaterial3D.new(); mat_smoke.albedo_color = Color(0.2, 0.2, 0.2)
+            pipe.material_override = mat_smoke; pipe.position.y = 5.0; pipe.position.x = 1.5
+            mesh_node.add_child(pipe)
+            
+    elif faction == "The Reach":
+        var mat_glass = StandardMaterial3D.new(); mat_glass.albedo_color = Color(0.1, 0.8, 1.0, 0.6); mat_glass.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA; mat_glass.emission_enabled = true; mat_glass.emission = Color(0.0, 0.5, 1.0)
+        var mat_white = StandardMaterial3D.new(); mat_white.albedo_color = Color(0.9, 0.95, 1.0); mat_white.metallic = 0.2; mat_white.roughness = 0.1
+        if is_tower:
+            var obelisk = MeshInstance3D.new()
+            obelisk.mesh = CylinderMesh.new(); obelisk.mesh.radial_segments = 4; obelisk.mesh.height = 4.5; obelisk.mesh.bottom_radius = 1.0; obelisk.mesh.top_radius = 0.2
+            obelisk.material_override = mat_white; obelisk.position.y = 2.25
+            obelisk.rotation_degrees.y = 45
+            mesh_node.add_child(obelisk)
+            var crystal = MeshInstance3D.new()
+            crystal.mesh = PrismMesh.new(); crystal.mesh.size = Vector3(1.5, 2.0, 1.5)
+            crystal.material_override = mat_glass; crystal.position.y = 5.5
+            mesh_node.add_child(crystal)
+            var crystal2 = MeshInstance3D.new()
+            crystal2.mesh = PrismMesh.new(); crystal2.mesh.size = Vector3(1.5, 2.0, 1.5)
+            crystal2.material_override = mat_glass; crystal2.position.y = 5.5; crystal2.rotation_degrees.x = 180
+            mesh_node.add_child(crystal2)
+        else:
+            var plat = MeshInstance3D.new()
+            plat.mesh = CylinderMesh.new(); plat.mesh.height = 1.0; plat.mesh.bottom_radius = 4.0; plat.mesh.top_radius = 3.5
+            plat.material_override = mat_white; plat.position.y = 0.5
+            mesh_node.add_child(plat)
+            var core = MeshInstance3D.new()
+            core.mesh = SphereMesh.new(); core.mesh.radius = 2.0; core.mesh.height = 4.0
+            core.material_override = mat_glass; core.position.y = 2.5
+            mesh_node.add_child(core)
+            for i in range(3):
+                var ring = MeshInstance3D.new()
+                ring.mesh = TorusMesh.new(); ring.mesh.inner_radius = 2.5; ring.mesh.outer_radius = 3.0
+                ring.material_override = mat_white; ring.position.y = 2.5
+                ring.rotation_degrees.x = 90
+                ring.rotation_degrees.y = i * 60
+                mesh_node.add_child(ring)

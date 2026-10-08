@@ -137,9 +137,9 @@ func _physics_process(delta):
 					else:
 						target_health.take_damage(attack_damage)
 						
-					var ap = get_node_or_null("AnimationPlayer")
-					if ap and ap.has_animation("attack"):
-						ap.play("attack", -1, attack_speed)
+					var ap_attack = get_node_or_null("AnimationPlayer")
+					if ap_attack and ap_attack.has_animation("attack"):
+						ap_attack.play("attack", -1, attack_speed)
 	else:
 		velocity.x = move_toward(velocity.x, 0, speed)
 		velocity.z = move_toward(velocity.z, 0, speed)

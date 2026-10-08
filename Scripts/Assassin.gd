@@ -24,30 +24,18 @@ func _ready():
 	if "attack_speed" in self:
 		base_attack_speed = self.get("attack_speed")
 	# Make Assassin partially transparent
-	if mesh.mesh and mesh.mesh.material:
-		# Need to make material unique so it doesn't affect other capsules
-		var mat = mesh.mesh.material.duplicate()
-		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		mat.albedo_color.a = 0.3
-		mesh.set_surface_override_material(0, mat)
+	if mesh is MeshInstance3D and mesh.mesh:
+		var active_mat = mesh.material_override
+		if not active_mat and mesh.mesh.get_surface_count() > 0:
+			active_mat = mesh.mesh.surface_get_material(0)
+		if active_mat:
+			var mat = active_mat.duplicate()
+			mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			mat.albedo_color.a = 0.3
+			mesh.material_override = mat
 
 func _physics_process(delta):
-	# Reach Synergy Inject
-	var reach_count = 0
-	if "Reach" in self.name:
-		var my_team = ""
-		for g in get_groups():
-			if g.begins_with("Side"): my_team = g
-		for node in get_tree().get_nodes_in_group(my_team):
-			if node != self and "Reach" in node.name and global_position.distance_to(node.global_position) < 6.0:
-				reach_count += 1
-		var synergy = min(reach_count, 5) * 0.15
-		speed = base_speed * (1.0 + synergy)
-		if "attack_speed" in self: self.set("attack_speed", base_attack_val * (1.0 + synergy))
-		elif "attack_rate" in self: self.set("attack_rate", base_attack_val / (1.0 + synergy))
-		var r_mesh = get_node_or_null("MeshInstance3D")
-		if not r_mesh: r_mesh = get_node_or_null("VisualPivot")
-		if r_mesh: r_mesh.scale = r_mesh.scale.lerp(Vector3.ONE * (1.0 + (synergy * 0.6)), 0.1)
+	_apply_reach_synergy()
 
 	if not is_on_floor():
 		velocity.y -= 9.8 * delta
@@ -83,9 +71,9 @@ func _physics_process(delta):
 				var target_health = current_target.get_node_or_null("HealthComponent")
 				if target_health:
 					target_health.take_damage(damage)
-					var ap = get_node_or_null("AnimationPlayer")
-					if ap and ap.has_animation("attack"):
-						ap.play("attack")
+					var ap_action = get_node_or_null("AnimationPlayer")
+					if ap_action and ap_action.has_animation("attack"):
+						ap_action.play("attack")
 
 	else:
 		velocity.x = move_toward(velocity.x, 0, speed)
@@ -164,5 +152,31 @@ func find_new_target():
 	elif normal_target != null:
 		current_target = normal_target
 
+# --- Reach faction synergy: faster move/attack + bigger model when clustered with other Reach units ---
+var _reach_base_speed: float = -1.0
+var _reach_base_atk: float = -1.0
 
-
+func _apply_reach_synergy():
+	if not "Reach" in name:
+		return
+	if _reach_base_speed < 0.0:
+		_reach_base_speed = get("speed") if "speed" in self else 0.0
+		if "attack_speed" in self: _reach_base_atk = get("attack_speed")
+		elif "attack_rate" in self: _reach_base_atk = get("attack_rate")
+	var my_team := ""
+	for g in get_groups():
+		if g.begins_with("Side"): my_team = g
+	if my_team == "":
+		return
+	var reach_count := 0
+	for node in get_tree().get_nodes_in_group(my_team):
+		if node != self and node is Node3D and "Reach" in node.name and global_position.distance_to(node.global_position) < 6.0:
+			reach_count += 1
+	var synergy: float = min(reach_count, 5) * 0.15
+	if "speed" in self: set("speed", _reach_base_speed * (1.0 + synergy))
+	if _reach_base_atk > 0.0:
+		if "attack_speed" in self: set("attack_speed", _reach_base_atk * (1.0 + synergy))
+		elif "attack_rate" in self: set("attack_rate", _reach_base_atk / (1.0 + synergy))
+	var r_mesh = get_node_or_null("MeshInstance3D")
+	if not r_mesh: r_mesh = get_node_or_null("VisualPivot")
+	if r_mesh: r_mesh.scale = r_mesh.scale.lerp(Vector3.ONE * (1.0 + synergy * 0.6), 0.1)
