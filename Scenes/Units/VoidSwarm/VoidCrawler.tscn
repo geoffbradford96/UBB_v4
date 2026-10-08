@@ -1,56 +1,33 @@
-[gd_scene load_steps=17 format=3]
+[gd_scene load_steps=12 format=3]
 
 [ext_resource type="Script" path="res://Scripts/Unit.gd" id="1_script"]
 [ext_resource type="Script" path="res://Scripts/HealthComponent.gd" id="2_health"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_1"]
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_1"]
-transparency = 1
-albedo_color = Color(0.3, 0, 0.5, 0.65)
-emission_enabled = true
-emission = Color(0.6, 0.1, 0.8, 1)
-emission_energy_multiplier = 1.8
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_r6rl0"]
+albedo_color = Color(0.2, 0, 0.3, 1)
 
-[sub_resource type="CapsuleMesh" id="CapsuleMesh_1"]
-material = SubResource("StandardMaterial3D_1")
+[sub_resource type="BoxMesh" id="BoxMesh_wuteu"]
+size = Vector3(1.5, 1, 2)
 
-[sub_resource type="FastNoiseLite" id="FastNoiseLite_r6rl0"]
-noise_type = 0
-frequency = 0.1
+[sub_resource type="BoxMesh" id="BoxMesh_gouct"]
+size = Vector3(1, 0.2, 0.2)
 
-[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_wuteu"]
-noise = SubResource("FastNoiseLite_r6rl0")
-as_normal_map = true
+[sub_resource type="BoxMesh" id="BoxMesh_f5ij0"]
+size = Vector3(1, 0.2, 0.2)
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_gouct"]
-albedo_color = Color(0.2, 0.1, 0.3, 1)
-normal_enabled = true
-normal_texture = SubResource("NoiseTexture2D_wuteu")
+[sub_resource type="BoxMesh" id="BoxMesh_ei88p"]
+size = Vector3(1, 0.2, 0.2)
 
-[sub_resource type="CapsuleMesh" id="CapsuleMesh_r6rl0"]
-material = SubResource("StandardMaterial3D_1")
+[sub_resource type="BoxMesh" id="BoxMesh_835rs"]
+size = Vector3(1, 0.2, 0.2)
 
-[sub_resource type="CapsuleMesh" id="CapsuleMesh_wuteu"]
-material = SubResource("StandardMaterial3D_1")
+[sub_resource type="BoxMesh" id="BoxMesh_45ewf"]
+size = Vector3(1, 0.2, 0.2)
 
-[sub_resource type="CapsuleMesh" id="CapsuleMesh_gouct"]
-material = SubResource("StandardMaterial3D_1")
-
-[sub_resource type="CapsuleMesh" id="CapsuleMesh_f5ij0"]
-material = SubResource("StandardMaterial3D_1")
-
-[sub_resource type="CapsuleMesh" id="CapsuleMesh_ei88p"]
-material = SubResource("StandardMaterial3D_1")
-
-[sub_resource type="CapsuleMesh" id="CapsuleMesh_835rs"]
-material = SubResource("StandardMaterial3D_1")
-
-[sub_resource type="CapsuleMesh" id="CapsuleMesh_45ewf"]
-material = SubResource("StandardMaterial3D_1")
-
-[sub_resource type="CapsuleMesh" id="CapsuleMesh_bkc2p"]
-material = SubResource("StandardMaterial3D_1")
+[sub_resource type="BoxMesh" id="BoxMesh_bkc2p"]
+size = Vector3(1, 0.2, 0.2)
 
 [node name="VoidCrawler" type="CharacterBody3D" groups=["SideA"]]
 script = ExtResource("1_script")
@@ -61,41 +38,41 @@ script = ExtResource("2_health")
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 shape = SubResource("CapsuleShape3D_1")
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, 0, -0.3, 0)
-mesh = SubResource("CapsuleMesh_1")
-surface_material_override/0 = SubResource("StandardMaterial3D_gouct")
-
-[node name="LeftLeg_0" type="MeshInstance3D" parent="MeshInstance3D"]
-transform = Transform3D(0.049999997, -0.69282037, 0, 0.086602546, 0.39999998, 0, 0, 0, 0.1, -0.6, 0, -0.6)
-mesh = SubResource("CapsuleMesh_r6rl0")
-
-[node name="RightLeg_0" type="MeshInstance3D" parent="MeshInstance3D"]
-transform = Transform3D(0.049999997, 0.69282037, 0, -0.086602546, 0.39999998, 0, 0, 0, 0.1, 0.6, 0, -0.6)
-mesh = SubResource("CapsuleMesh_wuteu")
-
-[node name="LeftLeg_1" type="MeshInstance3D" parent="MeshInstance3D"]
-transform = Transform3D(0.049999997, -0.69282037, 0, 0.086602546, 0.39999998, 0, 0, 0, 0.1, -0.6, 0, -0.2)
-mesh = SubResource("CapsuleMesh_gouct")
-
-[node name="RightLeg_1" type="MeshInstance3D" parent="MeshInstance3D"]
-transform = Transform3D(0.049999997, 0.69282037, 0, -0.086602546, 0.39999998, 0, 0, 0, 0.1, 0.6, 0, -0.2)
-mesh = SubResource("CapsuleMesh_f5ij0")
-
-[node name="LeftLeg_2" type="MeshInstance3D" parent="MeshInstance3D"]
-transform = Transform3D(0.049999997, -0.69282037, 0, 0.086602546, 0.39999998, 0, 0, 0, 0.1, -0.6, 0, 0.2)
-mesh = SubResource("CapsuleMesh_ei88p")
-
-[node name="RightLeg_2" type="MeshInstance3D" parent="MeshInstance3D"]
-transform = Transform3D(0.049999997, 0.69282037, 0, -0.086602546, 0.39999998, 0, 0, 0, 0.1, 0.6, 0, 0.2)
-mesh = SubResource("CapsuleMesh_835rs")
-
-[node name="LeftLeg_3" type="MeshInstance3D" parent="MeshInstance3D"]
-transform = Transform3D(0.049999997, -0.69282037, 0, 0.086602546, 0.39999998, 0, 0, 0, 0.1, -0.6, 0, 0.6)
-mesh = SubResource("CapsuleMesh_45ewf")
-
-[node name="RightLeg_3" type="MeshInstance3D" parent="MeshInstance3D"]
-transform = Transform3D(0.049999997, 0.69282037, 0, -0.086602546, 0.39999998, 0, 0, 0, 0.1, 0.6, 0, 0.6)
-mesh = SubResource("CapsuleMesh_bkc2p")
-
 [node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
+
+[node name="VisualPivot" type="Node3D" parent="."]
+
+[node name="@MeshInstance3D@2" type="MeshInstance3D" parent="VisualPivot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+material_override = SubResource("StandardMaterial3D_r6rl0")
+mesh = SubResource("BoxMesh_wuteu")
+
+[node name="@MeshInstance3D@3" type="MeshInstance3D" parent="VisualPivot"]
+transform = Transform3D(0.70710677, -0.70710677, 0, 0.70710677, 0.70710677, 0, 0, 0, 1, 1, 0.5, -0.8)
+material_override = SubResource("StandardMaterial3D_r6rl0")
+mesh = SubResource("BoxMesh_gouct")
+
+[node name="@MeshInstance3D@4" type="MeshInstance3D" parent="VisualPivot"]
+transform = Transform3D(0.70710677, -0.70710677, 0, 0.70710677, 0.70710677, 0, 0, 0, 1, 1, 0.5, 0)
+material_override = SubResource("StandardMaterial3D_r6rl0")
+mesh = SubResource("BoxMesh_f5ij0")
+
+[node name="@MeshInstance3D@5" type="MeshInstance3D" parent="VisualPivot"]
+transform = Transform3D(0.70710677, -0.70710677, 0, 0.70710677, 0.70710677, 0, 0, 0, 1, 1, 0.5, 0.8)
+material_override = SubResource("StandardMaterial3D_r6rl0")
+mesh = SubResource("BoxMesh_ei88p")
+
+[node name="@MeshInstance3D@6" type="MeshInstance3D" parent="VisualPivot"]
+transform = Transform3D(0.70710677, 0.70710677, 0, -0.70710677, 0.70710677, 0, 0, 0, 1, -1, 0.5, -0.8)
+material_override = SubResource("StandardMaterial3D_r6rl0")
+mesh = SubResource("BoxMesh_835rs")
+
+[node name="@MeshInstance3D@7" type="MeshInstance3D" parent="VisualPivot"]
+transform = Transform3D(0.70710677, 0.70710677, 0, -0.70710677, 0.70710677, 0, 0, 0, 1, -1, 0.5, 0)
+material_override = SubResource("StandardMaterial3D_r6rl0")
+mesh = SubResource("BoxMesh_45ewf")
+
+[node name="@MeshInstance3D@8" type="MeshInstance3D" parent="VisualPivot"]
+transform = Transform3D(0.70710677, 0.70710677, 0, -0.70710677, 0.70710677, 0, 0, 0, 1, -1, 0.5, 0.8)
+material_override = SubResource("StandardMaterial3D_r6rl0")
+mesh = SubResource("BoxMesh_bkc2p")

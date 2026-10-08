@@ -1,4 +1,4 @@
-[gd_scene load_steps=14 format=3]
+[gd_scene load_steps=16 format=3]
 
 [ext_resource type="Script" path="res://Scripts/Plane.gd" id="1_script"]
 [ext_resource type="Script" path="res://Scripts/HealthComponent.gd" id="2_health"]
@@ -6,35 +6,20 @@
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_1"]
 height = 3.0
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_1"]
-albedo_color = Color(0.7, 0.7, 0.8, 1)
-
-[sub_resource type="CapsuleMesh" id="CapsuleMesh_1"]
-material = SubResource("StandardMaterial3D_1")
-height = 3.0
-
-[sub_resource type="BoxMesh" id="BoxMesh_1"]
-material = SubResource("StandardMaterial3D_1")
-size = Vector3(4, 0.2, 1)
-
-[sub_resource type="BoxMesh" id="BoxMesh_2"]
-material = SubResource("StandardMaterial3D_1")
-size = Vector3(1.5, 0.2, 0.5)
-
-[sub_resource type="Animation" id="Animation_eu40k"]
-loop_mode = 1
-
-[sub_resource type="Animation" id="Animation_ejdvp"]
-loop_mode = 1
-
 [sub_resource type="Animation" id="Animation_bvwpt"]
 length = 0.5
 
 [sub_resource type="Animation" id="Animation_vebep"]
 length = 0.5
 
+[sub_resource type="Animation" id="Animation_eu40k"]
+loop_mode = 1
+
 [sub_resource type="Animation" id="Animation_jps0t"]
 length = 0.5
+
+[sub_resource type="Animation" id="Animation_ejdvp"]
+loop_mode = 1
 
 [sub_resource type="AnimationLibrary" id="AnimationLibrary_sxsch"]
 _data = {
@@ -44,6 +29,24 @@ _data = {
 &"repair": SubResource("Animation_jps0t"),
 &"walk": SubResource("Animation_ejdvp")
 }
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_eu40k"]
+albedo_color = Color(0.7, 0.7, 0.8, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_ejdvp"]
+size = Vector3(1, 1, 3)
+
+[sub_resource type="BoxMesh" id="BoxMesh_bvwpt"]
+size = Vector3(5, 0.2, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_vebep"]
+size = Vector3(0.2, 1, 0.5)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_jps0t"]
+albedo_color = Color(0.2, 0.2, 0.2, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_sxsch"]
+size = Vector3(1.5, 0.1, 0.1)
 
 [node name="Plane" type="CharacterBody3D" groups=["SideA"]]
 script = ExtResource("1_script")
@@ -55,20 +58,31 @@ script = ExtResource("2_health")
 transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, 0)
 shape = SubResource("CapsuleShape3D_1")
 
-[node name="Body" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, 0)
-mesh = SubResource("CapsuleMesh_1")
-
-[node name="MainWings" type="MeshInstance3D" parent="."]
-mesh = SubResource("BoxMesh_1")
-
-[node name="TailWings" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, 1.2)
-mesh = SubResource("BoxMesh_2")
-
 [node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="."]
 libraries = {
 &"": SubResource("AnimationLibrary_sxsch")
 }
+
+[node name="VisualPivot" type="Node3D" parent="."]
+
+[node name="@MeshInstance3D@10" type="MeshInstance3D" parent="VisualPivot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5, 0)
+material_override = SubResource("StandardMaterial3D_eu40k")
+mesh = SubResource("BoxMesh_ejdvp")
+
+[node name="@MeshInstance3D@11" type="MeshInstance3D" parent="VisualPivot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5, 0)
+material_override = SubResource("StandardMaterial3D_eu40k")
+mesh = SubResource("BoxMesh_bvwpt")
+
+[node name="@MeshInstance3D@12" type="MeshInstance3D" parent="VisualPivot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.5, -1.2)
+material_override = SubResource("StandardMaterial3D_eu40k")
+mesh = SubResource("BoxMesh_vebep")
+
+[node name="@MeshInstance3D@13" type="MeshInstance3D" parent="VisualPivot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5, 1.6)
+material_override = SubResource("StandardMaterial3D_jps0t")
+mesh = SubResource("BoxMesh_sxsch")

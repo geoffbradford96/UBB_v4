@@ -1,4 +1,4 @@
-[gd_scene load_steps=14 format=3]
+[gd_scene load_steps=17 format=3]
 
 [ext_resource type="Script" path="res://Scripts/Hero.gd" id="1_b5afs"]
 [ext_resource type="Script" path="res://Scripts/HealthComponent.gd" id="2_va6a1"]
@@ -6,34 +6,17 @@
 [sub_resource type="BoxShape3D" id="BoxShape3D_2g0lf"]
 size = Vector3(2, 3, 2)
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_2yoy5"]
-albedo_color = Color(0.15, 0.15, 0.2, 1)
-metallic = 0.8
-
-[sub_resource type="BoxMesh" id="BoxMesh_lfgpb"]
-size = Vector3(2, 3, 2)
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_47xks"]
-albedo_color = Color(0.8, 0, 0, 1)
-emission_enabled = true
-emission = Color(0.8, 0, 0, 1)
-
-[sub_resource type="CylinderMesh" id="CylinderMesh_mlvf5"]
-top_radius = 1.5
-bottom_radius = 0.8
-height = 1.0
-
-[sub_resource type="Animation" id="Animation_j7eah"]
-loop_mode = 1
-
-[sub_resource type="Animation" id="Animation_p8y46"]
-loop_mode = 1
-
 [sub_resource type="Animation" id="Animation_efuqi"]
 
 [sub_resource type="Animation" id="Animation_uunah"]
 
+[sub_resource type="Animation" id="Animation_j7eah"]
+loop_mode = 1
+
 [sub_resource type="Animation" id="Animation_axhog"]
+
+[sub_resource type="Animation" id="Animation_p8y46"]
+loop_mode = 1
 
 [sub_resource type="AnimationLibrary" id="AnimationLibrary_2e7k1"]
 _data = {
@@ -44,6 +27,29 @@ _data = {
 &"walk": SubResource("Animation_p8y46")
 }
 
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_b5afs"]
+albedo_color = Color(0.2, 0.2, 0.3, 1)
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_va6a1"]
+radius = 0.8
+height = 2.5
+
+[sub_resource type="BoxMesh" id="BoxMesh_2g0lf"]
+size = Vector3(0.8, 0.8, 0.8)
+
+[sub_resource type="BoxMesh" id="BoxMesh_2yoy5"]
+size = Vector3(0.8, 0.8, 0.8)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_lfgpb"]
+albedo_color = Color(0.9, 0.9, 0.9, 1)
+
+[sub_resource type="SphereMesh" id="SphereMesh_47xks"]
+radius = 0.6
+height = 1.2
+
+[sub_resource type="BoxMesh" id="BoxMesh_mlvf5"]
+size = Vector3(0.2, 2, 0.2)
+
 [node name="ReachCommander" type="CharacterBody3D"]
 script = ExtResource("1_b5afs")
 attack_damage = 100.0
@@ -52,16 +58,6 @@ attack_damage = 100.0
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
 shape = SubResource("BoxShape3D_2g0lf")
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
-material_override = SubResource("StandardMaterial3D_2yoy5")
-mesh = SubResource("BoxMesh_lfgpb")
-
-[node name="@MeshInstance3D@5" type="MeshInstance3D" parent="MeshInstance3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
-material_override = SubResource("StandardMaterial3D_47xks")
-mesh = SubResource("CylinderMesh_mlvf5")
-
 [node name="HealthComponent" type="Node3D" parent="."]
 script = ExtResource("2_va6a1")
 
@@ -69,3 +65,30 @@ script = ExtResource("2_va6a1")
 libraries = {
 &"": SubResource("AnimationLibrary_2e7k1")
 }
+
+[node name="VisualPivot" type="Node3D" parent="."]
+
+[node name="@MeshInstance3D@46" type="MeshInstance3D" parent="VisualPivot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
+material_override = SubResource("StandardMaterial3D_b5afs")
+mesh = SubResource("CapsuleMesh_va6a1")
+
+[node name="@MeshInstance3D@47" type="MeshInstance3D" parent="VisualPivot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 2.2, 0)
+material_override = SubResource("StandardMaterial3D_b5afs")
+mesh = SubResource("BoxMesh_2g0lf")
+
+[node name="@MeshInstance3D@48" type="MeshInstance3D" parent="VisualPivot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 2.2, 0)
+material_override = SubResource("StandardMaterial3D_b5afs")
+mesh = SubResource("BoxMesh_2yoy5")
+
+[node name="@MeshInstance3D@49" type="MeshInstance3D" parent="VisualPivot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.2, 0)
+material_override = SubResource("StandardMaterial3D_lfgpb")
+mesh = SubResource("SphereMesh_47xks")
+
+[node name="@MeshInstance3D@50" type="MeshInstance3D" parent="VisualPivot"]
+transform = Transform3D(1, 0, 0, 0, 0.70710677, -0.70710677, 0, 0.70710677, 0.70710677, 1.2, 1.5, 1)
+material_override = SubResource("StandardMaterial3D_b5afs")
+mesh = SubResource("BoxMesh_mlvf5")
