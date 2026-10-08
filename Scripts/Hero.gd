@@ -13,12 +13,16 @@ const ATTACK_RANGE = 2.0
 var current_target: Node3D = null
 var attack_timer: float = 0.0
 
-@onready var mesh = $MeshInstance3D
+var mesh: Node3D
 
 var walk_time: float = 0.0
 var base_mesh_pos: Vector3 = Vector3.ZERO
 
 func _ready():
+	mesh = get_node_or_null("MeshInstance3D")
+	if not mesh: mesh = get_node_or_null("VisualPivot")
+	if not mesh: mesh = get_node_or_null("Visuals")
+	if not mesh: mesh = self # fallback
 	add_to_group("Targetable")
 		# Dynamically assign attribute based on name if not set manually
 	if "Tank" in name or "Walker" in name or "Plane" in name or "Tower" in name or "Base" in name or "CommandBay" in name:

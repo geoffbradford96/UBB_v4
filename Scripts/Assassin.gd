@@ -5,7 +5,7 @@ extends CharacterBody3D
 @export var damage: float = 15.0
 @export var attack_rate: float = 0.5 # attacks fast!
 
-@onready var mesh: MeshInstance3D = $MeshInstance3D
+var mesh: Node3D
 
 var current_target: Node3D = null
 var attack_timer: float = 0.0
@@ -15,6 +15,10 @@ var base_speed: float
 var base_attack_speed: float
 
 func _ready():
+	mesh = get_node_or_null("MeshInstance3D")
+	if not mesh: mesh = get_node_or_null("VisualPivot")
+	if not mesh: mesh = get_node_or_null("Visuals")
+	if not mesh: mesh = self # fallback
 	base_speed = speed
 	if "attack_speed" in self:
 		base_attack_speed = self.get("attack_speed")

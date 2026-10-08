@@ -70,6 +70,7 @@ func _physics_process(delta):
 				if "attack_speed" in self:
 					self.set("attack_speed", base_attack_speed * (1.0 + synergy))
 				var r_mesh = get_node_or_null("MeshInstance3D")
+				if not r_mesh: r_mesh = get_node_or_null("VisualPivot")
 				if r_mesh:
 					var target_scale = 1.0 + (synergy * 0.6)
 					r_mesh.scale = r_mesh.scale.lerp(Vector3(target_scale, target_scale, target_scale), 0.1)
