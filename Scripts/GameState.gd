@@ -21,6 +21,7 @@ var ai_difficulty = "MEDIUM"
 var game_mode = "DESTROY_BASE"
 var map_selected = "Arena.tscn"
 var match_player_count = 2
+var sudden_death_timer = 600.0
 
 func _ready():
 	print("Global GameState is active!")

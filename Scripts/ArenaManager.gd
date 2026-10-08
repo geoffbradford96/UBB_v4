@@ -3,6 +3,13 @@ extends Node3D
 @export var max_requisition: float = 100.0
 var requisition_rate: float = 0.5
 
+var match_timer: float = 600.0
+var sudden_death_active: bool = false
+var beast_timer: float = 0.0
+var beast_spawn_interval: float = 5.0
+var beast_tentacle_scene = preload("res://Scenes/BeastTentacle.tscn")
+
+
 var initial_towers_per_team = {}
 var koth_points = {"SideA": 0, "SideB": 0, "SideC": 0, "SideD": 0, "SideE": 0, "SideF": 0}
 
@@ -21,6 +28,10 @@ var players: Array = []
 
 func _ready():
     print("Initializing Arena in Mode: ", GameState.current_mode)
+
+    if "sudden_death_timer" in GameState:
+        match_timer = float(GameState.sudden_death_timer)
+
     
     var original_ui = get_node_or_null("InGameUI")
     var original_cam = get_node_or_null("ArenaCamera")
@@ -154,6 +165,28 @@ func setup_match():
         
 func _process(delta):
     if get_tree().paused: return
+
+    if not sudden_death_active:
+        match_timer -= delta
+        if match_timer <= 0:
+            match_timer = 0
+            sudden_death_active = true
+            _start_beast_of_nothingness()
+    else:
+        beast_timer -= delta
+        if beast_timer <= 0:
+            beast_timer = beast_spawn_interval
+            beast_spawn_interval = max(0.5, beast_spawn_interval - 0.2)
+            var rx = randf_range(-40.0, 40.0)
+            var rz = randf_range(-40.0, 40.0)
+            if multiplayer.has_multiplayer_peer() and multiplayer.multiplayer_peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED:
+                if multiplayer.is_server():
+                    rpc("sync_spawn_tentacle", rx, rz)
+            else:
+                sync_spawn_tentacle(rx, rz)
+                
+    _update_timer_ui()
+
     for p in players:
         var player_towers = 0
         for z in get_tree().get_nodes_in_group(p.team):
@@ -578,3 +611,81 @@ func _build_structure_mesh(node, faction, is_tower):
                 ring.rotation_degrees.x = 90
                 ring.rotation_degrees.y = i * 60
                 mesh_node.add_child(ring)
+
+
+func _update_timer_ui():
+    var ui = get_node_or_null("InGameUI")
+    if not ui: return
+    var label = ui.get_node_or_null("TimerLabel")
+    if not label: return
+    
+    if not sudden_death_active:
+        var m = int(match_timer) / 60
+        var s = int(match_timer) % 60
+        label.text = str(m) + ":" + ("0" if s < 10 else "") + str(s)
+        label.modulate = Color(1, 1, 1)
+        label.scale = Vector2(1.0, 1.0)
+    else:
+        label.text = "SUDDEN DEATH!"
+        label.modulate = Color(1, 0, 0)
+        label.scale = Vector2(1.2 + sin(Time.get_ticks_msec()*0.01)*0.1, 1.2 + sin(Time.get_ticks_msec()*0.01)*0.1)
+
+func _start_beast_of_nothingness():
+    print("THE BEAST OF NOTHINGNESS AWAKENS!")
+    var beast_root = Node3D.new()
+    beast_root.name = "BeastOfNothingness"
+    add_child(beast_root)
+    
+    var torus = MeshInstance3D.new()
+    torus.mesh = TorusMesh.new()
+    torus.mesh.inner_radius = 50.0
+    torus.mesh.outer_radius = 80.0
+    
+    var mat = StandardMaterial3D.new()
+    mat.albedo_color = Color(0.2, 0.1, 0.3)
+    mat.emission_enabled = true
+    mat.emission = Color(0.5, 0.0, 0.8)
+    mat.emission_energy_multiplier = 0.5
+    torus.material_override = mat
+    torus.position = Vector3(0, -50, 0)
+    beast_root.add_child(torus)
+    
+    var teeth_mat = StandardMaterial3D.new()
+    teeth_mat.albedo_color = Color(0.7, 0.7, 0.7)
+    for i in range(45):
+        var angle = i * 8 * (3.14159/180.0)
+        var tooth = MeshInstance3D.new()
+        tooth.mesh = CylinderMesh.new()
+        tooth.mesh.top_radius = 0.0
+        tooth.mesh.bottom_radius = 3.0
+        tooth.mesh.height = 15.0
+        tooth.material_override = teeth_mat
+        tooth.position = Vector3(cos(angle) * 55, -45, sin(angle) * 55)
+        tooth.rotation_degrees.x = -15
+        tooth.rotation_degrees.y = -angle * (180.0/3.14159)
+        beast_root.add_child(tooth)
+        
+    for i in range(40):
+        var eye = MeshInstance3D.new()
+        eye.mesh = SphereMesh.new()
+        eye.mesh.radius = 2.5
+        var eye_mat = StandardMaterial3D.new()
+        eye_mat.albedo_color = Color(1.0, 0.0, 0.0)
+        eye_mat.emission_enabled = true
+        eye_mat.emission = Color(1.0, 0.0, 0.0)
+        eye.material_override = eye_mat
+        var angle = (i * 9 + 4) * (3.14159/180.0)
+        eye.position = Vector3(cos(angle) * 62, -48, sin(angle) * 62)
+        beast_root.add_child(eye)
+        
+    var tw = create_tween()
+    tw.tween_property(beast_root, "position:y", 20.0, 30.0) # slowly rise (to y=20 so mouth frames the arena)
+
+@rpc("authority", "call_local", "reliable")
+func sync_spawn_tentacle(rx: float, rz: float):
+    if not beast_tentacle_scene: return
+    var t = beast_tentacle_scene.instantiate()
+    add_child(t)
+    t.global_position = Vector3(rx, -5, rz)
+    var tw = create_tween()
+    tw.tween_property(t, "position:y", 0.0, 1.0)

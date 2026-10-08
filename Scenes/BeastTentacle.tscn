@@ -1,0 +1,19 @@
+[gd_scene load_steps=4 format=3 uid="uid://beasttentacle1"]
+
+[ext_resource type="Script" path="res://Scripts/BeastTentacle.gd" id="1_script"]
+[ext_resource type="Script" path="res://Scripts/HealthComponent.gd" id="2_health"]
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_1"]
+radius = 1.2
+height = 10.0
+
+[node name="BeastTentacle" type="CharacterBody3D" groups=["Targetable", "Beast"]]
+script = ExtResource("1_script")
+
+[node name="HealthComponent" type="Node" parent="."]
+script = ExtResource("2_health")
+max_health = 1000.0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5, 0)
+shape = SubResource("CylinderShape3D_1")
