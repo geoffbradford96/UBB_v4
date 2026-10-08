@@ -1,8 +1,8 @@
 extends Control
 
-@onready var resolution_option = $VBoxContainer/HBoxRes/ResolutionDropdown
-@onready var fullscreen_check = $VBoxContainer/HBoxFull/FullscreenCheck
-@onready var volume_slider = $VBoxContainer/HBoxVol/VolumeSlider
+@onready var resolution_option = $CenterContainer/VBoxContainer/HBoxRes/ResolutionDropdown
+@onready var fullscreen_check = $CenterContainer/VBoxContainer/HBoxFull/FullscreenCheck
+@onready var volume_slider = $CenterContainer/VBoxContainer/HBoxVol/VolumeSlider
 
 var resolutions = [
 	Vector2i(1920, 1080),
