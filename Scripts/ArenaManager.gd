@@ -362,23 +362,29 @@ func _get_team_faction(team: String) -> String:
                 if child.ai_profile == "Void Charcon": return "Void"
                 if child.ai_profile == "The Great Beast Speaker": return "Rimworlders"
                 if child.ai_profile == "Dominion Planet Commander": return "Dominion"
-                var options = ["Dominion", "Void", "Rimworlders"]
+                if child.ai_profile == "The Scrap Pirate King": return "Pirates"
+                if child.ai_profile == "The Reach Queen": return "The Reach"
+                var options = ["Dominion", "Void", "Rimworlders", "Pirates", "The Reach"]
                 return options[randi() % options.size()]
     for p in players:
         if p.team == team:
             var deck = []
             if GameState.player_decks.has(p.profile):
                 deck = GameState.player_decks[p.profile]
-            var v = 0; var r = 0; var d = 0
+            var v = 0; var r = 0; var d = 0; var pi = 0; var reach = 0
             for c in deck:
                 if "Void" in c: v += 1
                 elif "Rimworlder" in c or "Sky" in c or "Stone" in c or "Giant" in c or "Great" in c: r += 1
+                elif "Scrap" in c: pi += 1
+                elif "Reach" in c: reach += 1
                 else: d += 1
-            var mx = max(d, max(v, r))
+            var mx = max(d, max(v, max(r, max(pi, reach))))
             if mx == v and v > 0: return "Void"
             if mx == r and r > 0: return "Rimworlders"
+            if mx == pi and pi > 0: return "Pirates"
+            if mx == reach and reach > 0: return "The Reach"
             return "Dominion"
-    var opts = ["Dominion", "Void", "Rimworlders"]
+    var opts = ["Dominion", "Void", "Rimworlders", "Pirates", "The Reach"]
     return opts[randi() % opts.size()]
 
 func _apply_faction_visuals():
