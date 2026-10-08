@@ -1,0 +1,102 @@
+[gd_scene load_steps=17 format=3]
+
+[ext_resource type="Script" path="res://Scripts/SupportingFire.gd" id="1_script"]
+[ext_resource type="Script" path="res://Scripts/HealthComponent.gd" id="2_health"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_1"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_1"]
+transparency = 1
+albedo_color = Color(0.3, 0, 0.5, 0.65)
+emission_enabled = true
+emission = Color(0.6, 0.1, 0.8, 1)
+emission_energy_multiplier = 1.8
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_1"]
+material = SubResource("StandardMaterial3D_1")
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_h4utm"]
+noise_type = 2
+frequency = 0.05
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_0vd0b"]
+noise = SubResource("FastNoiseLite_h4utm")
+as_normal_map = true
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_irplj"]
+albedo_color = Color(0.15, 0.05, 0.25, 1)
+roughness = 0.6
+normal_enabled = true
+normal_texture = SubResource("NoiseTexture2D_0vd0b")
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_h4utm"]
+material = SubResource("StandardMaterial3D_1")
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_0vd0b"]
+material = SubResource("StandardMaterial3D_1")
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_irplj"]
+material = SubResource("StandardMaterial3D_1")
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_n4ik1"]
+material = SubResource("StandardMaterial3D_1")
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_lbsaj"]
+material = SubResource("StandardMaterial3D_1")
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_nnndi"]
+material = SubResource("StandardMaterial3D_1")
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_ee7x8"]
+material = SubResource("StandardMaterial3D_1")
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_gkk7a"]
+material = SubResource("StandardMaterial3D_1")
+
+[node name="VoidSpitter" type="CharacterBody3D" groups=["SideA"]]
+script = ExtResource("1_script")
+
+[node name="HealthComponent" type="Node" parent="."]
+script = ExtResource("2_health")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("CapsuleShape3D_1")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, 0, -0.3, 0)
+mesh = SubResource("CapsuleMesh_1")
+surface_material_override/0 = SubResource("StandardMaterial3D_irplj")
+
+[node name="LeftLeg_0" type="MeshInstance3D" parent="MeshInstance3D"]
+transform = Transform3D(0.049999997, -0.69282037, 0, 0.086602546, 0.39999998, 0, 0, 0, 0.1, -0.6, 0, -0.6)
+mesh = SubResource("CapsuleMesh_h4utm")
+
+[node name="RightLeg_0" type="MeshInstance3D" parent="MeshInstance3D"]
+transform = Transform3D(0.049999997, 0.69282037, 0, -0.086602546, 0.39999998, 0, 0, 0, 0.1, 0.6, 0, -0.6)
+mesh = SubResource("CapsuleMesh_0vd0b")
+
+[node name="LeftLeg_1" type="MeshInstance3D" parent="MeshInstance3D"]
+transform = Transform3D(0.049999997, -0.69282037, 0, 0.086602546, 0.39999998, 0, 0, 0, 0.1, -0.6, 0, -0.2)
+mesh = SubResource("CapsuleMesh_irplj")
+
+[node name="RightLeg_1" type="MeshInstance3D" parent="MeshInstance3D"]
+transform = Transform3D(0.049999997, 0.69282037, 0, -0.086602546, 0.39999998, 0, 0, 0, 0.1, 0.6, 0, -0.2)
+mesh = SubResource("CapsuleMesh_n4ik1")
+
+[node name="LeftLeg_2" type="MeshInstance3D" parent="MeshInstance3D"]
+transform = Transform3D(0.049999997, -0.69282037, 0, 0.086602546, 0.39999998, 0, 0, 0, 0.1, -0.6, 0, 0.2)
+mesh = SubResource("CapsuleMesh_lbsaj")
+
+[node name="RightLeg_2" type="MeshInstance3D" parent="MeshInstance3D"]
+transform = Transform3D(0.049999997, 0.69282037, 0, -0.086602546, 0.39999998, 0, 0, 0, 0.1, 0.6, 0, 0.2)
+mesh = SubResource("CapsuleMesh_nnndi")
+
+[node name="LeftLeg_3" type="MeshInstance3D" parent="MeshInstance3D"]
+transform = Transform3D(0.049999997, -0.69282037, 0, 0.086602546, 0.39999998, 0, 0, 0, 0.1, -0.6, 0, 0.6)
+mesh = SubResource("CapsuleMesh_ee7x8")
+
+[node name="RightLeg_3" type="MeshInstance3D" parent="MeshInstance3D"]
+transform = Transform3D(0.049999997, 0.69282037, 0, -0.086602546, 0.39999998, 0, 0, 0, 0.1, 0.6, 0, 0.6)
+mesh = SubResource("CapsuleMesh_gkk7a")
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]

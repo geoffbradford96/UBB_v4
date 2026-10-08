@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="CardData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://Scripts/CardData.gd" id="1_dha08"]
+[ext_resource type="PackedScene" path="res://Scenes/Units/GiantSquid.tscn" id="2_0qxg4"]
+
+[resource]
+script = ExtResource("1_dha08")
+card_name = "GiantSquid"
+card_type = "Beast"
+cost = 8.0
+max_hp = 800.0
+description = "A colossal aquatic beast built to tear down heavy targets."
+unit_scene = ExtResource("2_0qxg4")

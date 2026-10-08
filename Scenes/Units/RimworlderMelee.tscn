@@ -1,0 +1,71 @@
+[gd_scene load_steps=12 format=3]
+
+[ext_resource type="Script" path="res://Scripts/Unit.gd" id="1_nxgtb"]
+[ext_resource type="Script" path="res://Scripts/HealthComponent.gd" id="2_c4c1l"]
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_hjgap"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ltrj6"]
+transparency = 1
+albedo_color = Color(0.1, 0.9, 0.3, 0.65)
+emission_enabled = true
+emission = Color(0, 0.5, 0.1, 1)
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_drm5r"]
+radius = 0.4
+height = 1.8
+
+[sub_resource type="SphereMesh" id="SphereMesh_xi7lw"]
+radius = 0.3
+
+[sub_resource type="BoxMesh" id="BoxMesh_v51p5"]
+size = Vector3(0.05, 0.8, 0.1)
+
+[sub_resource type="Animation" id="Animation_rit66"]
+length = 0.5
+
+[sub_resource type="Animation" id="Animation_joyc0"]
+loop_mode = 1
+
+[sub_resource type="Animation" id="Animation_u76tu"]
+loop_mode = 1
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_26pqi"]
+_data = {
+&"attack": SubResource("Animation_rit66"),
+&"idle": SubResource("Animation_joyc0"),
+&"walk": SubResource("Animation_u76tu")
+}
+
+[node name="RimworlderMelee" type="CharacterBody3D"]
+script = ExtResource("1_nxgtb")
+
+[node name="HealthComponent" type="Node" parent="."]
+script = ExtResource("2_c4c1l")
+
+[node name="@CollisionShape3D@6" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+shape = SubResource("CylinderShape3D_hjgap")
+
+[node name="MeshInstance3D" type="Node3D" parent="."]
+
+[node name="@MeshInstance3D@7" type="MeshInstance3D" parent="MeshInstance3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+material_override = SubResource("StandardMaterial3D_ltrj6")
+mesh = SubResource("CapsuleMesh_drm5r")
+
+[node name="@MeshInstance3D@8" type="MeshInstance3D" parent="MeshInstance3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.9, 0)
+material_override = SubResource("StandardMaterial3D_ltrj6")
+mesh = SubResource("SphereMesh_xi7lw")
+
+[node name="@MeshInstance3D@9" type="MeshInstance3D" parent="MeshInstance3D"]
+transform = Transform3D(1, 0, 0, 0, 0.70710677, -0.70710677, 0, 0.70710677, 0.70710677, 0.5, 1.2, 0)
+mesh = SubResource("BoxMesh_v51p5")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+libraries = {
+&"": SubResource("AnimationLibrary_26pqi")
+}
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]

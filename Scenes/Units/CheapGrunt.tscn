@@ -1,0 +1,102 @@
+[gd_scene load_steps=18 format=3]
+
+[ext_resource type="Script" path="res://Scripts/Unit.gd" id="1_script"]
+[ext_resource type="Script" path="res://Scripts/HealthComponent.gd" id="2_health"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_1"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_1"]
+albedo_color = Color(0, 1, 0, 1)
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_1"]
+material = SubResource("StandardMaterial3D_1")
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_apdb0"]
+material = SubResource("StandardMaterial3D_1")
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_ohad2"]
+material = SubResource("StandardMaterial3D_1")
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_apdb0"]
+albedo_color = Color(0.2, 0.2, 0.2, 1)
+metallic = 0.8
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_6b3i1"]
+material = SubResource("StandardMaterial3D_1")
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_k41s7"]
+material = SubResource("StandardMaterial3D_1")
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ohad2"]
+albedo_color = Color(0.2, 0.3, 0.1, 1)
+roughness = 0.9
+
+[sub_resource type="Animation" id="Animation_apdb0"]
+loop_mode = 1
+
+[sub_resource type="Animation" id="Animation_ohad2"]
+loop_mode = 1
+
+[sub_resource type="Animation" id="Animation_6b3i1"]
+length = 0.5
+
+[sub_resource type="Animation" id="Animation_k41s7"]
+length = 0.5
+
+[sub_resource type="Animation" id="Animation_b3u4c"]
+length = 0.5
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_rja6e"]
+_data = {
+&"attack": SubResource("Animation_6b3i1"),
+&"heal": SubResource("Animation_k41s7"),
+&"idle": SubResource("Animation_apdb0"),
+&"repair": SubResource("Animation_b3u4c"),
+&"walk": SubResource("Animation_ohad2")
+}
+
+[node name="CheapGrunt" type="CharacterBody3D" groups=["SideA"]]
+script = ExtResource("1_script")
+
+[node name="HealthComponent" type="Node" parent="."]
+script = ExtResource("2_health")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("CapsuleShape3D_1")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("CapsuleMesh_1")
+
+[node name="LeftArm" type="MeshInstance3D" parent="MeshInstance3D"]
+transform = Transform3D(0.2, 0, 0, 0, 0.6, 0, 0, 0, 0.2, -0.6, 0.2, 0)
+mesh = SubResource("CapsuleMesh_apdb0")
+
+[node name="RightArm" type="MeshInstance3D" parent="MeshInstance3D"]
+transform = Transform3D(0.2, 0, 0, 0, 0.6, 0, 0, 0, 0.2, 0.6, 0.2, 0)
+mesh = SubResource("CapsuleMesh_ohad2")
+
+[node name="Weapon_Baton" type="CSGCylinder3D" parent="MeshInstance3D/RightArm"]
+transform = Transform3D(1, 0, 0, 0, 0.8660254, 0.5, 0, -0.5, 0.8660254, 0, -0.5, -0.2)
+radius = 0.05
+height = 0.6
+material = SubResource("StandardMaterial3D_apdb0")
+
+[node name="LeftLeg" type="MeshInstance3D" parent="MeshInstance3D"]
+transform = Transform3D(0.25, 0, 0, 0, 0.6, 0, 0, 0, 0.25, -0.25, -0.6, 0)
+mesh = SubResource("CapsuleMesh_6b3i1")
+
+[node name="RightLeg" type="MeshInstance3D" parent="MeshInstance3D"]
+transform = Transform3D(0.25, 0, 0, 0, 0.6, 0, 0, 0, 0.25, 0.25, -0.6, 0)
+mesh = SubResource("CapsuleMesh_k41s7")
+
+[node name="Cosmetic_Helm" type="CSGSphere3D" parent="MeshInstance3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
+radius = 0.55
+material = SubResource("StandardMaterial3D_ohad2")
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+libraries = {
+&"": SubResource("AnimationLibrary_rja6e")
+}

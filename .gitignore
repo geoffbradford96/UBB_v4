@@ -1,0 +1,13 @@
+﻿# Godot 4+ specific ignores
+.godot/
+*.translation
+
+# OS hidden files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# C# build folders (if any)
+.mono/
+data_*/
+export_presets.cfg

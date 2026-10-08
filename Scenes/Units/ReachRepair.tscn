@@ -1,0 +1,81 @@
+[gd_scene load_steps=15 format=3]
+
+[ext_resource type="Script" path="res://Scripts/RepairMan.gd" id="1_odenh"]
+[ext_resource type="Script" path="res://Scripts/HealthComponent.gd" id="2_hy12p"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_wylba"]
+size = Vector3(1, 2, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_fkeha"]
+albedo_color = Color(0.15, 0.15, 0.2, 1)
+metallic = 0.9
+roughness = 0.4
+
+[sub_resource type="BoxMesh" id="BoxMesh_xv84t"]
+size = Vector3(1, 2, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_1xxcm"]
+albedo_color = Color(0.8, 0.1, 0.1, 1)
+emission_enabled = true
+emission = Color(0.8, 0.1, 0.1, 1)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_5mjbl"]
+top_radius = 0.0
+bottom_radius = 0.2
+height = 1.0
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_aeinh"]
+top_radius = 0.0
+bottom_radius = 0.2
+height = 1.0
+
+[sub_resource type="Animation" id="Animation_nbpfe"]
+loop_mode = 1
+
+[sub_resource type="Animation" id="Animation_edjbf"]
+loop_mode = 1
+
+[sub_resource type="Animation" id="Animation_wgec3"]
+
+[sub_resource type="Animation" id="Animation_ef8ij"]
+
+[sub_resource type="Animation" id="Animation_nruj2"]
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_87s47"]
+_data = {
+&"attack": SubResource("Animation_wgec3"),
+&"heal": SubResource("Animation_ef8ij"),
+&"idle": SubResource("Animation_nbpfe"),
+&"repair": SubResource("Animation_nruj2"),
+&"walk": SubResource("Animation_edjbf")
+}
+
+[node name="ReachRepair" type="CharacterBody3D"]
+script = ExtResource("1_odenh")
+
+[node name="@CollisionShape3D@45" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+shape = SubResource("BoxShape3D_wylba")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+material_override = SubResource("StandardMaterial3D_fkeha")
+mesh = SubResource("BoxMesh_xv84t")
+
+[node name="@MeshInstance3D@46" type="MeshInstance3D" parent="MeshInstance3D"]
+transform = Transform3D(0.9847032, 0.17424022, 0, -0.15046911, 0.85036284, 0.50422424, 0.08785614, -0.49651122, 0.8635728, -0.2960927, 1, 0.29791754)
+material_override = SubResource("StandardMaterial3D_1xxcm")
+mesh = SubResource("CylinderMesh_5mjbl")
+
+[node name="@MeshInstance3D@47" type="MeshInstance3D" parent="MeshInstance3D"]
+transform = Transform3D(0.999859, -0.016794983, 0, 0.0167899, 0.99955636, 0.024600707, -0.00041316845, -0.024597237, 0.9996973, -0.47158048, 1, 0.26544267)
+material_override = SubResource("StandardMaterial3D_1xxcm")
+mesh = SubResource("CylinderMesh_aeinh")
+
+[node name="HealthComponent" type="Node3D" parent="."]
+script = ExtResource("2_hy12p")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+libraries = {
+&"": SubResource("AnimationLibrary_87s47")
+}

@@ -1,0 +1,83 @@
+[gd_scene load_steps=16 format=3]
+
+[ext_resource type="Script" path="res://Scripts/SupportingFire.gd" id="1_script"]
+[ext_resource type="Script" path="res://Scripts/HealthComponent.gd" id="2_health"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_1"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_1"]
+albedo_color = Color(0, 0, 1, 1)
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_1"]
+material = SubResource("StandardMaterial3D_1")
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_w55my"]
+material = SubResource("StandardMaterial3D_1")
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_vf814"]
+material = SubResource("StandardMaterial3D_1")
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_6m3k6"]
+material = SubResource("StandardMaterial3D_1")
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_dum3b"]
+material = SubResource("StandardMaterial3D_1")
+
+[sub_resource type="Animation" id="Animation_w55my"]
+loop_mode = 1
+
+[sub_resource type="Animation" id="Animation_vf814"]
+loop_mode = 1
+
+[sub_resource type="Animation" id="Animation_6m3k6"]
+length = 0.5
+
+[sub_resource type="Animation" id="Animation_dum3b"]
+length = 0.5
+
+[sub_resource type="Animation" id="Animation_8mxf8"]
+length = 0.5
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_6n7b0"]
+_data = {
+&"attack": SubResource("Animation_6m3k6"),
+&"heal": SubResource("Animation_dum3b"),
+&"idle": SubResource("Animation_w55my"),
+&"repair": SubResource("Animation_8mxf8"),
+&"walk": SubResource("Animation_vf814")
+}
+
+[node name="SupportingFire" type="CharacterBody3D" groups=["SideA"]]
+script = ExtResource("1_script")
+
+[node name="HealthComponent" type="Node" parent="."]
+script = ExtResource("2_health")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("CapsuleShape3D_1")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("CapsuleMesh_1")
+
+[node name="LeftArm" type="MeshInstance3D" parent="MeshInstance3D"]
+transform = Transform3D(0.2, 0, 0, 0, 0.6, 0, 0, 0, 0.2, -0.6, 0.2, 0)
+mesh = SubResource("CapsuleMesh_w55my")
+
+[node name="RightArm" type="MeshInstance3D" parent="MeshInstance3D"]
+transform = Transform3D(0.2, 0, 0, 0, 0.6, 0, 0, 0, 0.2, 0.6, 0.2, 0)
+mesh = SubResource("CapsuleMesh_vf814")
+
+[node name="LeftLeg" type="MeshInstance3D" parent="MeshInstance3D"]
+transform = Transform3D(0.25, 0, 0, 0, 0.6, 0, 0, 0, 0.25, -0.25, -0.6, 0)
+mesh = SubResource("CapsuleMesh_6m3k6")
+
+[node name="RightLeg" type="MeshInstance3D" parent="MeshInstance3D"]
+transform = Transform3D(0.25, 0, 0, 0, 0.6, 0, 0, 0, 0.25, 0.25, -0.6, 0)
+mesh = SubResource("CapsuleMesh_dum3b")
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+libraries = {
+&"": SubResource("AnimationLibrary_6n7b0")
+}

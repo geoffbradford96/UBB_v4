@@ -1,0 +1,39 @@
+[gd_scene load_steps=6 format=3 uid="uid://tower1234"]
+
+[ext_resource type="Script" path="res://Scripts/Tower.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://proj1234" path="res://Scenes/Projectile.tscn" id="2_proj"]
+[ext_resource type="Script" path="res://Scripts/HealthComponent.gd" id="3_health"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_tower"]
+size = Vector3(4, 8, 4)
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_detect"]
+radius = 15.0
+height = 20.0
+
+[node name="Tower" type="StaticBody3D" groups=["SideB"]]
+script = ExtResource("1_script")
+projectile_scene = ExtResource("2_proj")
+
+[node name="HealthComponent" type="Node" parent="."]
+script = ExtResource("3_health")
+max_health = 500.0
+
+[node name="CSGBox3D" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4, 0)
+size = Vector3(4, 8, 4)
+material_override = null
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4, 0)
+shape = SubResource("BoxShape3D_tower")
+
+[node name="DetectionArea" type="Area3D" parent="."]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="DetectionArea"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4, 0)
+shape = SubResource("CylinderShape3D_detect")
+
+[connection signal="body_entered" from="DetectionArea" to="." method="_on_detection_area_body_entered"]
+[connection signal="body_exited" from="DetectionArea" to="." method="_on_detection_area_body_exited"]
+

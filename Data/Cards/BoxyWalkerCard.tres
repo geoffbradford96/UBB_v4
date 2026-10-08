@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="CardData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://Scripts/CardData.gd" id="1_4tun8"]
+[ext_resource type="PackedScene" path="res://Scenes/Units/BoxyWalker.tscn" id="2_sygqp"]
+
+[resource]
+script = ExtResource("1_4tun8")
+card_name = "BoxyWalker"
+cost = 5.0
+max_hp = 250.0
+description = "Heavy mech with 4 rapid-fire guns."
+unit_scene = ExtResource("2_sygqp")

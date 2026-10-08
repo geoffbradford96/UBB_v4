@@ -1,0 +1,87 @@
+[gd_scene load_steps=10 format=3]
+
+[ext_resource type="Script" path="res://Scripts/Unit.gd" id="1_v8mmy"]
+[ext_resource type="Script" path="res://Scripts/HealthComponent.gd" id="2_v03vo"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_3b2jb"]
+height = 1.5
+
+[sub_resource type="Animation" id="Animation_3b2jb"]
+length = 0.5
+
+[sub_resource type="Animation" id="Animation_bcx43"]
+length = 0.5
+
+[sub_resource type="Animation" id="Animation_v8mmy"]
+loop_mode = 1
+
+[sub_resource type="Animation" id="Animation_0tum7"]
+length = 0.5
+
+[sub_resource type="Animation" id="Animation_v03vo"]
+loop_mode = 1
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_lax46"]
+_data = {
+&"attack": SubResource("Animation_3b2jb"),
+&"heal": SubResource("Animation_bcx43"),
+&"idle": SubResource("Animation_v8mmy"),
+&"repair": SubResource("Animation_0tum7"),
+&"walk": SubResource("Animation_v03vo")
+}
+
+[node name="BoxyWalker" type="CharacterBody3D"]
+script = ExtResource("1_v8mmy")
+speed = 2.5
+attack_damage = 10.0
+attack_range = 18.0
+attack_speed = 4.0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.75, 0)
+shape = SubResource("CapsuleShape3D_3b2jb")
+
+[node name="HealthComponent" type="Node" parent="."]
+script = ExtResource("2_v03vo")
+
+[node name="MeshInstance3D" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 0)
+
+[node name="LeftLeg_0" type="CSGBox3D" parent="MeshInstance3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.4, -0.5, 0.4)
+size = Vector3(0.2, 0.6, 0.2)
+
+[node name="RightLeg_1" type="CSGBox3D" parent="MeshInstance3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.4, -0.5, 0.4)
+size = Vector3(0.2, 0.6, 0.2)
+
+[node name="LeftLeg_2" type="CSGBox3D" parent="MeshInstance3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.4, -0.5, -0.4)
+size = Vector3(0.2, 0.6, 0.2)
+
+[node name="RightLeg_3" type="CSGBox3D" parent="MeshInstance3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.4, -0.5, -0.4)
+size = Vector3(0.2, 0.6, 0.2)
+
+[node name="MG_0" type="CSGBox3D" parent="MeshInstance3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.55, 0.2, -0.3)
+size = Vector3(0.1, 0.1, 0.6)
+
+[node name="MG_1" type="CSGBox3D" parent="MeshInstance3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.55, 0.2, -0.3)
+size = Vector3(0.1, 0.1, 0.6)
+
+[node name="MG_2" type="CSGBox3D" parent="MeshInstance3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.55, 0.2, 0.3)
+size = Vector3(0.1, 0.1, 0.6)
+
+[node name="MG_3" type="CSGBox3D" parent="MeshInstance3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.55, 0.2, 0.3)
+size = Vector3(0.1, 0.1, 0.6)
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+libraries = {
+&"": SubResource("AnimationLibrary_lax46")
+}
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]

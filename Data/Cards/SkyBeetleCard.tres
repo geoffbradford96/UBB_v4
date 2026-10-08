@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="CardData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://Scripts/CardData.gd" id="1_0t5de"]
+[ext_resource type="PackedScene" path="res://Scenes/Units/SkyBeetle.tscn" id="2_7crij"]
+
+[resource]
+script = ExtResource("1_0t5de")
+card_name = "SkyBeetle"
+card_type = "Beast"
+cost = 4.5
+max_hp = 400.0
+description = "A heavy, armored flying beetle beast."
+unit_scene = ExtResource("2_7crij")

@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="CardData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://Scripts/CardData.gd" id="1_12evq"]
+[ext_resource type="PackedScene" path="res://Scenes/Units/RocketInfantry.tscn" id="2_2yhrf"]
+
+[resource]
+script = ExtResource("1_12evq")
+card_name = "RocketInfantry"
+cost = 4.0
+max_hp = 150.0
+description = "Anti-vehicle rocket soldier."
+unit_scene = ExtResource("2_2yhrf")

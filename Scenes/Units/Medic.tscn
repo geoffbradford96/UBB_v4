@@ -1,0 +1,112 @@
+[gd_scene load_steps=18 format=3]
+
+[ext_resource type="Script" path="res://Scripts/Medic.gd" id="1_script"]
+[ext_resource type="Script" path="res://Scripts/HealthComponent.gd" id="2_health"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_1"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_1"]
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_1"]
+material = SubResource("StandardMaterial3D_1")
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_agq0s"]
+material = SubResource("StandardMaterial3D_1")
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_kq8py"]
+material = SubResource("StandardMaterial3D_1")
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_agq0s"]
+albedo_color = Color(0.2, 0.2, 0.2, 1)
+metallic = 0.8
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_tucpg"]
+material = SubResource("StandardMaterial3D_1")
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_02cjr"]
+material = SubResource("StandardMaterial3D_1")
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_kq8py"]
+albedo_color = Color(0.9, 0.1, 0.1, 1)
+emission_enabled = true
+emission = Color(0.9, 0.1, 0.1, 1)
+
+[sub_resource type="Animation" id="Animation_agq0s"]
+loop_mode = 1
+
+[sub_resource type="Animation" id="Animation_kq8py"]
+loop_mode = 1
+
+[sub_resource type="Animation" id="Animation_tucpg"]
+length = 0.5
+
+[sub_resource type="Animation" id="Animation_02cjr"]
+length = 0.5
+
+[sub_resource type="Animation" id="Animation_smrlq"]
+length = 0.5
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_gylnu"]
+_data = {
+&"attack": SubResource("Animation_tucpg"),
+&"heal": SubResource("Animation_02cjr"),
+&"idle": SubResource("Animation_agq0s"),
+&"repair": SubResource("Animation_smrlq"),
+&"walk": SubResource("Animation_kq8py")
+}
+
+[node name="Medic" type="CharacterBody3D" groups=["SideA"]]
+script = ExtResource("1_script")
+
+[node name="HealthComponent" type="Node" parent="."]
+script = ExtResource("2_health")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("CapsuleShape3D_1")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("CapsuleMesh_1")
+
+[node name="LeftArm" type="MeshInstance3D" parent="MeshInstance3D"]
+transform = Transform3D(0.2, 0, 0, 0, 0.6, 0, 0, 0, 0.2, -0.6, 0.2, 0)
+mesh = SubResource("CapsuleMesh_agq0s")
+
+[node name="RightArm" type="MeshInstance3D" parent="MeshInstance3D"]
+transform = Transform3D(0.2, 0, 0, 0, 0.6, 0, 0, 0, 0.2, 0.6, 0.2, 0)
+mesh = SubResource("CapsuleMesh_kq8py")
+
+[node name="Weapon_Pistol" type="CSGCombiner3D" parent="MeshInstance3D/RightArm"]
+material_override = SubResource("StandardMaterial3D_agq0s")
+
+[node name="@CSGBox3D@2" type="CSGBox3D" parent="MeshInstance3D/RightArm/Weapon_Pistol"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.4, -0.2)
+size = Vector3(0.1, 0.1, 0.3)
+
+[node name="@CSGBox3D@3" type="CSGBox3D" parent="MeshInstance3D/RightArm/Weapon_Pistol"]
+transform = Transform3D(1, 0, 0, 0, 0.9396926, -0.34202012, 0, 0.34202012, 0.9396926, 0, -0.5, -0.05)
+size = Vector3(0.1, 0.2, 0.1)
+
+[node name="LeftLeg" type="MeshInstance3D" parent="MeshInstance3D"]
+transform = Transform3D(0.25, 0, 0, 0, 0.6, 0, 0, 0, 0.25, -0.25, -0.6, 0)
+mesh = SubResource("CapsuleMesh_tucpg")
+
+[node name="RightLeg" type="MeshInstance3D" parent="MeshInstance3D"]
+transform = Transform3D(0.25, 0, 0, 0, 0.6, 0, 0, 0, 0.25, 0.25, -0.6, 0)
+mesh = SubResource("CapsuleMesh_02cjr")
+
+[node name="Cosmetic_CrossV" type="CSGBox3D" parent="MeshInstance3D"]
+transform = Transform3D(-4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0, 0, 1, 0, 0.3, -0.55)
+size = Vector3(0.6, 0.15, 0.1)
+material = SubResource("StandardMaterial3D_kq8py")
+
+[node name="Cosmetic_CrossH" type="CSGBox3D" parent="MeshInstance3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, -0.55)
+size = Vector3(0.6, 0.15, 0.1)
+material = SubResource("StandardMaterial3D_kq8py")
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+libraries = {
+&"": SubResource("AnimationLibrary_gylnu")
+}

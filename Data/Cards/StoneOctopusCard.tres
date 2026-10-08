@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="CardData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://Scripts/CardData.gd" id="1_nshad"]
+[ext_resource type="PackedScene" path="res://Scenes/Units/StoneOctopus.tscn" id="2_em3y5"]
+
+[resource]
+script = ExtResource("1_nshad")
+card_name = "StoneOctopus"
+card_type = "Beast"
+cost = 6.0
+max_hp = 300.0
+description = "Stone-shelled beast that unleashes a flurry of rapid attacks."
+unit_scene = ExtResource("2_em3y5")

@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="CardData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://Scripts/CardData.gd" id="1_rhoxc"]
+[ext_resource type="PackedScene" path="res://Scenes/Units/GreatBeastSpeaker.tscn" id="2_os0tt"]
+
+[resource]
+script = ExtResource("1_rhoxc")
+card_name = "Great Beast Speaker"
+card_type = "Commander"
+cost = 0.0
+max_hp = 500.0
+is_melee = false
+description = "The commander of the Rimworlders. Can summon beasts from the void."
+unit_scene = ExtResource("2_os0tt")

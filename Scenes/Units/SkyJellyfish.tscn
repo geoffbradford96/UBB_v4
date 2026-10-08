@@ -1,0 +1,58 @@
+[gd_scene load_steps=10 format=3]
+
+[ext_resource type="Script" path="res://Scripts/Unit.gd" id="1_4juct"]
+[ext_resource type="Script" path="res://Scripts/HealthComponent.gd" id="2_a62o0"]
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_hemc4"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_vmk7y"]
+transparency = 1
+albedo_color = Color(0.1, 0.9, 0.3, 0.65)
+emission_enabled = true
+emission = Color(0, 0.5, 0.1, 1)
+
+[sub_resource type="SphereMesh" id="SphereMesh_m6cqn"]
+radius = 1.0
+
+[sub_resource type="Animation" id="Animation_unadw"]
+length = 0.5
+
+[sub_resource type="Animation" id="Animation_r2eaq"]
+loop_mode = 1
+
+[sub_resource type="Animation" id="Animation_i5yf7"]
+loop_mode = 1
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_gljtw"]
+_data = {
+&"attack": SubResource("Animation_unadw"),
+&"idle": SubResource("Animation_r2eaq"),
+&"walk": SubResource("Animation_i5yf7")
+}
+
+[node name="SkyJellyfish" type="CharacterBody3D"]
+script = ExtResource("1_4juct")
+attack_damage = 5.0
+attack_range = 10.0
+attack_speed = 0.5
+
+[node name="HealthComponent" type="Node" parent="."]
+script = ExtResource("2_a62o0")
+
+[node name="@CollisionShape3D@16" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+shape = SubResource("CylinderShape3D_hemc4")
+
+[node name="MeshInstance3D" type="Node3D" parent="."]
+
+[node name="@MeshInstance3D@17" type="MeshInstance3D" parent="MeshInstance3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, 0)
+material_override = SubResource("StandardMaterial3D_vmk7y")
+mesh = SubResource("SphereMesh_m6cqn")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+libraries = {
+&"": SubResource("AnimationLibrary_gljtw")
+}
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]

@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="CardData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://Scripts/CardData.gd" id="1_x1nee"]
+[ext_resource type="PackedScene" path="res://Scenes/Units/SpiderTank.tscn" id="2_wj402"]
+
+[resource]
+script = ExtResource("1_x1nee")
+card_name = "SpiderTank"
+cost = 6.5
+max_hp = 200.0
+description = "Long range artillery spider mech."
+unit_scene = ExtResource("2_wj402")

@@ -1,0 +1,114 @@
+[gd_scene load_steps=2 format=3 uid="uid://multiplayermenu"]
+
+[ext_resource type="Script" path="res://Scripts/MultiplayerMenu.gd" id="1_script"]
+
+[node name="MultiplayerMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_script")
+
+[node name="ColorRect" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.1, 0.1, 0.2, 1)
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -200.0
+offset_top = -200.0
+offset_right = 200.0
+offset_bottom = 200.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 15
+
+[node name="Label" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "Multiplayer Hub"
+horizontal_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="VBoxContainer"]
+layout_mode = 2
+
+[node name="Label2" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Private Matches (Direct IP)"
+horizontal_alignment = 1
+
+[node name="HostBtn" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Host Private Room"
+
+[node name="IPInput" type="LineEdit" parent="VBoxContainer"]
+layout_mode = 2
+placeholder_text = "Enter Host IP (Default: 127.0.0.1)"
+alignment = 1
+
+[node name="JoinBtn" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Join Private Room"
+
+[node name="HSeparator2" type="HSeparator" parent="VBoxContainer"]
+layout_mode = 2
+
+[node name="Label3" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Public Matchmaking (Central Server)"
+horizontal_alignment = 1
+
+[node name="MatchmakingBtn" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Find Match (Coming Soon)"
+disabled = true
+
+[node name="HSeparator3" type="HSeparator" parent="VBoxContainer"]
+layout_mode = 2
+
+[node name="Label4" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Local Split-Screen"
+horizontal_alignment = 1
+
+[node name="Local2PBtn" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Play Local 2-Player (Split-Screen)"
+
+[node name="Local4PBtn" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Play Local 4-Player (Split-Screen)"
+
+[node name="HSeparator4" type="HSeparator" parent="VBoxContainer"]
+layout_mode = 2
+
+[node name="BackBtn" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Back to Main Menu"
+
+[connection signal="pressed" from="VBoxContainer/HostBtn" to="." method="_on_host_pressed"]
+[connection signal="pressed" from="VBoxContainer/JoinBtn" to="." method="_on_join_pressed"]
+[connection signal="pressed" from="VBoxContainer/Local2PBtn" to="." method="_on_local_2p_pressed"]
+[connection signal="pressed" from="VBoxContainer/Local4PBtn" to="." method="_on_local_4p_pressed"]
+[connection signal="pressed" from="VBoxContainer/BackBtn" to="." method="_on_back_pressed"]

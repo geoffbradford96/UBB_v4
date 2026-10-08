@@ -1,0 +1,129 @@
+[gd_scene load_steps=19 format=3]
+
+[ext_resource type="Script" path="res://Scripts/Unit.gd" id="1_ksotf"]
+[ext_resource type="Script" path="res://Scripts/HealthComponent.gd" id="2_a5don"]
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_7hhgc"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wpvsc"]
+albedo_color = Color(0.4, 0.4, 0.45, 1)
+roughness = 0.9
+
+[sub_resource type="SphereMesh" id="SphereMesh_f3bd3"]
+radius = 0.8
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_yco4l"]
+albedo_color = Color(0.2, 0.1, 0.4, 1)
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_kurdg"]
+radius = 0.15
+height = 1.2
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_kfid4"]
+radius = 0.15
+height = 1.2
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_jotl7"]
+radius = 0.15
+height = 1.2
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_ixrp6"]
+radius = 0.15
+height = 1.2
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_vrymy"]
+radius = 0.15
+height = 1.2
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_00urp"]
+radius = 0.15
+height = 1.2
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_min7t"]
+radius = 0.15
+height = 1.2
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_stlgf"]
+radius = 0.15
+height = 1.2
+
+[sub_resource type="Animation" id="Animation_r272a"]
+length = 0.5
+
+[sub_resource type="Animation" id="Animation_s7toe"]
+loop_mode = 1
+
+[sub_resource type="Animation" id="Animation_8dpe6"]
+loop_mode = 1
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_hw3le"]
+_data = {
+&"attack": SubResource("Animation_r272a"),
+&"idle": SubResource("Animation_s7toe"),
+&"walk": SubResource("Animation_8dpe6")
+}
+
+[node name="StoneOctopus" type="CharacterBody3D"]
+script = ExtResource("1_ksotf")
+attack_speed = 0.2
+
+[node name="HealthComponent" type="Node" parent="."]
+script = ExtResource("2_a5don")
+
+[node name="@CollisionShape3D@20" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+shape = SubResource("CylinderShape3D_7hhgc")
+
+[node name="MeshInstance3D" type="Node3D" parent="."]
+
+[node name="@MeshInstance3D@21" type="MeshInstance3D" parent="MeshInstance3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+material_override = SubResource("StandardMaterial3D_wpvsc")
+mesh = SubResource("SphereMesh_f3bd3")
+
+[node name="@MeshInstance3D@22" type="MeshInstance3D" parent="MeshInstance3D"]
+transform = Transform3D(0.70710677, 0.70710677, 0, -0.49999997, 0.49999997, 0.70710677, 0.49999997, -0.49999997, 0.70710677, 0.8, 0.5, 0)
+material_override = SubResource("StandardMaterial3D_yco4l")
+mesh = SubResource("CapsuleMesh_kurdg")
+
+[node name="@MeshInstance3D@23" type="MeshInstance3D" parent="MeshInstance3D"]
+transform = Transform3D(0.70710677, 0.70710677, 0, -0.49999997, 0.49999997, -0.70710677, -0.49999997, 0.49999997, 0.70710677, 0.56568545, 0.5, 0.56568545)
+material_override = SubResource("StandardMaterial3D_yco4l")
+mesh = SubResource("CapsuleMesh_kfid4")
+
+[node name="@MeshInstance3D@24" type="MeshInstance3D" parent="MeshInstance3D"]
+transform = Transform3D(0.70710677, 0.70710677, 0, -0.49999997, 0.49999997, -0.70710677, -0.49999997, 0.49999997, 0.70710677, 4.8984253e-17, 0.5, 0.8)
+material_override = SubResource("StandardMaterial3D_yco4l")
+mesh = SubResource("CapsuleMesh_jotl7")
+
+[node name="@MeshInstance3D@25" type="MeshInstance3D" parent="MeshInstance3D"]
+transform = Transform3D(0.70710677, -0.70710677, 0, 0.49999997, 0.49999997, -0.70710677, 0.49999997, 0.49999997, 0.70710677, -0.56568545, 0.5, 0.56568545)
+material_override = SubResource("StandardMaterial3D_yco4l")
+mesh = SubResource("CapsuleMesh_ixrp6")
+
+[node name="@MeshInstance3D@26" type="MeshInstance3D" parent="MeshInstance3D"]
+transform = Transform3D(0.70710677, -0.70710677, 0, 0.49999997, 0.49999997, -0.70710677, 0.49999997, 0.49999997, 0.70710677, -0.8, 0.5, 9.7968506e-17)
+material_override = SubResource("StandardMaterial3D_yco4l")
+mesh = SubResource("CapsuleMesh_vrymy")
+
+[node name="@MeshInstance3D@27" type="MeshInstance3D" parent="MeshInstance3D"]
+transform = Transform3D(0.70710677, -0.70710677, 0, 0.49999997, 0.49999997, 0.70710677, -0.49999997, -0.49999997, 0.70710677, -0.56568545, 0.5, -0.56568545)
+material_override = SubResource("StandardMaterial3D_yco4l")
+mesh = SubResource("CapsuleMesh_00urp")
+
+[node name="@MeshInstance3D@28" type="MeshInstance3D" parent="MeshInstance3D"]
+transform = Transform3D(0.70710677, -0.70710677, 0, 0.49999997, 0.49999997, 0.70710677, -0.49999997, -0.49999997, 0.70710677, -1.4695277e-16, 0.5, -0.8)
+material_override = SubResource("StandardMaterial3D_yco4l")
+mesh = SubResource("CapsuleMesh_min7t")
+
+[node name="@MeshInstance3D@29" type="MeshInstance3D" parent="MeshInstance3D"]
+transform = Transform3D(0.70710677, 0.70710677, 0, -0.49999997, 0.49999997, 0.70710677, 0.49999997, -0.49999997, 0.70710677, 0.56568545, 0.5, -0.56568545)
+material_override = SubResource("StandardMaterial3D_yco4l")
+mesh = SubResource("CapsuleMesh_stlgf")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+libraries = {
+&"": SubResource("AnimationLibrary_hw3le")
+}
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]

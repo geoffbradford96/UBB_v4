@@ -1,0 +1,113 @@
+[gd_scene load_steps=18 format=3]
+
+[ext_resource type="Script" path="res://Scripts/LandMineInfantry.gd" id="1_cmv6j"]
+[ext_resource type="Script" path="res://Scripts/HealthComponent.gd" id="2_tl2qt"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_1"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_1"]
+albedo_color = Color(1, 1, 0, 1)
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_1"]
+material = SubResource("StandardMaterial3D_1")
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_bi5c4"]
+material = SubResource("StandardMaterial3D_1")
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_hhjbu"]
+material = SubResource("StandardMaterial3D_1")
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_bi5c4"]
+albedo_color = Color(0.5, 0.5, 0.5, 1)
+metallic = 0.8
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_hhjbu"]
+albedo_color = Color(0.2, 0.2, 0.2, 1)
+metallic = 0.8
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_5py40"]
+material = SubResource("StandardMaterial3D_1")
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_88p53"]
+material = SubResource("StandardMaterial3D_1")
+
+[sub_resource type="Animation" id="Animation_cmv6j"]
+loop_mode = 1
+
+[sub_resource type="Animation" id="Animation_tl2qt"]
+loop_mode = 1
+
+[sub_resource type="Animation" id="Animation_b44un"]
+length = 0.5
+
+[sub_resource type="Animation" id="Animation_nosrg"]
+length = 0.5
+
+[sub_resource type="Animation" id="Animation_4hgow"]
+length = 0.5
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_ipf0v"]
+_data = {
+&"attack": SubResource("Animation_b44un"),
+&"heal": SubResource("Animation_nosrg"),
+&"idle": SubResource("Animation_cmv6j"),
+&"repair": SubResource("Animation_4hgow"),
+&"walk": SubResource("Animation_tl2qt")
+}
+
+[node name="LandMineInfantry" type="CharacterBody3D" groups=["SideA"]]
+script = ExtResource("1_cmv6j")
+
+[node name="HealthComponent" type="Node" parent="."]
+script = ExtResource("2_tl2qt")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("CapsuleShape3D_1")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("CapsuleMesh_1")
+
+[node name="LeftArm" type="MeshInstance3D" parent="MeshInstance3D"]
+transform = Transform3D(0.2, 0, 0, 0, 0.6, 0, 0, 0, 0.2, -0.6, 0.2, 0)
+mesh = SubResource("CapsuleMesh_bi5c4")
+
+[node name="RightArm" type="MeshInstance3D" parent="MeshInstance3D"]
+transform = Transform3D(0.2, 0, 0, 0, 0.6, 0, 0, 0, 0.2, 0.6, 0.2, 0)
+mesh = SubResource("CapsuleMesh_hhjbu")
+
+[node name="Weapon_Wrench" type="CSGBox3D" parent="MeshInstance3D/RightArm"]
+transform = Transform3D(1, 0, 0, 0, 0.8660254, 0.5, 0, -0.5, 0.8660254, 0, -0.5, -0.2)
+size = Vector3(0.1, 1, 0.1)
+material = SubResource("StandardMaterial3D_bi5c4")
+
+[node name="Weapon_WrenchHead" type="CSGCylinder3D" parent="MeshInstance3D/RightArm/Weapon_Wrench"]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0.5, 0)
+radius = 0.2
+height = 0.15
+material = SubResource("StandardMaterial3D_bi5c4")
+
+[node name="Weapon_Pistol" type="CSGCombiner3D" parent="MeshInstance3D/RightArm"]
+material_override = SubResource("StandardMaterial3D_hhjbu")
+
+[node name="@CSGBox3D@4" type="CSGBox3D" parent="MeshInstance3D/RightArm/Weapon_Pistol"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.4, -0.2)
+size = Vector3(0.1, 0.1, 0.3)
+
+[node name="@CSGBox3D@5" type="CSGBox3D" parent="MeshInstance3D/RightArm/Weapon_Pistol"]
+transform = Transform3D(1, 0, 0, 0, 0.9396926, -0.34202012, 0, 0.34202012, 0.9396926, 0, -0.5, -0.05)
+size = Vector3(0.1, 0.2, 0.1)
+
+[node name="LeftLeg" type="MeshInstance3D" parent="MeshInstance3D"]
+transform = Transform3D(0.25, 0, 0, 0, 0.6, 0, 0, 0, 0.25, -0.25, -0.6, 0)
+mesh = SubResource("CapsuleMesh_5py40")
+
+[node name="RightLeg" type="MeshInstance3D" parent="MeshInstance3D"]
+transform = Transform3D(0.25, 0, 0, 0, 0.6, 0, 0, 0, 0.25, 0.25, -0.6, 0)
+mesh = SubResource("CapsuleMesh_88p53")
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+libraries = {
+&"": SubResource("AnimationLibrary_ipf0v")
+}

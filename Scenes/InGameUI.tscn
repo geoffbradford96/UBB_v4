@@ -1,0 +1,110 @@
+[gd_scene load_steps=3 format=3 uid="uid://ingameui123"]
+
+[ext_resource type="Script" path="res://Scripts/InGameUI.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://cardui123" path="res://Scenes/CardUI.tscn" id="2_card"]
+[ext_resource type="Script" path="res://Scripts/MinimapInput.gd" id="3_minimap"]
+
+[node name="InGameUI" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_script")
+
+[node name="ExitButton" type="Button" parent="."]
+layout_mode = 0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = 120.0
+offset_bottom = 60.0
+text = "Surrender"
+
+[node name="MinimapContainer" type="SubViewportContainer" parent="."]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -220.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = 220.0
+grow_horizontal = 0
+script = ExtResource("3_minimap")
+
+[node name="ColorRect" type="ColorRect" parent="MinimapContainer"]
+show_behind_parent = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.8, 0.7, 0.2, 1)
+
+[node name="SubViewport" type="SubViewport" parent="MinimapContainer"]
+handle_input_locally = false
+size = Vector2i(200, 200)
+render_target_update_mode = 4
+
+[node name="MinimapCamera" type="Camera3D" parent="MinimapContainer/SubViewport"]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 50, 0)
+projection = 1
+size = 200.0
+
+[node name="BottomPanel" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -250.0
+grow_horizontal = 2
+grow_vertical = 0
+color = Color(0.1, 0.1, 0.1, 0.8)
+
+[node name="RequisitionBar" type="ProgressBar" parent="BottomPanel"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = -20.0
+offset_bottom = 0.0
+grow_horizontal = 2
+show_percentage = false
+
+[node name="Label" type="Label" parent="BottomPanel/RequisitionBar"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "Requisition: 0 / 10"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HandContainer" type="HBoxContainer" parent="BottomPanel"]
+layout_mode = 1
+anchors_preset = 13
+anchor_left = 0.5
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -250.0
+offset_top = 15.0
+offset_right = 250.0
+offset_bottom = -15.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 20
+alignment = 1
+
+[node name="Card1" parent="BottomPanel/HandContainer" instance=ExtResource("2_card")]
+layout_mode = 2
+
+[node name="Card2" parent="BottomPanel/HandContainer" instance=ExtResource("2_card")]
+layout_mode = 2
+
+[node name="Card3" parent="BottomPanel/HandContainer" instance=ExtResource("2_card")]
+layout_mode = 2

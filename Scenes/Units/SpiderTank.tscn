@@ -1,0 +1,77 @@
+[gd_scene load_steps=10 format=3]
+
+[ext_resource type="Script" path="res://Scripts/Unit.gd" id="1_kyfiv"]
+[ext_resource type="Script" path="res://Scripts/HealthComponent.gd" id="2_65uhf"]
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_hw27j"]
+radius = 1.0
+
+[sub_resource type="Animation" id="Animation_hw27j"]
+length = 0.5
+
+[sub_resource type="Animation" id="Animation_4eh5n"]
+length = 0.5
+
+[sub_resource type="Animation" id="Animation_kyfiv"]
+loop_mode = 1
+
+[sub_resource type="Animation" id="Animation_o53ui"]
+length = 0.5
+
+[sub_resource type="Animation" id="Animation_65uhf"]
+loop_mode = 1
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_pbnbh"]
+_data = {
+&"attack": SubResource("Animation_hw27j"),
+&"heal": SubResource("Animation_4eh5n"),
+&"idle": SubResource("Animation_kyfiv"),
+&"repair": SubResource("Animation_o53ui"),
+&"walk": SubResource("Animation_65uhf")
+}
+
+[node name="SpiderTank" type="CharacterBody3D"]
+script = ExtResource("1_kyfiv")
+speed = 3.0
+attack_damage = 60.0
+attack_range = 35.0
+attack_speed = 0.5
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+shape = SubResource("SphereShape3D_hw27j")
+
+[node name="HealthComponent" type="Node" parent="."]
+script = ExtResource("2_65uhf")
+
+[node name="MeshInstance3D" type="CSGSphere3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
+radius = 0.8
+
+[node name="SniperBarrel" type="CSGCylinder3D" parent="MeshInstance3D"]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0, -1.5)
+radius = 0.1
+height = 3.0
+
+[node name="LeftLeg_0" type="CSGCylinder3D" parent="MeshInstance3D"]
+transform = Transform3D(0.70710677, -0.49999997, 0.49999997, 0, 0.70710677, 0.70710677, -0.70710677, -0.49999997, 0.49999997, 0.56568545, -0.5, -0.56568545)
+radius = 0.1
+
+[node name="RightLeg_1" type="CSGCylinder3D" parent="MeshInstance3D"]
+transform = Transform3D(-0.70710677, -0.49999997, 0.49999997, 0, 0.70710677, 0.70710677, -0.70710677, 0.49999997, -0.49999997, -0.56568545, -0.5, -0.56568545)
+radius = 0.1
+
+[node name="LeftLeg_2" type="CSGCylinder3D" parent="MeshInstance3D"]
+transform = Transform3D(-0.7071068, 0.49999994, -0.49999994, 0, 0.70710677, 0.70710677, 0.7071067, 0.5, -0.5, -0.56568545, -0.5, 0.56568545)
+radius = 0.1
+
+[node name="RightLeg_3" type="CSGCylinder3D" parent="MeshInstance3D"]
+transform = Transform3D(0.70710665, 0.50000006, -0.50000006, 0, 0.70710677, 0.70710677, 0.7071069, -0.4999999, 0.4999999, 0.56568545, -0.5, 0.56568545)
+radius = 0.1
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+libraries = {
+&"": SubResource("AnimationLibrary_pbnbh")
+}
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]

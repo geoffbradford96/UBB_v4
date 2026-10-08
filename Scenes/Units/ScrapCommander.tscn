@@ -1,0 +1,71 @@
+[gd_scene load_steps=14 format=3]
+
+[ext_resource type="Script" path="res://Scripts/Hero.gd" id="1_jp6t7"]
+[ext_resource type="Script" path="res://Scripts/HealthComponent.gd" id="2_g5fcc"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_ebv20"]
+size = Vector3(2, 3, 2)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_hgmlc"]
+albedo_color = Color(0.6, 0.3, 0.1, 1)
+metallic = 0.8
+
+[sub_resource type="BoxMesh" id="BoxMesh_t22sp"]
+size = Vector3(2, 3, 2)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_sp80d"]
+albedo_color = Color(1, 0.8, 0, 1)
+emission_enabled = true
+emission = Color(1, 0.8, 0, 1)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_5nj34"]
+top_radius = 1.5
+bottom_radius = 0.8
+height = 1.0
+
+[sub_resource type="Animation" id="Animation_18hm5"]
+loop_mode = 1
+
+[sub_resource type="Animation" id="Animation_esggq"]
+loop_mode = 1
+
+[sub_resource type="Animation" id="Animation_kuf8h"]
+
+[sub_resource type="Animation" id="Animation_ujiuf"]
+
+[sub_resource type="Animation" id="Animation_cjp8i"]
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_7plc0"]
+_data = {
+&"attack": SubResource("Animation_kuf8h"),
+&"heal": SubResource("Animation_ujiuf"),
+&"idle": SubResource("Animation_18hm5"),
+&"repair": SubResource("Animation_cjp8i"),
+&"walk": SubResource("Animation_esggq")
+}
+
+[node name="ScrapCommander" type="CharacterBody3D"]
+script = ExtResource("1_jp6t7")
+attack_damage = 60.0
+
+[node name="@CollisionShape3D@2" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
+shape = SubResource("BoxShape3D_ebv20")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
+material_override = SubResource("StandardMaterial3D_hgmlc")
+mesh = SubResource("BoxMesh_t22sp")
+
+[node name="@MeshInstance3D@3" type="MeshInstance3D" parent="MeshInstance3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
+material_override = SubResource("StandardMaterial3D_sp80d")
+mesh = SubResource("CylinderMesh_5nj34")
+
+[node name="HealthComponent" type="Node3D" parent="."]
+script = ExtResource("2_g5fcc")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+libraries = {
+&"": SubResource("AnimationLibrary_7plc0")
+}

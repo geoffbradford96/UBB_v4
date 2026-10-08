@@ -1,0 +1,112 @@
+[gd_scene load_steps=19 format=3]
+
+[ext_resource type="Script" path="res://Scripts/Tank.gd" id="1_f4a0j"]
+[ext_resource type="Script" path="res://Scripts/HealthComponent.gd" id="2_k50d6"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_x61rw"]
+size = Vector3(2, 2, 2)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_kfleu"]
+albedo_color = Color(0.6, 0.3, 0.1, 1)
+metallic = 0.5
+roughness = 0.8
+
+[sub_resource type="BoxMesh" id="BoxMesh_0byh8"]
+size = Vector3(2, 2, 2)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_eti1i"]
+albedo_color = Color(0.9, 0.1, 0.7, 1)
+emission_enabled = true
+emission = Color(0.9, 0.1, 0.7, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_tvglh"]
+size = Vector3(1, 1, 2.1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_hoqi3"]
+albedo_color = Color(0.4, 0.4, 0.4, 1)
+metallic = 0.8
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_wimuw"]
+top_radius = 0.0
+bottom_radius = 0.2
+height = 1.0
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_wapvj"]
+top_radius = 0.0
+bottom_radius = 0.2
+height = 1.0
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_pc3e8"]
+top_radius = 0.0
+bottom_radius = 0.2
+height = 1.0
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_7tt16"]
+top_radius = 0.0
+bottom_radius = 0.2
+height = 1.0
+
+[sub_resource type="Animation" id="Animation_6x3xd"]
+loop_mode = 1
+
+[sub_resource type="Animation" id="Animation_1fp4i"]
+loop_mode = 1
+
+[sub_resource type="Animation" id="Animation_35ifc"]
+
+[sub_resource type="Animation" id="Animation_lit08"]
+
+[sub_resource type="Animation" id="Animation_okk4b"]
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_v23yf"]
+_data = {
+&"attack": SubResource("Animation_35ifc"),
+&"heal": SubResource("Animation_lit08"),
+&"idle": SubResource("Animation_6x3xd"),
+&"repair": SubResource("Animation_okk4b"),
+&"walk": SubResource("Animation_1fp4i")
+}
+
+[node name="ScrapTank" type="CharacterBody3D"]
+script = ExtResource("1_f4a0j")
+
+[node name="@CollisionShape3D@10" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+shape = SubResource("BoxShape3D_x61rw")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+material_override = SubResource("StandardMaterial3D_kfleu")
+mesh = SubResource("BoxMesh_0byh8")
+
+[node name="@MeshInstance3D@11" type="MeshInstance3D" parent="MeshInstance3D"]
+material_override = SubResource("StandardMaterial3D_eti1i")
+mesh = SubResource("BoxMesh_tvglh")
+
+[node name="@MeshInstance3D@12" type="MeshInstance3D" parent="MeshInstance3D"]
+transform = Transform3D(0.9884953, -0.1512518, 0, 0.15049298, 0.98353606, -0.10004316, 0.015131707, 0.0988922, 0.9949831, -0.23217373, 1, -0.83368886)
+material_override = SubResource("StandardMaterial3D_hoqi3")
+mesh = SubResource("CylinderMesh_wimuw")
+
+[node name="@MeshInstance3D@13" type="MeshInstance3D" parent="MeshInstance3D"]
+transform = Transform3D(0.93897974, -0.34397238, 0, 0.2460998, 0.67180604, -0.6986498, 0.24031624, 0.656018, 0.7154638, 0.74822134, 1, 0.2602574)
+material_override = SubResource("StandardMaterial3D_hoqi3")
+mesh = SubResource("CylinderMesh_wapvj")
+
+[node name="@MeshInstance3D@14" type="MeshInstance3D" parent="MeshInstance3D"]
+transform = Transform3D(0.99268854, -0.120704055, 0, 0.11716406, 0.9635751, 0.24040718, -0.029018123, -0.23864946, 0.97067213, 0.04705775, 1, 0.26067054)
+material_override = SubResource("StandardMaterial3D_hoqi3")
+mesh = SubResource("CylinderMesh_pc3e8")
+
+[node name="@MeshInstance3D@15" type="MeshInstance3D" parent="MeshInstance3D"]
+transform = Transform3D(0.71791095, -0.696135, 0, 0.6882598, 0.7097894, 0.1499916, -0.1044144, -0.10768061, 0.9886873, -0.31317857, 1, -0.39817488)
+material_override = SubResource("StandardMaterial3D_hoqi3")
+mesh = SubResource("CylinderMesh_7tt16")
+
+[node name="HealthComponent" type="Node3D" parent="."]
+script = ExtResource("2_k50d6")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+libraries = {
+&"": SubResource("AnimationLibrary_v23yf")
+}

@@ -1,0 +1,77 @@
+[gd_scene load_steps=13 format=3]
+
+[ext_resource type="Script" path="res://Scripts/Unit.gd" id="1_cxw13"]
+[ext_resource type="Script" path="res://Scripts/HealthComponent.gd" id="2_2p6i8"]
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_ot7qj"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_1upd4"]
+transparency = 1
+albedo_color = Color(0.1, 0.9, 0.3, 0.65)
+emission_enabled = true
+emission = Color(0, 0.5, 0.1, 1)
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_2rdpi"]
+radius = 0.4
+height = 1.8
+
+[sub_resource type="SphereMesh" id="SphereMesh_hyav7"]
+radius = 0.3
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_f31qg"]
+albedo_color = Color(0.2, 0.1, 0.4, 1)
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_wjbtn"]
+radius = 0.2
+height = 1.5
+
+[sub_resource type="Animation" id="Animation_dbtw3"]
+length = 0.5
+
+[sub_resource type="Animation" id="Animation_5rk5c"]
+loop_mode = 1
+
+[sub_resource type="Animation" id="Animation_phai2"]
+loop_mode = 1
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_3ie0n"]
+_data = {
+&"attack": SubResource("Animation_dbtw3"),
+&"idle": SubResource("Animation_5rk5c"),
+&"walk": SubResource("Animation_phai2")
+}
+
+[node name="RimworlderMutant" type="CharacterBody3D"]
+script = ExtResource("1_cxw13")
+attack_range = 5.0
+
+[node name="HealthComponent" type="Node" parent="."]
+script = ExtResource("2_2p6i8")
+
+[node name="@CollisionShape3D@10" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+shape = SubResource("CylinderShape3D_ot7qj")
+
+[node name="MeshInstance3D" type="Node3D" parent="."]
+
+[node name="@MeshInstance3D@11" type="MeshInstance3D" parent="MeshInstance3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+material_override = SubResource("StandardMaterial3D_1upd4")
+mesh = SubResource("CapsuleMesh_2rdpi")
+
+[node name="@MeshInstance3D@12" type="MeshInstance3D" parent="MeshInstance3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.9, 0)
+material_override = SubResource("StandardMaterial3D_1upd4")
+mesh = SubResource("SphereMesh_hyav7")
+
+[node name="RightArm_0" type="MeshInstance3D" parent="MeshInstance3D"]
+transform = Transform3D(1, 0, 0, 0, 0.70710677, 0.70710677, 0, -0.70710677, 0.70710677, 0.6, 1, -0.5)
+material_override = SubResource("StandardMaterial3D_f31qg")
+mesh = SubResource("CapsuleMesh_wjbtn")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+libraries = {
+&"": SubResource("AnimationLibrary_3ie0n")
+}
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]

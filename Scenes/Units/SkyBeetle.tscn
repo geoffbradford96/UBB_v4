@@ -1,0 +1,54 @@
+[gd_scene load_steps=10 format=3]
+
+[ext_resource type="Script" path="res://Scripts/Unit.gd" id="1_piwgj"]
+[ext_resource type="Script" path="res://Scripts/HealthComponent.gd" id="2_j5460"]
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_2ng4n"]
+radius = 1.5
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_nhg3j"]
+albedo_color = Color(0.4, 0.4, 0.45, 1)
+roughness = 0.9
+
+[sub_resource type="SphereMesh" id="SphereMesh_pja87"]
+radius = 1.2
+
+[sub_resource type="Animation" id="Animation_c8cop"]
+length = 0.5
+
+[sub_resource type="Animation" id="Animation_gxux8"]
+loop_mode = 1
+
+[sub_resource type="Animation" id="Animation_tm26f"]
+loop_mode = 1
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_w5wxn"]
+_data = {
+&"attack": SubResource("Animation_c8cop"),
+&"idle": SubResource("Animation_gxux8"),
+&"walk": SubResource("Animation_tm26f")
+}
+
+[node name="SkyBeetle" type="CharacterBody3D"]
+script = ExtResource("1_piwgj")
+
+[node name="HealthComponent" type="Node" parent="."]
+script = ExtResource("2_j5460")
+
+[node name="@CollisionShape3D@18" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+shape = SubResource("CylinderShape3D_2ng4n")
+
+[node name="MeshInstance3D" type="Node3D" parent="."]
+
+[node name="@MeshInstance3D@19" type="MeshInstance3D" parent="MeshInstance3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
+material_override = SubResource("StandardMaterial3D_nhg3j")
+mesh = SubResource("SphereMesh_pja87")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+libraries = {
+&"": SubResource("AnimationLibrary_w5wxn")
+}
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]

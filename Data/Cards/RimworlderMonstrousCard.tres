@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="CardData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://Scripts/CardData.gd" id="1_3v7tr"]
+[ext_resource type="PackedScene" path="res://Scenes/Units/RimworlderMonstrous.tscn" id="2_ijbvc"]
+
+[resource]
+script = ExtResource("1_3v7tr")
+card_name = "RimworlderMonstrous"
+card_type = "Rimworlder"
+cost = 5.0
+max_hp = 350.0
+description = "A terrifyingly overgrown Rimworlder brute."
+unit_scene = ExtResource("2_ijbvc")

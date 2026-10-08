@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="CardData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://Scripts/CardData.gd" id="1_43fw7"]
+[ext_resource type="PackedScene" path="res://Scenes/Units/RimworlderMutant.tscn" id="2_i2vyx"]
+
+[resource]
+script = ExtResource("1_43fw7")
+card_name = "RimworlderMutant"
+card_type = "Rimworlder"
+max_hp = 180.0
+description = "Mutated rimworlder wielding a massive tentacle."
+unit_scene = ExtResource("2_i2vyx")

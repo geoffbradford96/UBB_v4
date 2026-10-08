@@ -1,0 +1,64 @@
+[gd_scene load_steps=11 format=3]
+
+[ext_resource type="Script" path="res://Scripts/Unit.gd" id="1_ljd1w"]
+[ext_resource type="Script" path="res://Scripts/HealthComponent.gd" id="2_4380c"]
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_3hme4"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_a6ch0"]
+transparency = 1
+albedo_color = Color(0.1, 0.9, 0.3, 0.65)
+emission_enabled = true
+emission = Color(0, 0.5, 0.1, 1)
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_fvkm5"]
+
+[sub_resource type="SphereMesh" id="SphereMesh_5knnn"]
+radius = 0.4
+
+[sub_resource type="Animation" id="Animation_ld22j"]
+length = 0.5
+
+[sub_resource type="Animation" id="Animation_xuyrh"]
+loop_mode = 1
+
+[sub_resource type="Animation" id="Animation_nipxx"]
+loop_mode = 1
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_cnhk4"]
+_data = {
+&"attack": SubResource("Animation_ld22j"),
+&"idle": SubResource("Animation_xuyrh"),
+&"walk": SubResource("Animation_nipxx")
+}
+
+[node name="GreatBeastSpeaker" type="CharacterBody3D"]
+script = ExtResource("1_ljd1w")
+attack_damage = 10.0
+attack_range = 12.0
+
+[node name="HealthComponent" type="Node" parent="."]
+script = ExtResource("2_4380c")
+
+[node name="@CollisionShape3D@2" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+shape = SubResource("CylinderShape3D_3hme4")
+
+[node name="MeshInstance3D" type="Node3D" parent="."]
+
+[node name="@MeshInstance3D@3" type="MeshInstance3D" parent="MeshInstance3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+material_override = SubResource("StandardMaterial3D_a6ch0")
+mesh = SubResource("CapsuleMesh_fvkm5")
+
+[node name="@MeshInstance3D@4" type="MeshInstance3D" parent="MeshInstance3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2, 0)
+material_override = SubResource("StandardMaterial3D_a6ch0")
+mesh = SubResource("SphereMesh_5knnn")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+libraries = {
+&"": SubResource("AnimationLibrary_cnhk4")
+}
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]

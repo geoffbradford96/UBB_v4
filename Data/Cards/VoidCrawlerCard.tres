@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="CardData" load_steps=3 format=3 uid="uid://cardvoidcrawler"]
+[ext_resource type="Script" path="res://Scripts/CardData.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://voidvoidcrawler" path="res://Scenes/Units/VoidSwarm/VoidCrawler.tscn" id="2_scene"]
+[resource]
+script = ExtResource("1_script")
+card_name = "VoidCrawler"
+card_type = "Unit"
+description = "A swarm of 3 fast-moving Void aberrations."
+cost = 2.0
+is_spell = false
+spawn_count = 4
+unit_scene = ExtResource("2_scene")

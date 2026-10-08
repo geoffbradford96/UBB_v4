@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="CardData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://Scripts/CardData.gd" id="1_v01s2"]
+[ext_resource type="PackedScene" path="res://Scenes/Units/RimworlderMelee.tscn" id="2_4euue"]
+
+[resource]
+script = ExtResource("1_v01s2")
+card_name = "RimworlderMelee"
+card_type = "Rimworlder"
+cost = 1.5
+max_hp = 120.0
+description = "Green translucent humanoid with a blade."
+unit_scene = ExtResource("2_4euue")

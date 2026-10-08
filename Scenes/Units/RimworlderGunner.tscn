@@ -1,0 +1,72 @@
+[gd_scene load_steps=12 format=3]
+
+[ext_resource type="Script" path="res://Scripts/Unit.gd" id="1_qv5vp"]
+[ext_resource type="Script" path="res://Scripts/HealthComponent.gd" id="2_3free"]
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_phcoc"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_8b3xq"]
+transparency = 1
+albedo_color = Color(0.1, 0.9, 0.3, 0.65)
+emission_enabled = true
+emission = Color(0, 0.5, 0.1, 1)
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_egw3a"]
+radius = 0.4
+height = 1.8
+
+[sub_resource type="SphereMesh" id="SphereMesh_dttfm"]
+radius = 0.3
+
+[sub_resource type="BoxMesh" id="BoxMesh_hncq5"]
+size = Vector3(0.1, 0.1, 0.8)
+
+[sub_resource type="Animation" id="Animation_pkdec"]
+length = 0.5
+
+[sub_resource type="Animation" id="Animation_7i1f7"]
+loop_mode = 1
+
+[sub_resource type="Animation" id="Animation_fhqou"]
+loop_mode = 1
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_ve5ex"]
+_data = {
+&"attack": SubResource("Animation_pkdec"),
+&"idle": SubResource("Animation_7i1f7"),
+&"walk": SubResource("Animation_fhqou")
+}
+
+[node name="RimworlderGunner" type="CharacterBody3D"]
+script = ExtResource("1_qv5vp")
+attack_range = 18.0
+
+[node name="HealthComponent" type="Node" parent="."]
+script = ExtResource("2_3free")
+
+[node name="@CollisionShape3D@2" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+shape = SubResource("CylinderShape3D_phcoc")
+
+[node name="MeshInstance3D" type="Node3D" parent="."]
+
+[node name="@MeshInstance3D@3" type="MeshInstance3D" parent="MeshInstance3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+material_override = SubResource("StandardMaterial3D_8b3xq")
+mesh = SubResource("CapsuleMesh_egw3a")
+
+[node name="@MeshInstance3D@4" type="MeshInstance3D" parent="MeshInstance3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.9, 0)
+material_override = SubResource("StandardMaterial3D_8b3xq")
+mesh = SubResource("SphereMesh_dttfm")
+
+[node name="@MeshInstance3D@5" type="MeshInstance3D" parent="MeshInstance3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 1, -0.4)
+mesh = SubResource("BoxMesh_hncq5")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+libraries = {
+&"": SubResource("AnimationLibrary_ve5ex")
+}
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]

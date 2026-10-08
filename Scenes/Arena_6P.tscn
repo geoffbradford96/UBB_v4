@@ -1,0 +1,248 @@
+[gd_scene load_steps=16 format=3]
+
+[ext_resource type="Script" path="res://Scripts/ArenaManager.gd" id="1_u5g0q"]
+[ext_resource type="PackedScene" path="res://Scenes/InGameUI.tscn" id="2_rrg6c"]
+[ext_resource type="Script" path="res://Scripts/InGameUI.gd" id="3_yw5vl"]
+[ext_resource type="Script" path="res://Scripts/ArenaCamera.gd" id="4_qihlv"]
+[ext_resource type="Script" path="res://Scripts/HealthComponent.gd" id="5_quofm"]
+[ext_resource type="PackedScene" path="res://Scenes/Tower.tscn" id="6_y8d4a"]
+[ext_resource type="Script" path="res://Scripts/Tower.gd" id="7_5hvej"]
+[ext_resource type="PackedScene" path="res://Scenes/Projectile.tscn" id="8_c88e0"]
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_arena"]
+size = Vector2(300, 300)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_floor"]
+size = Vector3(300, 0.1, 300)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_path"]
+albedo_color = Color(0.35, 0.25, 0.15, 1)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_path"]
+material = SubResource("StandardMaterial3D_path")
+size = Vector2(26, 120)
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_1"]
+sky_top_color = Color(0.15, 0.1, 0.1, 1)
+sky_horizon_color = Color(0.6, 0.3, 0.2, 1)
+ground_bottom_color = Color(0.1, 0.1, 0.1, 1)
+ground_horizon_color = Color(0.6, 0.3, 0.2, 1)
+
+[sub_resource type="Sky" id="Sky_1"]
+sky_material = SubResource("ProceduralSkyMaterial_1")
+
+[sub_resource type="Environment" id="Environment_1"]
+background_mode = 2
+sky = SubResource("Sky_1")
+ambient_light_source = 3
+ambient_light_color = Color(1, 1, 1, 1)
+ambient_light_sky_contribution = 0.5
+tonemap_mode = 2
+ssao_enabled = true
+glow_enabled = true
+glow_intensity = 1.5
+glow_bloom = 0.2
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_koth"]
+radius = 20.0
+height = 10.0
+
+[node name="Arena_6P" type="Node3D"]
+script = ExtResource("1_u5g0q")
+
+[node name="InGameUI" type="Control" parent="." instance=ExtResource("2_rrg6c")]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("3_yw5vl")
+
+[node name="Ground" type="StaticBody3D" parent="."]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Ground"]
+mesh = SubResource("PlaneMesh_arena")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Ground"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.05, 0)
+shape = SubResource("BoxShape3D_floor")
+
+[node name="Path0" type="MeshInstance3D" parent="Ground"]
+transform = Transform3D(1.0, 0, 0.0, 0, 1, 0, -0.0, 0, 1.0, 0.0, 0.05, 60.0)
+mesh = SubResource("PlaneMesh_path")
+
+[node name="Path1" type="MeshInstance3D" parent="Ground"]
+transform = Transform3D(0.5000000000000001, 0, 0.8660254037844386, 0, 1, 0, -0.8660254037844386, 0, 0.5000000000000001, 51.96152422706631, 0.05, 30.000000000000007)
+mesh = SubResource("PlaneMesh_path")
+
+[node name="Path2" type="MeshInstance3D" parent="Ground"]
+transform = Transform3D(-0.4999999999999998, 0, 0.8660254037844387, 0, 1, 0, -0.8660254037844387, 0, -0.4999999999999998, 51.96152422706632, 0.05, -29.999999999999986)
+mesh = SubResource("PlaneMesh_path")
+
+[node name="Path3" type="MeshInstance3D" parent="Ground"]
+transform = Transform3D(-1.0, 0, 1.2246467991473532e-16, 0, 1, 0, -1.2246467991473532e-16, 0, -1.0, 7.34788079488412e-15, 0.05, -60.0)
+mesh = SubResource("PlaneMesh_path")
+
+[node name="Path4" type="MeshInstance3D" parent="Ground"]
+transform = Transform3D(-0.5000000000000004, 0, -0.8660254037844385, 0, 1, 0, 0.8660254037844385, 0, -0.5000000000000004, -51.961524227066306, 0.05, -30.00000000000003)
+mesh = SubResource("PlaneMesh_path")
+
+[node name="Path5" type="MeshInstance3D" parent="Ground"]
+transform = Transform3D(0.49999999999999933, 0, -0.866025403784439, 0, 1, 0, 0.866025403784439, 0, 0.49999999999999933, -51.96152422706634, 0.05, 29.99999999999996)
+mesh = SubResource("PlaneMesh_path")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_1")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.866025, -0.25, 0.433013, 0, 0.866025, 0.5, -0.5, -0.433013, 0.75, 0, 10, 0)
+shadow_enabled = true
+shadow_bias = 0.05
+directional_shadow_max_distance = 300.0
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.5, 0.866025, 0, -0.866025, 0.5, 0, 30, 24)
+current = true
+script = ExtResource("4_qihlv")
+
+[node name="KotH_Zone" type="Area3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="KotH_Zone"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, 0)
+shape = SubResource("CylinderShape3D_koth")
+
+[node name="CSGCylinder3D" type="CSGCylinder3D" parent="KotH_Zone"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, 0)
+radius = 20.0
+height = 0.2
+sides = 32
+
+
+[node name="Base_0" type="CSGBox3D" parent="." groups=["SideA"]]
+transform = Transform3D(-1.0, 0, 1.2246467991473532e-16, 0, 1, 0, -1.2246467991473532e-16, 0, -1.0, 0.0, 2.5, 120.0)
+use_collision = true
+size = Vector3(10, 5, 10)
+
+[node name="HealthComponent" type="Node" parent="Base_0"]
+script = ExtResource("5_quofm")
+max_health = 2000.0
+
+[node name="Tower_0_Left" type="StaticBody3D" parent="." groups=["SideA"] instance=ExtResource("6_y8d4a")]
+transform = Transform3D(-1.0, 0, 1.2246467991473532e-16, 0, 1, 0, -1.2246467991473532e-16, 0, -1.0, -15.0, 0, 90.0)
+script = ExtResource("7_5hvej")
+projectile_scene = ExtResource("8_c88e0")
+team = "SideA"
+
+[node name="Tower_0_Right" type="StaticBody3D" parent="." groups=["SideA"] instance=ExtResource("6_y8d4a")]
+transform = Transform3D(-1.0, 0, 1.2246467991473532e-16, 0, 1, 0, -1.2246467991473532e-16, 0, -1.0, 15.0, 0, 90.0)
+script = ExtResource("7_5hvej")
+projectile_scene = ExtResource("8_c88e0")
+team = "SideA"
+
+[node name="Base_1" type="CSGBox3D" parent="." groups=["SideA"]]
+transform = Transform3D(-0.5000000000000004, 0, -0.8660254037844385, 0, 1, 0, 0.8660254037844385, 0, -0.5000000000000004, 103.92304845413263, 2.5, 60.000000000000014)
+use_collision = true
+size = Vector3(10, 5, 10)
+
+[node name="HealthComponent" type="Node" parent="Base_1"]
+script = ExtResource("5_quofm")
+max_health = 2000.0
+
+[node name="Tower_1_Left" type="StaticBody3D" parent="." groups=["SideA"] instance=ExtResource("6_y8d4a")]
+transform = Transform3D(-0.5000000000000004, 0, -0.8660254037844385, 0, 1, 0, 0.8660254037844385, 0, -0.5000000000000004, 70.44228634059948, 0, 57.99038105676659)
+script = ExtResource("7_5hvej")
+projectile_scene = ExtResource("8_c88e0")
+team = "SideA"
+
+[node name="Tower_1_Right" type="StaticBody3D" parent="." groups=["SideA"] instance=ExtResource("6_y8d4a")]
+transform = Transform3D(-0.5000000000000004, 0, -0.8660254037844385, 0, 1, 0, 0.8660254037844385, 0, -0.5000000000000004, 85.44228634059948, 0, 32.00961894323343)
+script = ExtResource("7_5hvej")
+projectile_scene = ExtResource("8_c88e0")
+team = "SideA"
+
+[node name="Base_2" type="CSGBox3D" parent="." groups=["SideA"]]
+transform = Transform3D(0.49999999999999933, 0, -0.866025403784439, 0, 1, 0, 0.866025403784439, 0, 0.49999999999999933, 103.92304845413264, 2.5, -59.99999999999997)
+use_collision = true
+size = Vector3(10, 5, 10)
+
+[node name="HealthComponent" type="Node" parent="Base_2"]
+script = ExtResource("5_quofm")
+max_health = 2000.0
+
+[node name="Tower_2_Left" type="StaticBody3D" parent="." groups=["SideA"] instance=ExtResource("6_y8d4a")]
+transform = Transform3D(0.49999999999999933, 0, -0.866025403784439, 0, 1, 0, 0.866025403784439, 0, 0.49999999999999933, 85.44228634059948, 0, -32.0096189432334)
+script = ExtResource("7_5hvej")
+projectile_scene = ExtResource("8_c88e0")
+team = "SideA"
+
+[node name="Tower_2_Right" type="StaticBody3D" parent="." groups=["SideA"] instance=ExtResource("6_y8d4a")]
+transform = Transform3D(0.49999999999999933, 0, -0.866025403784439, 0, 1, 0, 0.866025403784439, 0, 0.49999999999999933, 70.44228634059948, 0, -57.99038105676656)
+script = ExtResource("7_5hvej")
+projectile_scene = ExtResource("8_c88e0")
+team = "SideA"
+
+[node name="Base_3" type="CSGBox3D" parent="." groups=["SideB"]]
+transform = Transform3D(1.0, 0, -2.4492935982947064e-16, 0, 1, 0, 2.4492935982947064e-16, 0, 1.0, 1.469576158976824e-14, 2.5, -120.0)
+use_collision = true
+size = Vector3(10, 5, 10)
+
+[node name="HealthComponent" type="Node" parent="Base_3"]
+script = ExtResource("5_quofm")
+max_health = 2000.0
+
+[node name="Tower_3_Left" type="StaticBody3D" parent="." groups=["SideB"] instance=ExtResource("6_y8d4a")]
+transform = Transform3D(1.0, 0, -2.4492935982947064e-16, 0, 1, 0, 2.4492935982947064e-16, 0, 1.0, 15.00000000000001, 0, -90.0)
+script = ExtResource("7_5hvej")
+projectile_scene = ExtResource("8_c88e0")
+team = "SideB"
+
+[node name="Tower_3_Right" type="StaticBody3D" parent="." groups=["SideB"] instance=ExtResource("6_y8d4a")]
+transform = Transform3D(1.0, 0, -2.4492935982947064e-16, 0, 1, 0, 2.4492935982947064e-16, 0, 1.0, -14.99999999999999, 0, -90.0)
+script = ExtResource("7_5hvej")
+projectile_scene = ExtResource("8_c88e0")
+team = "SideB"
+
+[node name="Base_4" type="CSGBox3D" parent="." groups=["SideB"]]
+transform = Transform3D(0.5000000000000004, 0, 0.8660254037844384, 0, 1, 0, -0.8660254037844384, 0, 0.5000000000000004, -103.92304845413261, 2.5, -60.00000000000006)
+use_collision = true
+size = Vector3(10, 5, 10)
+
+[node name="HealthComponent" type="Node" parent="Base_4"]
+script = ExtResource("5_quofm")
+max_health = 2000.0
+
+[node name="Tower_4_Left" type="StaticBody3D" parent="." groups=["SideB"] instance=ExtResource("6_y8d4a")]
+transform = Transform3D(0.5000000000000004, 0, 0.8660254037844384, 0, 1, 0, -0.8660254037844384, 0, 0.5000000000000004, -70.44228634059945, 0, -57.99038105676662)
+script = ExtResource("7_5hvej")
+projectile_scene = ExtResource("8_c88e0")
+team = "SideB"
+
+[node name="Tower_4_Right" type="StaticBody3D" parent="." groups=["SideB"] instance=ExtResource("6_y8d4a")]
+transform = Transform3D(0.5000000000000004, 0, 0.8660254037844384, 0, 1, 0, -0.8660254037844384, 0, 0.5000000000000004, -85.44228634059948, 0, -32.00961894323346)
+script = ExtResource("7_5hvej")
+projectile_scene = ExtResource("8_c88e0")
+team = "SideB"
+
+[node name="Base_5" type="CSGBox3D" parent="." groups=["SideB"]]
+transform = Transform3D(-0.4999999999999992, 0, 0.8660254037844392, 0, 1, 0, -0.8660254037844392, 0, -0.4999999999999992, -103.92304845413268, 2.5, 59.99999999999992)
+use_collision = true
+size = Vector3(10, 5, 10)
+
+[node name="HealthComponent" type="Node" parent="Base_5"]
+script = ExtResource("5_quofm")
+max_health = 2000.0
+
+[node name="Tower_5_Left" type="StaticBody3D" parent="." groups=["SideB"] instance=ExtResource("6_y8d4a")]
+transform = Transform3D(-0.4999999999999992, 0, 0.8660254037844392, 0, 1, 0, -0.8660254037844392, 0, -0.4999999999999992, -85.4422863405995, 0, 32.009618943233356)
+script = ExtResource("7_5hvej")
+projectile_scene = ExtResource("8_c88e0")
+team = "SideB"
+
+[node name="Tower_5_Right" type="StaticBody3D" parent="." groups=["SideB"] instance=ExtResource("6_y8d4a")]
+transform = Transform3D(-0.4999999999999992, 0, 0.8660254037844392, 0, 1, 0, -0.8660254037844392, 0, -0.4999999999999992, -70.44228634059952, 0, 57.99038105676653)
+script = ExtResource("7_5hvej")
+projectile_scene = ExtResource("8_c88e0")
+team = "SideB"

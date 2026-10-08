@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="CardData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://Scripts/CardData.gd" id="1_ihy3t"]
+[ext_resource type="PackedScene" path="res://Scenes/Units/RimworlderGunner.tscn" id="2_p6q46"]
+
+[resource]
+script = ExtResource("1_ihy3t")
+card_name = "RimworlderGunner"
+card_type = "Rimworlder"
+cost = 2.0
+is_melee = false
+description = "Green translucent humanoid with a rifle."
+unit_scene = ExtResource("2_p6q46")
