@@ -155,10 +155,6 @@ func die():
 
 
 func _process(delta):
-	if multiplayer.has_multiplayer_peer() and multiplayer.multiplayer_peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED:
-		if not multiplayer.is_server():
-			return # Only server computes regen
-			
 	if poison_ticks > 0:
 		poison_timer -= delta
 		if poison_timer <= 0:
