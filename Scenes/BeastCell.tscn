@@ -1,0 +1,25 @@
+[gd_scene load_steps=5 format=3 uid="uid://beastcell1"]
+
+[ext_resource type="Script" path="res://Scripts/BeastCell.gd" id="1_script"]
+[ext_resource type="Script" path="res://Scripts/HealthComponent.gd" id="2_health"]
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_1"]
+radius = 0.8
+
+[node name="BeastCell" type="CharacterBody3D" groups=["Beast"]]
+script = ExtResource("1_script")
+max_health = 150.0
+speed = 8.0
+attack_damage = 25.0
+attack_range = 1.5
+attack_speed = 0.8
+
+[node name="HealthComponent" type="Node" parent="."]
+script = ExtResource("2_health")
+max_health = 150.0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
+shape = SubResource("SphereShape3D_1")
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]

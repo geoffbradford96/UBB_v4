@@ -8,6 +8,7 @@ var sudden_death_active: bool = false
 var beast_timer: float = 0.0
 var beast_spawn_interval: float = 5.0
 var beast_tentacle_scene = preload("res://Scenes/BeastTentacle.tscn")
+var beast_mouth_scene = preload("res://Scenes/BeastMouth.tscn")
 
 
 var initial_towers_per_team = {}
@@ -181,9 +182,9 @@ func _process(delta):
             var rz = randf_range(-40.0, 40.0)
             if multiplayer.has_multiplayer_peer() and multiplayer.multiplayer_peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED:
                 if multiplayer.is_server():
-                    rpc("sync_spawn_tentacle", rx, rz)
+                    rpc("sync_spawn_hazard", rx, rz, randi() % 3 == 0) # 33% chance for mouth
             else:
-                sync_spawn_tentacle(rx, rz)
+                sync_spawn_hazard(rx, rz, randi() % 3 == 0)
                 
     _update_timer_ui()
 
@@ -638,8 +639,8 @@ func _start_beast_of_nothingness():
     
     var torus = MeshInstance3D.new()
     torus.mesh = TorusMesh.new()
-    torus.mesh.inner_radius = 50.0
     torus.mesh.outer_radius = 80.0
+    torus.mesh.inner_radius = 50.0
     
     var mat = StandardMaterial3D.new()
     mat.albedo_color = Color(0.2, 0.1, 0.3)
@@ -682,9 +683,10 @@ func _start_beast_of_nothingness():
     tw.tween_property(beast_root, "position:y", 20.0, 30.0) # slowly rise (to y=20 so mouth frames the arena)
 
 @rpc("authority", "call_local", "reliable")
-func sync_spawn_tentacle(rx: float, rz: float):
-    if not beast_tentacle_scene: return
-    var t = beast_tentacle_scene.instantiate()
+func sync_spawn_hazard(rx: float, rz: float, is_mouth: bool):
+    var scn = beast_mouth_scene if is_mouth else beast_tentacle_scene
+    if not scn: return
+    var t = scn.instantiate()
     add_child(t)
     t.global_position = Vector3(rx, -5, rz)
     var tw = create_tween()

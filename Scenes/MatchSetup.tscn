@@ -107,6 +107,20 @@ custom_minimum_size = Vector2(250, 0)
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
 
+[node name="HBoxTimer" type="HBoxContainer" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="CenterContainer/VBoxContainer/HBoxTimer"]
+custom_minimum_size = Vector2(250, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Sudden Death Timer"
+
+[node name="TimerDropdown" type="OptionButton" parent="CenterContainer/VBoxContainer/HBoxTimer"]
+custom_minimum_size = Vector2(250, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+
 [node name="HSeparator2" type="HSeparator" parent="CenterContainer/VBoxContainer"]
 layout_mode = 2
 
