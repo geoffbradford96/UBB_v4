@@ -59,5 +59,5 @@ func _on_volume_value_changed(value):
 	AudioServer.set_bus_mute(0, value <= 0.01)
 
 func _on_back_pressed():
-	get_tree().change_scene_to_file("res://Scenes/ModeHub.tscn")
+	get_tree().change_scene_to_file("res://Scenes/MainMenu.tscn")
 
