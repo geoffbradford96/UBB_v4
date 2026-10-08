@@ -2,7 +2,6 @@ extends CharacterBody3D
 
 @export var unit_attribute: String = "Organic"
 
-@onready var nav_agent = $NavigationAgent3D
 @onready var mesh = $MeshInstance3D
 
 @export var max_health: float = 100.0

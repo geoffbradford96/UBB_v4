@@ -5,7 +5,6 @@ extends CharacterBody3D
 @export var damage: float = 15.0
 @export var attack_rate: float = 0.5 # attacks fast!
 
-@onready var nav_agent: NavigationAgent3D = $NavigationAgent3D
 @onready var mesh: MeshInstance3D = $MeshInstance3D
 
 var current_target: Node3D = null

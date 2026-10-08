@@ -11,7 +11,8 @@ var input_mode: String = "MOUSE"
 var crosshair: ColorRect
 var selected_card_idx: int = -1
 
-var device_id: int = -1 # -1 means Keyboard/Mouse + Controller 0.
+var device_id: int = -1
+var player_id: int = 1 # -1 means Keyboard/Mouse + Controller 0.
 var player_profile: String = "Player1"
 
 signal ui_card_selected(card_ui, ui_instance)
@@ -55,11 +56,12 @@ func _input(event):
 				_update_controller_selection()
 				
 	if input_mode == "CONTROLLER":
-		if event.is_action_pressed("p1_prev_card"):
+		var prefix = "p" + str(player_id) + "_"
+		if event.is_action_pressed(prefix + "prev_card"):
 			selected_card_idx -= 1
 			if selected_card_idx < 0: selected_card_idx = hand_container.get_child_count() - 1
 			_update_controller_selection()
-		elif event.is_action_pressed("p1_next_card"):
+		elif event.is_action_pressed(prefix + "next_card"):
 			selected_card_idx += 1
 			if selected_card_idx >= hand_container.get_child_count(): selected_card_idx = 0
 			_update_controller_selection()

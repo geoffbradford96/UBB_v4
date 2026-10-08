@@ -3,6 +3,7 @@ extends Node3D
 @export var max_requisition: float = 100.0
 var requisition_rate: float = 0.5
 
+var initial_towers_per_team = {}
 var koth_points = {"SideA": 0, "SideB": 0, "SideC": 0, "SideD": 0, "SideE": 0, "SideF": 0}
 
 class LocalPlayerState:
@@ -30,8 +31,80 @@ func _ready():
         add_child(h_box)
         
         var is_4p = (GameState.current_mode == "LOCAL_SPLIT_4P" or GameState.map_selected == "Arena_4P.tscn")
-    var is_6p = (GameState.map_selected == "Arena_6P.tscn")
-    var total_slots = 6 if is_6p else (4 if is_4p else 2)
+        var is_6p = (GameState.map_selected == "Arena_6P.tscn")
+        var p_count = 6 if is_6p else (4 if is_4p else 2)
+        var teams = ["SideA", "SideB", "SideC", "SideD", "SideE", "SideF"]
+        var profiles = ["Player1", "Guest1", "Guest2", "Guest3", "Guest4", "Guest5"]
+        
+        if original_ui: original_ui.get_parent().remove_child(original_ui)
+        if original_cam: original_cam.get_parent().remove_child(original_cam)
+        
+        var left_vbox = VBoxContainer.new()
+        left_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+        h_box.add_child(left_vbox)
+        
+        var right_vbox = VBoxContainer.new() if (is_4p or is_6p) else null
+        if is_4p or is_6p:
+            right_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+            h_box.add_child(right_vbox)
+            
+        for i in range(p_count):
+            var pstate = LocalPlayerState.new()
+            pstate.p_id = i + 1
+            pstate.profile = profiles[i]
+            pstate.team = "SideB" if (is_6p and i >= 3) else ("SideA" if is_6p else teams[i])
+            
+            var sub_c = SubViewportContainer.new()
+            sub_c.size_flags_vertical = Control.SIZE_EXPAND_FILL
+            if not (is_4p or is_6p): sub_c.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+            sub_c.stretch = true
+            
+            if is_4p or is_6p:
+                if i % 2 == 0: left_vbox.add_child(sub_c)
+                else: right_vbox.add_child(sub_c)
+            else:
+                h_box.add_child(sub_c)
+                
+            var vp = SubViewport.new()
+            vp.use_3d_2d = true
+            sub_c.add_child(vp)
+            
+            var cam = original_cam.duplicate()
+            cam.player_id = pstate.p_id
+            cam.assigned_team = pstate.team
+            vp.add_child(cam)
+            pstate.cam = cam
+            
+            var ui = original_ui.duplicate()
+            ui.device_id = -1 if i == 0 else i - 1 # P1 is kb+joy0, P2 is joy0(if 1 controller) or joy1
+            ui.player_profile = pstate.profile
+            ui.player_id = pstate.p_id
+            ui.connect("ui_card_selected", Callable(self, "_on_ui_card_selected"))
+            vp.add_child(ui)
+            pstate.ui = ui
+            
+            players.append(pstate)
+            
+        if original_ui: original_ui.queue_free()
+        if original_cam: original_cam.queue_free()
+        
+    else:
+        var pstate = LocalPlayerState.new()
+        pstate.p_id = 1
+        pstate.profile = "Player1"
+        pstate.team = "SideA" if multiplayer.is_server() else "SideB"
+        pstate.ui = original_ui
+        pstate.cam = original_cam
+        if pstate.ui: pstate.ui.connect("ui_card_selected", Callable(self, "_on_ui_card_selected"))
+        players.append(pstate)
+        
+    setup_match()
+
+func setup_match():
+
+    var is_4p_mode = (GameState.current_mode == "LOCAL_SPLIT_4P" or GameState.map_selected == "Arena_4P.tscn")
+    var is_6p_mode = (GameState.map_selected == "Arena_6P.tscn")
+    var total_slots = 6 if is_6p_mode else (4 if is_4p_mode else 2)
     var local_players = players.size()
     var start_bot_idx = local_players
     
@@ -41,12 +114,13 @@ func _ready():
             players[0].ui.visible = false
     
     var teams_for_ai = []
-    if is_6p:
+    if is_6p_mode:
         teams_for_ai = ["SideA", "SideA", "SideA", "SideB", "SideB", "SideB"]
-    elif is_4p:
+    elif is_4p_mode:
         teams_for_ai = ["SideA", "SideB", "SideC", "SideD"]
     else:
         teams_for_ai = ["SideA", "SideB"]
+    
     if GameState.current_mode.begins_with("ONLINE"):
         return # Do not spawn AIs in online PvP matches!
         
@@ -54,11 +128,8 @@ func _ready():
         var bot = BotAI.new()
         bot.my_team = teams_for_ai[i]
         
-        # Pick enemy team (simplified: just first available enemy for target checking)
-        if i == 0: bot.enemy_team = "SideB"
-        elif i == 1: bot.enemy_team = "SideA"
-        elif i == 2: bot.enemy_team = "SideA"
-        elif i == 3: bot.enemy_team = "SideA"
+        # Pick enemy team
+        bot.enemy_team = "SideB" if bot.my_team == "SideA" else "SideA"
         
         if GameState.ai_difficulty == "EASY": bot.requisition_rate = 0.3
         elif GameState.ai_difficulty == "MEDIUM": bot.requisition_rate = 0.5
@@ -74,6 +145,12 @@ func _ready():
         timer.connect("timeout", Callable(self, "_on_koth_tick"))
         add_child(timer)
     _apply_faction_visuals()
+    
+    for t in ["SideA", "SideB", "SideC", "SideD", "SideE", "SideF"]:
+        var count = 0
+        for z in get_tree().get_nodes_in_group(t):
+            if "Tower" in z.name: count += 1
+        initial_towers_per_team[t] = max(count, 2)
         
 func _process(delta):
     if get_tree().paused: return
@@ -82,7 +159,8 @@ func _process(delta):
         for z in get_tree().get_nodes_in_group(p.team):
             if "Tower" in z.name: player_towers += 1
             
-        var dynamic_rate = requisition_rate + ((2 - player_towers) * 0.5)
+        var initial = initial_towers_per_team.get(p.team, 2)
+        var dynamic_rate = requisition_rate + ((initial - player_towers) * (1.0 / initial))
         if p.req < max_requisition:
             p.req += dynamic_rate * delta
             if p.req > max_requisition: p.req = max_requisition

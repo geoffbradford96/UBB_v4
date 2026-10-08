@@ -5,7 +5,6 @@ extends CharacterBody3D
 @export var heal_amount: float = 50.0
 @export var heal_rate: float = 2.0 # Heals every 2 seconds
 
-@onready var nav_agent: NavigationAgent3D = $NavigationAgent3D
 
 var current_target: Node3D = null
 var action_timer: float = 0.0

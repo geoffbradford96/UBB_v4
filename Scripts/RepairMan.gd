@@ -5,7 +5,6 @@ extends CharacterBody3D
 @export var repair_amount: float = 40.0
 @export var repair_rate: float = 1.0
 
-@onready var nav_agent: NavigationAgent3D = $NavigationAgent3D
 var current_target: Node3D = null
 var action_timer: float = 0.0
 
