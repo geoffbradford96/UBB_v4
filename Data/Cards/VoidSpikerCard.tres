@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="CardData" load_steps=3 format=3 uid="uid://voidspikercard"]
+
+[ext_resource type="Script" path="res://Scripts/CardData.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://voidspiker" path="res://Scenes/Units/VoidSpiker.tscn" id="2_scene"]
+
+[resource]
+script = ExtResource("1_script")
+card_name = "Void Spiker"
+card_type = "Monstrosity"
+cost = 6.5
+max_hp = 750.0
+is_melee = false
+description = "A massive monstrosity that spits lethal spikes at long range."
+unit_scene = ExtResource("2_scene")

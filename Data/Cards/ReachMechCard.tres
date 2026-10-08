@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="CardData" load_steps=3 format=3 uid="uid://reachmechcard"]
+
+[ext_resource type="Script" path="res://Scripts/CardData.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://reachmech" path="res://Scenes/Units/ReachMech.tscn" id="2_scene"]
+
+[resource]
+script = ExtResource("1_script")
+card_name = "Reach Mech"
+card_type = "Vehicle"
+cost = 7.0
+max_hp = 850.0
+is_melee = false
+description = "A sleek, hovering combat platform of white metal and glass."
+unit_scene = ExtResource("2_scene")

@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="CardData" load_steps=3 format=3 uid="uid://scrapmechcard"]
+
+[ext_resource type="Script" path="res://Scripts/CardData.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://scrapmech" path="res://Scenes/Units/ScrapMech.tscn" id="2_scene"]
+
+[resource]
+script = ExtResource("1_script")
+card_name = "Scrap Mech"
+card_type = "Vehicle"
+cost = 7.0
+max_hp = 900.0
+is_melee = true
+description = "A rusty, haphazard walker made of salvaged parts."
+unit_scene = ExtResource("2_scene")

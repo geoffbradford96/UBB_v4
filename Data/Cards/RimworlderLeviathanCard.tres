@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="CardData" load_steps=3 format=3 uid="uid://rimworlderleviathancard"]
+
+[ext_resource type="Script" path="res://Scripts/CardData.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://rimworlderleviathan" path="res://Scenes/Units/RimworlderLeviathan.tscn" id="2_scene"]
+
+[resource]
+script = ExtResource("1_script")
+card_name = "Rimworlder Leviathan"
+card_type = "Monstrosity"
+cost = 9.0
+max_hp = 1600.0
+is_melee = true
+description = "A colossal beast from the rimworlds capable of crushing entire squads."
+unit_scene = ExtResource("2_scene")

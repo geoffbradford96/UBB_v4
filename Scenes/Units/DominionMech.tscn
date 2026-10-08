@@ -1,0 +1,28 @@
+[gd_scene load_steps=5 format=3 uid="uid://dominionmech"]
+
+[ext_resource type="Script" path="res://Scripts/DominionMech.gd" id="1_script"]
+[ext_resource type="Script" path="res://Scripts/HealthComponent.gd" id="2_health"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_DominionMech"]
+size = Vector3(2.5, 3.0, 2.5)
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_dummy"]
+
+[node name="DominionMech" type="CharacterBody3D" groups=["Targetable"]]
+script = ExtResource("1_script")
+speed = 2.5
+attack_damage = 50.0
+attack_range = 15.0
+
+[node name="HealthComponent" type="Node" parent="."]
+script = ExtResource("2_health")
+max_health = 1200.0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
+shape = SubResource("BoxShape3D_DominionMech")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+libraries = {
+"": SubResource("AnimationLibrary_dummy")
+}
