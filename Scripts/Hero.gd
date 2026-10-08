@@ -18,7 +18,13 @@ var mesh: Node3D
 var walk_time: float = 0.0
 var base_mesh_pos: Vector3 = Vector3.ZERO
 
+var base_speed: float
+var base_attack_val: float
+
 func _ready():
+	base_speed = speed
+	if "attack_speed" in self: base_attack_val = self.get("attack_speed")
+	elif "attack_rate" in self: base_attack_val = self.get("attack_rate")
 	mesh = get_node_or_null("MeshInstance3D")
 	if not mesh: mesh = get_node_or_null("VisualPivot")
 	if not mesh: mesh = get_node_or_null("Visuals")
@@ -34,6 +40,23 @@ func _ready():
 		base_mesh_pos = mesh.position
 
 func _physics_process(delta):
+	# Reach Synergy Inject
+	var reach_count = 0
+	if "Reach" in self.name:
+		var my_team = ""
+		for g in get_groups():
+			if g.begins_with("Side"): my_team = g
+		for node in get_tree().get_nodes_in_group(my_team):
+			if node != self and "Reach" in node.name and global_position.distance_to(node.global_position) < 6.0:
+				reach_count += 1
+		var synergy = min(reach_count, 5) * 0.15
+		speed = base_speed * (1.0 + synergy)
+		if "attack_speed" in self: self.set("attack_speed", base_attack_val * (1.0 + synergy))
+		elif "attack_rate" in self: self.set("attack_rate", base_attack_val / (1.0 + synergy))
+		var r_mesh = get_node_or_null("MeshInstance3D")
+		if not r_mesh: r_mesh = get_node_or_null("VisualPivot")
+		if r_mesh: r_mesh.scale = r_mesh.scale.lerp(Vector3.ONE * (1.0 + (synergy * 0.6)), 0.1)
+
 	# Apply gravity
 	if not is_on_floor():
 		velocity.y -= 9.8 * delta

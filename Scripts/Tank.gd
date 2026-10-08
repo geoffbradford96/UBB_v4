@@ -15,6 +15,7 @@ var base_speed: float
 var base_attack_speed: float
 
 func _ready():
+	add_to_group("Targetable")
 	base_speed = speed
 	if "attack_speed" in self:
 		base_attack_speed = self.get("attack_speed")

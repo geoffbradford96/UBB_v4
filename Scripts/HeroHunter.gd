@@ -11,6 +11,23 @@ var attack_timer: float = 0.0
 var projectile_scene = preload("res://Scenes/Projectile.tscn")
 
 func _physics_process(delta):
+	# Reach Synergy Inject
+	var reach_count = 0
+	if "Reach" in self.name:
+		var my_team = ""
+		for g in get_groups():
+			if g.begins_with("Side"): my_team = g
+		for node in get_tree().get_nodes_in_group(my_team):
+			if node != self and "Reach" in node.name and global_position.distance_to(node.global_position) < 6.0:
+				reach_count += 1
+		var synergy = min(reach_count, 5) * 0.15
+		speed = base_speed * (1.0 + synergy)
+		if "attack_speed" in self: self.set("attack_speed", base_attack_val * (1.0 + synergy))
+		elif "attack_rate" in self: self.set("attack_rate", base_attack_val / (1.0 + synergy))
+		var r_mesh = get_node_or_null("MeshInstance3D")
+		if not r_mesh: r_mesh = get_node_or_null("VisualPivot")
+		if r_mesh: r_mesh.scale = r_mesh.scale.lerp(Vector3.ONE * (1.0 + (synergy * 0.6)), 0.1)
+
 	if not is_on_floor():
 		velocity.y -= 9.8 * delta
 		
