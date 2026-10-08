@@ -1,5 +1,9 @@
 extends Control
 
+@onready var bg = $Background
+@onready var title_label = $Title
+@onready var trim_top = $GoldTrimTop
+@onready var trim_bot = $GoldTrimBottom
 var all_cards = []
 var deck_commander = null
 var deck_units = []
@@ -88,6 +92,7 @@ func build_ui():
 	main_body.add_child(right_panel)
 	
 	var right_vbox = VBoxContainer.new()
+	right_vbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	right_panel.add_child(right_vbox)
 	
 	var deck_title = Label.new()
@@ -107,10 +112,14 @@ func build_ui():
 	count_label.text = "Units & Spells (0/5)"
 	right_vbox.add_child(count_label)
 	
+	var right_scroll = ScrollContainer.new()
+	right_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	right_vbox.add_child(right_scroll)
+	
 	right_deck_grid = GridContainer.new()
 	right_deck_grid.columns = 2
-	right_deck_grid.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	right_vbox.add_child(right_deck_grid)
+	right_deck_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	right_scroll.add_child(right_deck_grid)
 	
 	var save_btn = Button.new()
 	save_btn.text = "Save & Return to Hub"
@@ -142,6 +151,33 @@ func load_profile(profile_name: String):
 
 func _on_tab_changed(tab_idx: int):
 	current_tab = tab_idx
+	
+	var faction_names = ["Dominion of Sol", "The Void Swarm", "The Rimworlders", "Pirate Kingdoms", "The Reach"]
+	if tab_idx >= 0 and tab_idx < faction_names.size():
+		if title_label: title_label.text = faction_names[tab_idx] + " - Army Gathering"
+	
+	if bg and trim_top and trim_bot:
+		if tab_idx == 0: # Dominion
+			bg.color = Color(0.05, 0.2, 0.4)
+			trim_top.color = Color(0.8, 0.7, 0.2)
+			trim_bot.color = Color(0.8, 0.7, 0.2)
+		elif tab_idx == 1: # Void
+			bg.color = Color(0.15, 0.0, 0.3)
+			trim_top.color = Color(0.8, 0.1, 0.9)
+			trim_bot.color = Color(0.8, 0.1, 0.9)
+		elif tab_idx == 2: # Rimworlders
+			bg.color = Color(0.1, 0.3, 0.1)
+			trim_top.color = Color(0.2, 0.9, 0.4)
+			trim_bot.color = Color(0.2, 0.9, 0.4)
+		elif tab_idx == 3: # Pirates
+			bg.color = Color(0.3, 0.15, 0.05)
+			trim_top.color = Color(0.9, 0.4, 0.1)
+			trim_bot.color = Color(0.9, 0.4, 0.1)
+		elif tab_idx == 4: # Reach
+			bg.color = Color(0.05, 0.15, 0.2)
+			trim_top.color = Color(0.1, 0.8, 0.9)
+			trim_bot.color = Color(0.1, 0.8, 0.9)
+			
 	for c in left_grid.get_children():
 		left_grid.remove_child(c)
 		c.queue_free()
