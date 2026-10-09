@@ -60,8 +60,14 @@ func _process(delta):
 		if current_requisition > max_requisition:
 			current_requisition = max_requisition
 			
+	# Dynamically accelerate thinking during Sudden Death or Heavy Defense
+	var active_interval = think_interval
+	var am_scene = get_tree().current_scene
+	if am_scene and am_scene.get("sudden_death_active"):
+		active_interval = min(active_interval, 0.55)
+		
 	think_timer += delta
-	if think_timer >= think_interval:
+	if think_timer >= active_interval:
 		think_timer = 0.0
 		evaluate_moves()
 
@@ -79,7 +85,76 @@ func draw_to_hand():
 		if data:
 			hand.append(data)
 
+func assess_threats() -> Dictionary:
+	var am = get_tree().current_scene
+	var is_sudden_death: bool = am.get("sudden_death_active") if am and "sudden_death_active" in am else false
+	
+	var my_structures = []
+	var my_base: Node3D = null
+	for s in get_tree().get_nodes_in_group(my_team):
+		if "Base" in s.name or "Tower" in s.name or "CommandBay" in s.name:
+			my_structures.append(s)
+			if "Base" in s.name:
+				my_base = s
+				
+	var all_hostiles = []
+	for node in get_tree().get_nodes_in_group("Targetable"):
+		if node != null and is_instance_valid(node) and not node.is_in_group(my_team):
+			all_hostiles.append(node)
+			
+	var endangered_structure: Node3D = null
+	var highest_threat_score: float = 0.0
+	var closest_hostile: Node3D = null
+	var hostiles_near_endangered: Array = []
+	
+	for s in my_structures:
+		var threat_score = 0.0
+		var s_health = s.get_node_or_null("HealthComponent")
+		var health_pct = 1.0
+		if s_health:
+			health_pct = s_health.current_health / max(1.0, s_health.max_health)
+			
+		var is_base = "Base" in s.name
+		var base_mult = 3.5 if is_base else 1.2
+		
+		# If damaged, significantly increase threat
+		if health_pct < 0.98:
+			threat_score += (1.0 - health_pct) * 60.0 * base_mult
+			
+		var close_hostiles = []
+		for h in all_hostiles:
+			var d = s.global_position.distance_to(h.global_position)
+			if d <= 25.0:
+				close_hostiles.append(h)
+				var prox_factor = (25.0 - d) / 25.0
+				var is_beast = h.is_in_group("Beast")
+				var beast_mult = 1.6 if (is_beast and is_sudden_death) else 1.0
+				threat_score += (18.0 * prox_factor * beast_mult) * base_mult
+				
+		if threat_score > highest_threat_score and not close_hostiles.is_empty():
+			highest_threat_score = threat_score
+			endangered_structure = s
+			hostiles_near_endangered = close_hostiles
+			var min_d = 9999.0
+			for ch in close_hostiles:
+				var cd = s.global_position.distance_to(ch.global_position)
+				if cd < min_d:
+					min_d = cd
+					closest_hostile = ch
+					
+	return {
+		"is_sudden_death": is_sudden_death,
+		"threat_score": highest_threat_score,
+		"endangered_structure": endangered_structure,
+		"closest_hostile": closest_hostile,
+		"hostiles_near_endangered": hostiles_near_endangered,
+		"my_base": my_base,
+		"structures": my_structures
+	}
+
 func evaluate_moves():
+	var threat_info = assess_threats()
+	
 	var has_commander = false
 	var my_units = get_tree().get_nodes_in_group(my_team)
 	for u in my_units:
@@ -95,41 +170,105 @@ func evaluate_moves():
 		
 	if valid_hand.is_empty():
 		return
-	
-	# Prioritize highest impact cards affordable with current energy
-	valid_hand.sort_custom(func(a, b): return a.cost > b.cost)
+		
+	# In emergency defense mode, prioritize spells and immediate affordable units!
+	if threat_info.threat_score > 20.0:
+		valid_hand.sort_custom(func(a, b):
+			# Spells take high priority to wipe attacking clusters
+			if a.is_spell and not b.is_spell: return true
+			if not a.is_spell and b.is_spell: return false
+			var a_afford = current_requisition >= a.cost
+			var b_afford = current_requisition >= b.cost
+			if a_afford and not b_afford: return true
+			if not a_afford and b_afford: return false
+			return a.cost > b.cost
+		)
+	else:
+		# Standard priority: highest impact / cost first
+		valid_hand.sort_custom(func(a, b): return a.cost > b.cost)
 	
 	for c in valid_hand:
 		if current_requisition >= c.cost:
-			var spawn_pos = calculate_optimal_spawn(c)
+			var spawn_pos = calculate_optimal_spawn(c, threat_info)
 			if spawn_pos != null:
 				play_card(c, spawn_pos)
-				# If AI still has sufficient energy, loop to potentially play another card
+				# If under heavy attack and have energy, immediately deploy another defender!
+				if threat_info.threat_score > 25.0 and current_requisition >= 10.0:
+					continue
 				if current_requisition < 15.0:
 					break
 
-func calculate_optimal_spawn(card: CardData):
+func calculate_optimal_spawn(card: CardData, threat_info: Dictionary):
+	# 1. Spell Targeting
 	if card.is_spell:
-		var all_targets = get_tree().get_nodes_in_group("Targetable")
-		var valid_targets = []
-		for u in all_targets:
-			if not u.is_in_group(my_team) and not "Base" in u.name and not "Tower" in u.name:
-				valid_targets.append(u)
-				
-		if valid_targets.size() > 0:
-			var t = valid_targets.pick_random()
-			return t.global_position
+		# If under attack, drop spell on the cluster attacking the endangered structure!
+		if threat_info.threat_score > 10.0 and threat_info.hostiles_near_endangered.size() > 0:
+			var best_spell_target = threat_info.hostiles_near_endangered[0]
+			var max_cluster = 0
+			for h in threat_info.hostiles_near_endangered:
+				if not is_instance_valid(h): continue
+				var count = 0
+				for other in threat_info.hostiles_near_endangered:
+					if is_instance_valid(other) and h.global_position.distance_to(other.global_position) < 10.0:
+						count += 1
+				if count > max_cluster:
+					max_cluster = count
+					best_spell_target = h
+			return best_spell_target.global_position
 			
+		# Otherwise, find densest enemy cluster anywhere on the field
+		var all_targets = []
+		for u in get_tree().get_nodes_in_group("Targetable"):
+			if not u.is_in_group(my_team) and not "Base" in u.name and not "Tower" in u.name and is_instance_valid(u):
+				all_targets.append(u)
+				
+		if all_targets.size() > 0:
+			var best_t = all_targets[0]
+			var max_c = 0
+			for u in all_targets:
+				var c = 0
+				for other in all_targets:
+					if u.global_position.distance_to(other.global_position) < 10.0:
+						c += 1
+				if c > max_c:
+					max_c = c
+					best_t = u
+			return best_t.global_position
 		return null
 		
-	var my_structures = []
-	for z in get_tree().get_nodes_in_group(my_team):
-		if "Base" in z.name or "Tower" in z.name or "CommandBay" in z.name:
-			my_structures.append(z)
-			
+	var my_structures = threat_info.structures
 	if my_structures.is_empty():
 		return null
 		
+	# 2. Defensive Interception Deployment when under threat
+	if threat_info.threat_score > 12.0 and threat_info.endangered_structure != null:
+		var anchor = threat_info.endangered_structure
+		var target_pos = anchor.global_position
+		
+		if threat_info.closest_hostile != null and is_instance_valid(threat_info.closest_hostile):
+			var to_threat = (threat_info.closest_hostile.global_position - anchor.global_position)
+			to_threat.y = 0
+			var threat_dist = to_threat.length()
+			var threat_dir = to_threat.normalized() if threat_dist > 0.1 else Vector3(0, 0, 1)
+			var side_dir = threat_dir.cross(Vector3.UP).normalized()
+			
+			# Ranged / Artillery / Sniper / Acid spitters deploy slightly offset / behind anchor
+			if card.card_name in ["Sniper", "VoidSpitter", "SpiderTank", "ReachRanged", "RimworlderGunner", "BeastDigestiveCell"]:
+				var offset_dist = clamp(threat_dist * 0.35, 4.0, 14.0)
+				target_pos = anchor.global_position + (side_dir * (8.0 if randf() > 0.5 else -8.0)) + (threat_dir * offset_dist)
+			else:
+				# Melee / Tanks / Mechs / Interceptors deploy directly in front of the attacker to intercept!
+				var intercept_dist = clamp(threat_dist * 0.65, 5.0, 22.0)
+				target_pos = anchor.global_position + (threat_dir * intercept_dist) + (side_dir * randf_range(-3.0, 3.0))
+		else:
+			target_pos += Vector3(randf_range(-6.0, 6.0), 0, randf_range(-6.0, 6.0))
+			
+		# Clamp to valid deployment range (max 24.0m from anchor)
+		if target_pos.distance_to(anchor.global_position) > 24.0:
+			target_pos = anchor.global_position + (target_pos - anchor.global_position).normalized() * 24.0
+		return target_pos
+		
+	# 3. Offense / Pushing Deployment (Standard or Sudden Death counter-attack)
 	var spawn_anchor = my_structures[0]
 	var center = Vector3(0, 0, 0)
 	for s in my_structures:
@@ -141,19 +280,22 @@ func calculate_optimal_spawn(card: CardData):
 		push_dir = Vector3(0, 0, 1)
 		
 	var right_dir = push_dir.cross(Vector3.UP).normalized()
-	
 	var target_pos = spawn_anchor.global_position
-	if card.card_name == "Sniper" or card.card_name == "VoidSpitter" or card.card_name == "SpiderTank":
-		var side_offset = right_dir * (20.0 if randf() > 0.5 else -20.0)
-		target_pos += (push_dir * randf_range(2, 5)) + side_offset
-	elif card.card_name == "Assassin" or card.card_name == "VoidStalker":
-		var side_offset = right_dir * (15.0 if randf() > 0.5 else -15.0)
-		target_pos += (push_dir * randf_range(5, 10)) + side_offset
+	
+	if card.card_name in ["Sniper", "VoidSpitter", "SpiderTank", "ReachRanged", "RimworlderGunner"]:
+		var side_offset = right_dir * (18.0 if randf() > 0.5 else -18.0)
+		target_pos += (push_dir * randf_range(3.0, 7.0)) + side_offset
+	elif card.card_name in ["Assassin", "VoidStalker", "ReachHunter"]:
+		var side_offset = right_dir * (14.0 if randf() > 0.5 else -14.0)
+		target_pos += (push_dir * randf_range(8.0, 16.0)) + side_offset
 	else:
-		var side_offset = right_dir * randf_range(-5, 5)
-		target_pos += (push_dir * randf_range(5, 15)) + side_offset
+		var side_offset = right_dir * randf_range(-5.0, 5.0)
+		target_pos += (push_dir * randf_range(8.0, 18.0)) + side_offset
 		
-	# Clamp deployment to valid distance from friendly structure (max 24.0m, matching player's 25.0m rule)
+	# In Sudden Death: push further forward if territory is secure
+	if threat_info.is_sudden_death:
+		target_pos += push_dir * 4.0
+		
 	if target_pos.distance_to(spawn_anchor.global_position) > 24.0:
 		target_pos = spawn_anchor.global_position + (target_pos - spawn_anchor.global_position).normalized() * 24.0
 	return target_pos

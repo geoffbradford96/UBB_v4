@@ -150,44 +150,27 @@ func die():
 			elif not multiplayer.is_server() and GameState.current_mode.begins_with("ONLINE"):
 				my_team = "SideB"
 			
-			if GameState.game_mode == "DESTROY_BASE":
-				var my_bases_alive = false
-				var enemy_bases_alive = false
-				for b in get_tree().get_nodes_in_group("Targetable"):
-					if "Base" in b.name and b != get_parent():
-						if b.is_in_group(my_team):
-							my_bases_alive = true
-						else:
-							enemy_bases_alive = true
-							
-				if not my_bases_alive and not enemy_bases_alive:
-					am._end_match("DRAW! All bases were destroyed simultaneously!")
+			# Collect all remaining teams that have at least one Base alive
+			var teams_alive = []
+			for b in get_tree().get_nodes_in_group("Targetable"):
+				if "Base" in b.name and b != get_parent() and is_instance_valid(b):
+					for g in b.get_groups():
+						if g.begins_with("Side") and not teams_alive.has(g):
+							teams_alive.append(g)
+
+			if GameState.game_mode == "DESTROY_BASE" or am.get("sudden_death_active"):
+				if teams_alive.size() == 0:
+					am._end_match("DRAW! All bases were destroyed!")
 					return
-				elif not my_bases_alive:
+				elif teams_alive.size() == 1:
+					var winner = teams_alive[0]
 					if GameState.current_mode == "AI_VS_AI":
-						am._end_match("MATCH OVER! SideB DESTROYED ALL BASES!")
+						am._end_match("MATCH OVER! " + winner + " IS VICTORIOUS!")
+					elif winner == my_team:
+						am._end_match("VICTORY! All opposing bases destroyed.")
 					else:
-						am._end_match("DEFEAT! All your team's bases were destroyed.")
+						am._end_match("DEFEAT! " + winner + " destroyed all opposing bases.")
 					return
-				elif not enemy_bases_alive:
-					if GameState.current_mode == "AI_VS_AI":
-						am._end_match("MATCH OVER! SideA DESTROYED ALL BASES!")
-					else:
-						am._end_match("VICTORY! All enemy bases destroyed.")
-					return
-			else:
-				# Check for Sudden Death Last One Standing (applies to KOTH too!)
-				if am.get("sudden_death_active"):
-					var teams_alive = []
-					for b in get_tree().get_nodes_in_group("Targetable"):
-						if "Base" in b.name and b != get_parent():
-							for g in b.get_groups():
-								if g.begins_with("Side") and not teams_alive.has(g):
-									teams_alive.append(g)
-					if teams_alive.size() == 1:
-						am._end_match(teams_alive[0] + " WINS SUDDEN DEATH!")
-					elif teams_alive.size() == 0:
-						am._end_match("NO ONE SURVIVED SUDDEN DEATH!")
 
 
 	# Destruction burst effect
