@@ -6,24 +6,41 @@
 [sub_resource type="BoxShape3D" id="BoxShape3D_1"]
 size = Vector3(2.5, 1.5, 3.5)
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_1"]
-albedo_color = Color(0.2, 0.4, 0.1, 1)
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_hull"]
+albedo_color = Color(0.24, 0.34, 0.18, 1)
+roughness = 0.55
+metallic = 0.35
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_gunmetal"]
+albedo_color = Color(0.16, 0.18, 0.20, 1)
+metallic = 0.85
+roughness = 0.35
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_amber"]
+albedo_color = Color(1, 0.65, 0.1, 1)
+emission_enabled = true
+emission = Color(1, 0.65, 0.1, 1)
+emission_energy_multiplier = 2.0
 
 [sub_resource type="BoxMesh" id="BoxMesh_1"]
-material = SubResource("StandardMaterial3D_1")
+material = SubResource("StandardMaterial3D_hull")
 size = Vector3(2.5, 1.5, 3.5)
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_1"]
-material = SubResource("StandardMaterial3D_1")
+material = SubResource("StandardMaterial3D_hull")
 top_radius = 0.8
 bottom_radius = 1.0
 height = 1.0
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_2"]
-material = SubResource("StandardMaterial3D_1")
+material = SubResource("StandardMaterial3D_gunmetal")
 top_radius = 0.2
 bottom_radius = 0.2
 height = 3.0
+
+[sub_resource type="BoxMesh" id="BoxMesh_optic"]
+material = SubResource("StandardMaterial3D_amber")
+size = Vector3(0.4, 0.2, 0.1)
 
 [sub_resource type="Animation" id="Animation_qketc"]
 loop_mode = 1
@@ -70,6 +87,10 @@ mesh = SubResource("CylinderMesh_1")
 [node name="Barrel" type="MeshInstance3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 2, -2)
 mesh = SubResource("CylinderMesh_2")
+
+[node name="Optic" type="MeshInstance3D" parent="Turret"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.45, 0.25, -0.75)
+mesh = SubResource("BoxMesh_optic")
 
 [node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
 

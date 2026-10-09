@@ -6,7 +6,8 @@
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_1"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_1"]
-albedo_color = Color(0, 1, 0, 1)
+albedo_color = Color(0.24, 0.34, 0.18, 1)
+roughness = 0.7
 
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_1"]
 material = SubResource("StandardMaterial3D_1")
@@ -28,7 +29,9 @@ material = SubResource("StandardMaterial3D_1")
 material = SubResource("StandardMaterial3D_1")
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ohad2"]
-albedo_color = Color(0.2, 0.3, 0.1, 1)
+albedo_color = Color(0.18, 0.22, 0.25, 1)
+metallic = 0.8
+roughness = 0.4
 roughness = 0.9
 
 [sub_resource type="Animation" id="Animation_apdb0"]

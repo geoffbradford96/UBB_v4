@@ -6,7 +6,9 @@
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_1"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_0l8i5"]
-albedo_color = Color(0.2, 0, 0.3, 1)
+albedo_color = Color(0.1, 0.02, 0.15, 1)
+roughness = 0.2
+metallic = 0.5
 
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_q060d"]
 height = 3.0

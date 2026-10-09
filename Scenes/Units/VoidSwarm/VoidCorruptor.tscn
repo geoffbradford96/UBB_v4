@@ -6,15 +6,18 @@
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_1"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_1"]
-albedo_color = Color(0.6, 0.2, 0.8, 1)
+albedo_color = Color(0.12, 0.02, 0.18, 1)
+metallic = 0.75
+roughness = 0.25
 
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_1"]
 material = SubResource("StandardMaterial3D_1")
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_hfskk"]
-albedo_color = Color(0.1, 0, 0.2, 1)
-metallic = 0.8
-roughness = 0.1
+albedo_color = Color(0.85, 0.1, 0.85, 1)
+emission_enabled = true
+emission = Color(0.85, 0.1, 0.85, 1)
+emission_energy_multiplier = 2.5
 
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_hfskk"]
 material = SubResource("StandardMaterial3D_1")

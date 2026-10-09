@@ -30,7 +30,9 @@ _data = {
 }
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_6dkwv"]
-albedo_color = Color(1, 0.8, 0.1, 1)
+albedo_color = Color(0.18, 0.22, 0.28, 1)
+metallic = 0.5
+roughness = 0.4
 
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_kf35i"]
 radius = 0.8
@@ -43,7 +45,9 @@ size = Vector3(0.8, 0.8, 0.8)
 size = Vector3(0.8, 0.8, 0.8)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_pqlaq"]
-albedo_color = Color(0.9, 0.9, 0.9, 1)
+albedo_color = Color(0.9, 0.75, 0.2, 1)
+metallic = 0.9
+roughness = 0.2
 
 [sub_resource type="SphereMesh" id="SphereMesh_l07j6"]
 radius = 0.6

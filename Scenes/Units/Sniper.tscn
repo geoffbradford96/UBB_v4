@@ -6,7 +6,8 @@
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_1"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_1"]
-albedo_color = Color(0.5, 0, 0.5, 1)
+albedo_color = Color(0.24, 0.28, 0.22, 1)
+roughness = 0.85
 
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_1"]
 material = SubResource("StandardMaterial3D_1")
@@ -32,7 +33,8 @@ albedo_color = Color(0.3, 0.3, 0.35, 1)
 metallic = 0.6
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_coxyh"]
-albedo_color = Color(0.8, 0.1, 0.1, 1)
+albedo_color = Color(0.2, 0.25, 0.18, 1)
+roughness = 0.9
 
 [sub_resource type="Animation" id="Animation_gtsa1"]
 loop_mode = 1

@@ -198,6 +198,7 @@ func _process(delta):
                 sync_spawn_hazard(rx, rz, randi() % 3 == 0, hazard_name)
                 
     _update_timer_ui()
+    _animate_faction_structures(delta)
 
     for p in players:
         var player_towers = 0
@@ -382,6 +383,9 @@ func sync_spawn_card(card_path: String, pos: Vector3, team: String, unique_id: S
                 
         if "card_type" in data and data.card_type == "Commander":
             unit.add_to_group("CommanderUnit")
+        if "CommandBay" in unit.name:
+            var faction = _get_team_faction(team)
+            _build_structure_mesh(unit, faction, false)
 
 func _on_koth_tick():
     if get_tree().paused: return
@@ -464,7 +468,7 @@ func sync_faction(team: String, faction: String):
 
 func apply_local_faction(team: String, faction: String):
     for node in get_tree().get_nodes_in_group(team):
-        if "Base" in node.name or "Tower" in node.name:
+        if "Base" in node.name or "Tower" in node.name or "CommandBay" in node.name:
             if "faction" in node: node.faction = faction
             _build_structure_mesh(node, faction, "Tower" in node.name)
 
@@ -484,136 +488,221 @@ func _build_structure_mesh(node, faction, is_tower):
     node.set_meta("faction_mesh", mesh_node)
     
     var is_bay = "CommandBay" in node.name
+    
+    # ==========================================
+    # 1. DOMINION OF SOL (MILITARY FORTRESS)
+    # ==========================================
     if faction == "Dominion":
+        var steel_mat = StandardMaterial3D.new(); steel_mat.albedo_color = Color(0.25, 0.28, 0.3); steel_mat.metallic = 0.85; steel_mat.roughness = 0.35
+        var camo_mat = StandardMaterial3D.new(); camo_mat.albedo_color = Color(0.22, 0.32, 0.18); camo_mat.roughness = 0.7
+        var amber_mat = StandardMaterial3D.new(); amber_mat.albedo_color = Color(1.0, 0.6, 0.1); amber_mat.emission_enabled = true; amber_mat.emission = Color(1.0, 0.5, 0.0); amber_mat.emission_energy_multiplier = 2.0
+        
         if is_bay:
-            var box = MeshInstance3D.new(); box.mesh = BoxMesh.new(); box.mesh.size = Vector3(4, 2, 4)
-            var mat = StandardMaterial3D.new(); mat.albedo_color = Color(0.2, 0.4, 0.8); mat.metallic = 0.8
-            box.material_override = mat; box.position.y = 1.0; mesh_node.add_child(box)
+            # Military Supply Outpost & Communications Hub
+            var bunker = MeshInstance3D.new(); bunker.mesh = BoxMesh.new(); bunker.mesh.size = Vector3(4.5, 2.2, 4.0)
+            bunker.material_override = camo_mat; bunker.position.y = 1.1; mesh_node.add_child(bunker)
+            var roof = MeshInstance3D.new(); roof.mesh = BoxMesh.new(); roof.mesh.size = Vector3(5.0, 0.4, 4.4)
+            roof.material_override = steel_mat; roof.position.y = 2.4; mesh_node.add_child(roof)
+            # Radar Dish
+            var dish_pole = MeshInstance3D.new(); dish_pole.mesh = CylinderMesh.new(); dish_pole.mesh.top_radius = 0.08; dish_pole.mesh.bottom_radius = 0.08; dish_pole.mesh.height = 1.8
+            dish_pole.material_override = steel_mat; dish_pole.position = Vector3(-1.5, 3.3, -1.2); mesh_node.add_child(dish_pole)
+            var dish = MeshInstance3D.new(); dish.mesh = CylinderMesh.new(); dish.mesh.top_radius = 0.8; dish.mesh.bottom_radius = 0.1; dish.mesh.height = 0.3
+            dish.material_override = steel_mat; dish.position = Vector3(-1.5, 4.2, -1.2); dish.rotation_degrees.x = 45; mesh_node.add_child(dish)
+            # Crates
+            var c1 = MeshInstance3D.new(); c1.mesh = BoxMesh.new(); c1.mesh.size = Vector3(1.2, 1.0, 1.2)
+            c1.material_override = steel_mat; c1.position = Vector3(1.6, 0.5, 1.8); mesh_node.add_child(c1)
         elif is_tower:
-            var base = MeshInstance3D.new(); base.mesh = CylinderMesh.new(); base.mesh.height = 3.0; base.mesh.bottom_radius = 2.0; base.mesh.top_radius = 1.5
-            var mat = StandardMaterial3D.new(); mat.albedo_color = Color(0.6, 0.65, 0.7); mat.metallic = 0.8
-            base.material_override = mat; base.position.y = 1.5; mesh_node.add_child(base)
-            var dome = MeshInstance3D.new(); dome.mesh = SphereMesh.new(); dome.mesh.radius = 1.4
-            var d_mat = StandardMaterial3D.new(); d_mat.albedo_color = Color(0.2, 0.4, 0.8); d_mat.metallic = 0.9
-            dome.material_override = d_mat; dome.position.y = 3.2; mesh_node.add_child(dome)
+            # Heavy Military Pillbox with Twin Autocannons
+            var base = MeshInstance3D.new(); base.mesh = CylinderMesh.new(); base.mesh.height = 3.2; base.mesh.bottom_radius = 2.2; base.mesh.top_radius = 1.8; base.mesh.radial_segments = 8
+            base.material_override = camo_mat; base.position.y = 1.6; mesh_node.add_child(base)
+            var ring = MeshInstance3D.new(); ring.mesh = TorusMesh.new(); ring.mesh.outer_radius = 2.0; ring.mesh.inner_radius = 1.7
+            ring.material_override = steel_mat; ring.position.y = 3.2; mesh_node.add_child(ring)
+            var turret = MeshInstance3D.new(); turret.mesh = BoxMesh.new(); turret.mesh.size = Vector3(2.2, 1.2, 2.4)
+            turret.material_override = steel_mat; turret.position.y = 4.0; mesh_node.add_child(turret)
+            # Twin heavy barrels
             for i in range(2):
-                var barrel = MeshInstance3D.new(); barrel.mesh = CylinderMesh.new(); barrel.mesh.height = 2.0; barrel.mesh.bottom_radius = 0.2; barrel.mesh.top_radius = 0.2
-                barrel.material_override = mat; barrel.rotation_degrees.x = 90; barrel.position = Vector3(-0.4 + i*0.8, 3.2, 1.0)
+                var barrel = MeshInstance3D.new(); barrel.mesh = CylinderMesh.new(); barrel.mesh.height = 2.5; barrel.mesh.bottom_radius = 0.22; barrel.mesh.top_radius = 0.2
+                barrel.material_override = steel_mat; barrel.rotation_degrees.x = 90; barrel.position = Vector3(-0.5 + i*1.0, 4.0, 1.6)
                 mesh_node.add_child(barrel)
+            # Sensor Visor
+            var visor = MeshInstance3D.new(); visor.mesh = BoxMesh.new(); visor.mesh.size = Vector3(1.6, 0.25, 0.2)
+            visor.material_override = amber_mat; visor.position = Vector3(0, 4.4, 1.25); mesh_node.add_child(visor)
         else:
-            var body = MeshInstance3D.new(); body.mesh = CylinderMesh.new(); body.mesh.height = 4.0; body.mesh.bottom_radius = 4.0; body.mesh.top_radius = 3.5; body.mesh.radial_segments = 8
-            var mat = StandardMaterial3D.new(); mat.albedo_color = Color(0.7, 0.7, 0.75); mat.metallic = 0.9
-            body.material_override = mat; body.position.y = 2.0; mesh_node.add_child(body)
-            var core = MeshInstance3D.new(); core.mesh = SphereMesh.new(); core.mesh.radius = 2.0
-            var c_mat = StandardMaterial3D.new(); c_mat.albedo_color = Color(0.1, 0.5, 1.0); c_mat.emission_enabled = true; c_mat.emission = Color(0.1, 0.5, 1.0)
-            core.material_override = c_mat; core.position.y = 4.5; mesh_node.add_child(core)
+            # Massive Command Citadel HQ
+            var fort = MeshInstance3D.new(); fort.mesh = CylinderMesh.new(); fort.mesh.height = 4.5; fort.mesh.bottom_radius = 4.8; fort.mesh.top_radius = 4.2; fort.mesh.radial_segments = 8
+            fort.material_override = camo_mat; fort.position.y = 2.25; mesh_node.add_child(fort)
+            var upper = MeshInstance3D.new(); upper.mesh = BoxMesh.new(); upper.mesh.size = Vector3(5.0, 2.0, 5.0)
+            upper.material_override = steel_mat; upper.position.y = 5.25; mesh_node.add_child(upper)
+            var command_bridge = MeshInstance3D.new(); command_bridge.mesh = BoxMesh.new(); command_bridge.mesh.size = Vector3(4.0, 0.8, 4.0)
+            command_bridge.material_override = amber_mat; command_bridge.position.y = 6.2; mesh_node.add_child(command_bridge)
+            # Communications Antennae
             for i in range(4):
-                var ant = MeshInstance3D.new(); ant.mesh = CylinderMesh.new(); ant.mesh.height = 3.0; ant.mesh.bottom_radius = 0.1; ant.mesh.top_radius = 0.05
-                ant.material_override = mat; ant.position = Vector3(cos(i*PI/2)*3.0, 4.5, sin(i*PI/2)*3.0); mesh_node.add_child(ant)
-                
+                var ant = MeshInstance3D.new(); ant.mesh = CylinderMesh.new(); ant.mesh.height = 4.0; ant.mesh.bottom_radius = 0.12; ant.mesh.top_radius = 0.04
+                ant.material_override = steel_mat; ant.position = Vector3(cos(i*PI/2)*2.2, 7.5, sin(i*PI/2)*2.2); mesh_node.add_child(ant)
+            # Searchlights
+            for i in range(4):
+                var light = MeshInstance3D.new(); light.mesh = SphereMesh.new(); light.mesh.radius = 0.35
+                light.material_override = amber_mat; light.position = Vector3(cos(i*PI/2 + PI/4)*4.4, 4.6, sin(i*PI/2 + PI/4)*4.4); mesh_node.add_child(light)
+
+    # ==========================================
+    # 2. THE VOID SWARM (LIVING BIO-HORROR)
+    # ==========================================
     elif faction == "Void":
+        var flesh_mat = StandardMaterial3D.new(); flesh_mat.albedo_color = Color(0.18, 0.04, 0.28); flesh_mat.roughness = 0.4
+        var chitin_mat = StandardMaterial3D.new(); chitin_mat.albedo_color = Color(0.06, 0.02, 0.1); chitin_mat.roughness = 0.2; chitin_mat.metallic = 0.4
+        var eye_mat = StandardMaterial3D.new(); eye_mat.albedo_color = Color(1.0, 0.05, 0.85); eye_mat.emission_enabled = true; eye_mat.emission = Color(0.9, 0.0, 0.9); eye_mat.emission_energy_multiplier = 3.0
+        
         if is_bay:
-            var blob = MeshInstance3D.new(); blob.mesh = SphereMesh.new(); blob.mesh.radius = 2.0
-            var mat = StandardMaterial3D.new(); mat.albedo_color = Color(0.2, 0.0, 0.3)
-            blob.material_override = mat; blob.position.y = 1.0; mesh_node.add_child(blob)
+            # Spore Nest Cyst
+            var cyst = MeshInstance3D.new(); cyst.mesh = SphereMesh.new(); cyst.mesh.radius = 2.2; cyst.mesh.height = 2.5
+            cyst.material_override = flesh_mat; cyst.position.y = 1.25; mesh_node.add_child(cyst)
+            for i in range(5):
+                var pustule = MeshInstance3D.new(); pustule.mesh = SphereMesh.new(); pustule.mesh.radius = 0.6
+                pustule.material_override = eye_mat
+                var a = i * (2*PI/5)
+                pustule.position = Vector3(cos(a)*1.6, 1.8, sin(a)*1.6); mesh_node.add_child(pustule)
         elif is_tower:
-            var spire = MeshInstance3D.new(); spire.mesh = CylinderMesh.new(); spire.mesh.height = 5.0; spire.mesh.bottom_radius = 1.0; spire.mesh.top_radius = 0.2
-            var mat = StandardMaterial3D.new(); mat.albedo_color = Color(0.15, 0.05, 0.25)
-            spire.material_override = mat; spire.position.y = 2.5; mesh_node.add_child(spire)
-            var eye = MeshInstance3D.new(); eye.mesh = SphereMesh.new(); eye.mesh.radius = 1.2
-            var e_mat = StandardMaterial3D.new(); e_mat.albedo_color = Color(0.9, 0.1, 0.9); e_mat.emission_enabled = true; e_mat.emission = Color(0.8, 0.1, 0.8)
-            eye.material_override = e_mat; eye.position.y = 5.5; mesh_node.add_child(eye)
+            # Flesh Spire with Giant Pulsing Eye
+            var spire = MeshInstance3D.new(); spire.mesh = CylinderMesh.new(); spire.mesh.height = 6.0; spire.mesh.bottom_radius = 1.4; spire.mesh.top_radius = 0.4
+            spire.material_override = flesh_mat; spire.position.y = 3.0; mesh_node.add_child(spire)
+            # Talons surrounding the top
+            for i in range(4):
+                var talon = MeshInstance3D.new(); talon.mesh = CylinderMesh.new(); talon.mesh.height = 2.5; talon.mesh.bottom_radius = 0.25; talon.mesh.top_radius = 0.05
+                talon.material_override = chitin_mat; talon.position = Vector3(cos(i*PI/2)*0.8, 5.5, sin(i*PI/2)*0.8)
+                talon.rotation_degrees.x = 25 * cos(i*PI/2); talon.rotation_degrees.z = 25 * sin(i*PI/2); mesh_node.add_child(talon)
+            var eye = MeshInstance3D.new(); eye.mesh = SphereMesh.new(); eye.mesh.radius = 1.3
+            eye.material_override = eye_mat; eye.position.y = 5.8; mesh_node.add_child(eye)
             mesh_node.set_meta("void_eye", eye)
         else:
-            var heart = MeshInstance3D.new(); heart.mesh = SphereMesh.new(); heart.mesh.radius = 3.5
-            var mat = StandardMaterial3D.new(); mat.albedo_color = Color(0.4, 0.05, 0.4); mat.emission_enabled = true; mat.emission = Color(0.2, 0.0, 0.3)
-            heart.material_override = mat; heart.position.y = 2.5; mesh_node.add_child(heart)
-            for i in range(6):
-                var spike = MeshInstance3D.new(); spike.mesh = CylinderMesh.new(); spike.mesh.height = 4.0; spike.mesh.bottom_radius = 0.5; spike.mesh.top_radius = 0.0
-                var s_mat = StandardMaterial3D.new(); s_mat.albedo_color = Color(0.1, 0.1, 0.1)
-                spike.material_override = s_mat; spike.position = Vector3(cos(i*PI/3)*3.5, 2.0, sin(i*PI/3)*3.5)
-                spike.rotation_degrees.x = 45 * cos(i*PI/3); spike.rotation_degrees.z = 45 * sin(i*PI/3)
-                mesh_node.add_child(spike)
+            # Massive Beating Swarm Hive Heart
+            var hive = MeshInstance3D.new(); hive.mesh = SphereMesh.new(); hive.mesh.radius = 3.8; hive.mesh.height = 4.5
+            hive.material_override = flesh_mat; hive.position.y = 2.5; mesh_node.add_child(hive)
+            var heart = MeshInstance3D.new(); heart.mesh = SphereMesh.new(); heart.mesh.radius = 2.2
+            heart.material_override = eye_mat; heart.position.y = 3.2; mesh_node.add_child(heart)
             mesh_node.set_meta("void_heart", heart)
-            
-    elif faction == "Rimworlders":
-        if is_bay:
-            var tent = MeshInstance3D.new(); tent.mesh = CylinderMesh.new(); tent.mesh.bottom_radius = 2.5; tent.mesh.top_radius = 0; tent.mesh.height = 3.0
-            var mat = StandardMaterial3D.new(); mat.albedo_color = Color(0.5, 0.3, 0.1)
-            tent.material_override = mat; tent.position.y = 1.5; mesh_node.add_child(tent)
-        elif is_tower:
-            var mat = StandardMaterial3D.new(); mat.albedo_color = Color(0.4, 0.25, 0.1)
-            for i in range(4):
-                var leg = MeshInstance3D.new(); leg.mesh = CylinderMesh.new(); leg.mesh.height = 5.0; leg.mesh.bottom_radius = 0.3; leg.mesh.top_radius = 0.3
-                leg.material_override = mat; leg.position = Vector3(cos(i*PI/2 + PI/4)*1.2, 2.5, sin(i*PI/2 + PI/4)*1.2)
-                leg.rotation_degrees.x = 10 * cos(i*PI/2 + PI/4); leg.rotation_degrees.z = 10 * sin(i*PI/2 + PI/4)
-                mesh_node.add_child(leg)
-            var plat = MeshInstance3D.new(); plat.mesh = CylinderMesh.new(); plat.mesh.height = 0.5; plat.mesh.bottom_radius = 1.8; plat.mesh.top_radius = 1.8
-            plat.material_override = mat; plat.position.y = 5.0; mesh_node.add_child(plat)
-            var spikes = MeshInstance3D.new(); spikes.mesh = SphereMesh.new(); spikes.mesh.radius = 1.0
-            var s_mat = StandardMaterial3D.new(); s_mat.albedo_color = Color(0.2, 0.2, 0.2)
-            spikes.material_override = s_mat; spikes.position.y = 6.0; mesh_node.add_child(spikes)
-        else:
-            var pit = MeshInstance3D.new(); pit.mesh = CylinderMesh.new(); pit.mesh.height = 1.0; pit.mesh.bottom_radius = 4.0; pit.mesh.top_radius = 4.5
-            var mat = StandardMaterial3D.new(); mat.albedo_color = Color(0.3, 0.2, 0.1)
-            pit.material_override = mat; pit.position.y = 0.5; mesh_node.add_child(pit)
-            var fire = MeshInstance3D.new(); fire.mesh = SphereMesh.new(); fire.mesh.radius = 2.0
-            var f_mat = StandardMaterial3D.new(); f_mat.albedo_color = Color(1.0, 0.4, 0.0); f_mat.emission_enabled = true; f_mat.emission = Color(1.0, 0.3, 0.0); f_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA; f_mat.albedo_color.a = 0.8
-            fire.material_override = f_mat; fire.position.y = 1.5; mesh_node.add_child(fire)
+            # Outer curved chitinous mandibles
             for i in range(8):
-                var wall = MeshInstance3D.new(); wall.mesh = CylinderMesh.new(); wall.mesh.height = 3.5; wall.mesh.bottom_radius = 0.4; wall.mesh.top_radius = 0.1
-                wall.material_override = mat; wall.position = Vector3(cos(i*PI/4)*3.8, 1.75, sin(i*PI/4)*3.8)
-                mesh_node.add_child(wall)
-                
-    elif faction == "Pirates":
-        var r_mat = StandardMaterial3D.new(); r_mat.albedo_color = Color(0.5, 0.25, 0.1); r_mat.metallic = 0.4
+                var fang = MeshInstance3D.new(); fang.mesh = CylinderMesh.new(); fang.mesh.height = 5.0; fang.mesh.bottom_radius = 0.6; fang.mesh.top_radius = 0.05
+                fang.material_override = chitin_mat
+                var a = i * (2*PI/8)
+                fang.position = Vector3(cos(a)*3.6, 2.5, sin(a)*3.6)
+                fang.rotation_degrees.x = 35 * cos(a); fang.rotation_degrees.z = 35 * sin(a); mesh_node.add_child(fang)
+
+    # ==========================================
+    # 3. THE RIMWORLDERS (PRIMITIVE BEAST CITADEL)
+    # ==========================================
+    elif faction == "Rimworlders":
+        var stone_mat = StandardMaterial3D.new(); stone_mat.albedo_color = Color(0.35, 0.32, 0.28); stone_mat.roughness = 0.95
+        var wood_mat = StandardMaterial3D.new(); wood_mat.albedo_color = Color(0.42, 0.26, 0.14); wood_mat.roughness = 0.85
+        var bone_mat = StandardMaterial3D.new(); bone_mat.albedo_color = Color(0.9, 0.88, 0.78); bone_mat.roughness = 0.5
+        var fire_mat = StandardMaterial3D.new(); fire_mat.albedo_color = Color(1.0, 0.45, 0.0); fire_mat.emission_enabled = true; fire_mat.emission = Color(1.0, 0.35, 0.0); fire_mat.emission_energy_multiplier = 3.0
+        
         if is_bay:
-            var crate = MeshInstance3D.new(); crate.mesh = BoxMesh.new(); crate.mesh.size = Vector3(3, 2.5, 3)
-            crate.material_override = r_mat; crate.position.y = 1.25; mesh_node.add_child(crate)
+            # Beast Hide Yurt with Mammoth Horns
+            var yurt = MeshInstance3D.new(); yurt.mesh = CylinderMesh.new(); yurt.mesh.bottom_radius = 2.8; yurt.mesh.top_radius = 0.2; yurt.mesh.height = 3.5
+            yurt.material_override = wood_mat; yurt.position.y = 1.75; mesh_node.add_child(yurt)
+            var horn1 = MeshInstance3D.new(); horn1.mesh = CylinderMesh.new(); horn1.mesh.top_radius = 0.05; horn1.mesh.bottom_radius = 0.3; horn1.mesh.height = 2.5
+            horn1.material_override = bone_mat; horn1.position = Vector3(-1.4, 2.5, 1.4); horn1.rotation_degrees.z = -35; mesh_node.add_child(horn1)
+            var horn2 = MeshInstance3D.new(); horn2.mesh = CylinderMesh.new(); horn2.mesh.top_radius = 0.05; horn2.mesh.bottom_radius = 0.3; horn2.mesh.height = 2.5
+            horn2.material_override = bone_mat; horn2.position = Vector3(1.4, 2.5, 1.4); horn2.rotation_degrees.z = 35; mesh_node.add_child(horn2)
         elif is_tower:
-            var crane = MeshInstance3D.new(); crane.mesh = BoxMesh.new(); crane.mesh.size = Vector3(1, 6, 1)
-            crane.material_override = r_mat; crane.position.y = 3.0; mesh_node.add_child(crane)
-            var arm = MeshInstance3D.new(); arm.mesh = BoxMesh.new(); arm.mesh.size = Vector3(4, 0.5, 0.5)
-            arm.material_override = r_mat; arm.position = Vector3(1.5, 5.5, 0); mesh_node.add_child(arm)
-            var line = MeshInstance3D.new(); line.mesh = CylinderMesh.new(); line.mesh.height = 3.0; line.mesh.bottom_radius = 0.05; line.mesh.top_radius = 0.05
-            var l_mat = StandardMaterial3D.new(); l_mat.albedo_color = Color(0.1, 0.1, 0.1)
-            line.material_override = l_mat; line.position = Vector3(3.0, 4.0, 0); mesh_node.add_child(line)
-            var magnet = MeshInstance3D.new(); magnet.mesh = CylinderMesh.new(); magnet.mesh.height = 0.5; magnet.mesh.bottom_radius = 1.0; magnet.mesh.top_radius = 1.0
-            magnet.material_override = r_mat; magnet.position = Vector3(3.0, 2.5, 0); mesh_node.add_child(magnet)
+            # Primitive Timber Watchtower with Spiked Skull Crest
+            for i in range(4):
+                var post = MeshInstance3D.new(); post.mesh = CylinderMesh.new(); post.mesh.height = 5.5; post.mesh.bottom_radius = 0.35; post.mesh.top_radius = 0.3
+                post.material_override = wood_mat; post.position = Vector3(cos(i*PI/2 + PI/4)*1.3, 2.75, sin(i*PI/2 + PI/4)*1.3)
+                mesh_node.add_child(post)
+            var platform = MeshInstance3D.new(); platform.mesh = CylinderMesh.new(); platform.mesh.height = 0.6; platform.mesh.bottom_radius = 2.0; platform.mesh.top_radius = 2.0
+            platform.material_override = wood_mat; platform.position.y = 5.3; mesh_node.add_child(platform)
+            # Bone Spikes
+            for i in range(6):
+                var tusk = MeshInstance3D.new(); tusk.mesh = CylinderMesh.new(); tusk.mesh.height = 1.8; tusk.mesh.bottom_radius = 0.2; tusk.mesh.top_radius = 0.02
+                tusk.material_override = bone_mat; var a = i * (2*PI/6)
+                tusk.position = Vector3(cos(a)*1.8, 6.2, sin(a)*1.8); mesh_node.add_child(tusk)
         else:
-            for i in range(5):
-                var box = MeshInstance3D.new(); box.mesh = BoxMesh.new(); box.mesh.size = Vector3(2.5, 2.5, 4.5)
-                var mat = StandardMaterial3D.new(); mat.albedo_color = Color(randf_range(0.3, 0.7), randf_range(0.2, 0.4), 0.1); mat.metallic = 0.6
-                box.material_override = mat; box.position = Vector3(randf_range(-2, 2), 1.25 + (i/2.0), randf_range(-2, 2))
-                box.rotation_degrees.y = randf_range(0, 360)
-                mesh_node.add_child(box)
-            var stack = MeshInstance3D.new(); stack.mesh = CylinderMesh.new(); stack.mesh.height = 4.0; stack.mesh.bottom_radius = 0.6; stack.mesh.top_radius = 0.6
-            stack.material_override = r_mat; stack.position = Vector3(0, 4.0, 0); mesh_node.add_child(stack)
-            
-    elif faction == "The Reach":
-        var w_mat = StandardMaterial3D.new(); w_mat.albedo_color = Color(0.9, 0.95, 1.0); w_mat.roughness = 0.1
-        var c_mat = StandardMaterial3D.new(); c_mat.albedo_color = Color(0.0, 0.8, 1.0); c_mat.emission_enabled = true; c_mat.emission = Color(0.0, 0.8, 1.0)
+            # Megalithic Beast Totem Fortress & Sacrificial Fire
+            var stone_ring = MeshInstance3D.new(); stone_ring.mesh = CylinderMesh.new(); stone_ring.mesh.height = 2.0; stone_ring.mesh.bottom_radius = 4.8; stone_ring.mesh.top_radius = 4.4; stone_ring.mesh.radial_segments = 12
+            stone_ring.material_override = stone_mat; stone_ring.position.y = 1.0; mesh_node.add_child(stone_ring)
+            var fire = MeshInstance3D.new(); fire.mesh = SphereMesh.new(); fire.mesh.radius = 2.2
+            fire.material_override = fire_mat; fire.position.y = 2.8; mesh_node.add_child(fire)
+            # Gigantic Beast Tusks
+            for i in range(4):
+                var mammoth_tusk = MeshInstance3D.new(); mammoth_tusk.mesh = CylinderMesh.new(); mammoth_tusk.mesh.height = 6.0; mammoth_tusk.mesh.bottom_radius = 0.55; mammoth_tusk.mesh.top_radius = 0.05
+                mammoth_tusk.material_override = bone_mat; var a = i * (PI/2) + PI/4
+                mammoth_tusk.position = Vector3(cos(a)*3.6, 3.5, sin(a)*3.6)
+                mammoth_tusk.rotation_degrees.x = -25 * cos(a); mammoth_tusk.rotation_degrees.z = -25 * sin(a)
+                mesh_node.add_child(mammoth_tusk)
+
+    # ==========================================
+    # 4. PIRATE KINGDOMS (SCRAP CITADEL)
+    # ==========================================
+    elif faction == "Pirates":
+        seed(node.name.hash())
+        var rust_mat = StandardMaterial3D.new(); rust_mat.albedo_color = Color(0.55, 0.28, 0.12); rust_mat.metallic = 0.5; rust_mat.roughness = 0.9
+        var dark_metal = StandardMaterial3D.new(); dark_metal.albedo_color = Color(0.2, 0.2, 0.2); dark_metal.metallic = 0.8
+        var scrap_yellow = StandardMaterial3D.new(); scrap_yellow.albedo_color = Color(0.7, 0.55, 0.15); scrap_yellow.roughness = 0.8
+        
         if is_bay:
-            var dome = MeshInstance3D.new(); dome.mesh = SphereMesh.new(); dome.mesh.radius = 2.0; dome.mesh.height = 2.0
-            dome.material_override = w_mat; dome.position.y = 1.0; mesh_node.add_child(dome)
+            # Welded Cargo Container Bunker
+            var crate = MeshInstance3D.new(); crate.mesh = BoxMesh.new(); crate.mesh.size = Vector3(3.5, 2.4, 3.5)
+            crate.material_override = rust_mat; crate.position.y = 1.2; mesh_node.add_child(crate)
+            var plate = MeshInstance3D.new(); plate.mesh = BoxMesh.new(); plate.mesh.size = Vector3(2.5, 1.2, 0.2)
+            plate.material_override = scrap_yellow; plate.position = Vector3(0, 1.4, 1.85); mesh_node.add_child(plate)
+            var exhaust = MeshInstance3D.new(); exhaust.mesh = CylinderMesh.new(); exhaust.mesh.height = 2.0; exhaust.mesh.top_radius = 0.2; exhaust.mesh.bottom_radius = 0.2
+            exhaust.material_override = dark_metal; exhaust.position = Vector3(1.2, 2.8, -1.2); mesh_node.add_child(exhaust)
         elif is_tower:
-            var pad = MeshInstance3D.new(); pad.mesh = CylinderMesh.new(); pad.mesh.height = 0.5; pad.mesh.bottom_radius = 1.5; pad.mesh.top_radius = 1.5
-            pad.material_override = w_mat; pad.position.y = 0.25; mesh_node.add_child(pad)
-            var obelisk = MeshInstance3D.new(); obelisk.mesh = BoxMesh.new(); obelisk.mesh.size = Vector3(1.2, 4.0, 1.2)
-            obelisk.material_override = w_mat; obelisk.position.y = 3.5; mesh_node.add_child(obelisk)
-            var core = MeshInstance3D.new(); core.mesh = SphereMesh.new(); core.mesh.radius = 0.8
-            core.material_override = c_mat; core.position.y = 1.5; mesh_node.add_child(core)
+            # Jury-Rigged Crane Turret with Scrap Shielding
+            var derrick = MeshInstance3D.new(); derrick.mesh = BoxMesh.new(); derrick.mesh.size = Vector3(1.6, 5.5, 1.6)
+            derrick.material_override = rust_mat; derrick.position.y = 2.75; mesh_node.add_child(derrick)
+            var crane_boom = MeshInstance3D.new(); crane_boom.mesh = BoxMesh.new(); crane_boom.mesh.size = Vector3(4.2, 0.6, 0.8)
+            crane_boom.material_override = scrap_yellow; crane_boom.position = Vector3(1.6, 5.6, 0); mesh_node.add_child(crane_boom)
+            var cannon = MeshInstance3D.new(); cannon.mesh = CylinderMesh.new(); cannon.mesh.height = 3.0; cannon.mesh.top_radius = 0.3; cannon.mesh.bottom_radius = 0.35
+            cannon.material_override = dark_metal; cannon.rotation_degrees.x = 90; cannon.position = Vector3(0, 4.5, 1.5); mesh_node.add_child(cannon)
+        else:
+            # Mad-Max Scrapyard Fortress with Chimneys & Spikes
+            for i in range(5):
+                var box = MeshInstance3D.new(); box.mesh = BoxMesh.new(); box.mesh.size = Vector3(2.8, 2.2, 4.2)
+                box.material_override = rust_mat if i % 2 == 0 else scrap_yellow
+                box.rotation_degrees.y = (i * 35.0)
+                box.position = Vector3((i - 2.0) * 1.6, 1.1 + (i % 2) * 1.5, 0)
+                mesh_node.add_child(box)
+            # Giant smoking smokestacks
+            for i in range(2):
+                var stack = MeshInstance3D.new(); stack.mesh = CylinderMesh.new(); stack.mesh.height = 5.0; stack.mesh.bottom_radius = 0.55; stack.mesh.top_radius = 0.55
+                stack.material_override = dark_metal; stack.position = Vector3(-1.8 + i*3.6, 4.5, -1.0); mesh_node.add_child(stack)
+        randomize()
+
+    # ==========================================
+    # 5. THE REACH (PRISTINE CRYSTALLINE SPIRE)
+    # ==========================================
+    elif faction == "The Reach":
+        var white_mat = StandardMaterial3D.new(); white_mat.albedo_color = Color(0.95, 0.97, 1.0); white_mat.roughness = 0.15; white_mat.metallic = 0.1
+        var cyan_mat = StandardMaterial3D.new(); cyan_mat.albedo_color = Color(0.0, 0.88, 1.0); cyan_mat.emission_enabled = true; cyan_mat.emission = Color(0.0, 0.85, 1.0); cyan_mat.emission_energy_multiplier = 3.5
+        
+        if is_bay:
+            # Porcelain Energy Pylon & Prisms
+            var dome = MeshInstance3D.new(); dome.mesh = SphereMesh.new(); dome.mesh.radius = 2.0; dome.mesh.height = 2.2
+            dome.material_override = white_mat; dome.position.y = 1.1; mesh_node.add_child(dome)
+            var halo = MeshInstance3D.new(); halo.mesh = TorusMesh.new(); halo.mesh.outer_radius = 2.4; halo.mesh.inner_radius = 2.2
+            halo.material_override = cyan_mat; halo.position.y = 1.2; mesh_node.add_child(halo)
+        elif is_tower:
+            # Floating Crystalline Obelisk (Anti-Gravity)
+            var pad = MeshInstance3D.new(); pad.mesh = CylinderMesh.new(); pad.mesh.height = 0.5; pad.mesh.bottom_radius = 1.8; pad.mesh.top_radius = 1.8; pad.mesh.radial_segments = 6
+            pad.material_override = white_mat; pad.position.y = 0.25; mesh_node.add_child(pad)
+            var obelisk = MeshInstance3D.new(); obelisk.mesh = BoxMesh.new(); obelisk.mesh.size = Vector3(1.3, 4.5, 1.3)
+            obelisk.material_override = white_mat; obelisk.position.y = 3.8; mesh_node.add_child(obelisk)
+            var core = MeshInstance3D.new(); core.mesh = SphereMesh.new(); core.mesh.radius = 0.9
+            core.material_override = cyan_mat; core.position.y = 1.6; mesh_node.add_child(core)
             mesh_node.set_meta("reach_hover", obelisk)
         else:
-            var base = MeshInstance3D.new(); base.mesh = CylinderMesh.new(); base.mesh.height = 1.0; base.mesh.bottom_radius = 4.0; base.mesh.top_radius = 3.5; base.mesh.radial_segments = 6
-            base.material_override = w_mat; base.position.y = 0.5; mesh_node.add_child(base)
-            var pillar = MeshInstance3D.new(); pillar.mesh = CylinderMesh.new(); pillar.mesh.height = 6.0; pillar.mesh.bottom_radius = 1.5; pillar.mesh.top_radius = 1.5
-            pillar.material_override = c_mat; pillar.position.y = 3.5; mesh_node.add_child(pillar)
+            # Towering Crystalline Nexus with Levitating Rings
+            var base_dais = MeshInstance3D.new(); base_dais.mesh = CylinderMesh.new(); base_dais.mesh.height = 1.2; base_dais.mesh.bottom_radius = 4.6; base_dais.mesh.top_radius = 4.0; base_dais.mesh.radial_segments = 6
+            base_dais.material_override = white_mat; base_dais.position.y = 0.6; mesh_node.add_child(base_dais)
+            var spire = MeshInstance3D.new(); spire.mesh = CylinderMesh.new(); spire.mesh.height = 7.0; spire.mesh.bottom_radius = 1.4; spire.mesh.top_radius = 0.2
+            spire.material_override = cyan_mat; spire.position.y = 4.2; mesh_node.add_child(spire)
+            mesh_node.set_meta("reach_pillar", spire)
             for i in range(3):
-                var ring = MeshInstance3D.new(); ring.mesh = TorusMesh.new(); ring.mesh.outer_radius = 2.5; ring.mesh.inner_radius = 2.0
-                ring.material_override = w_mat; ring.position.y = 2.0 + i*1.5; mesh_node.add_child(ring)
-            mesh_node.set_meta("reach_pillar", pillar)
-
+                var ring = MeshInstance3D.new(); ring.mesh = TorusMesh.new(); ring.mesh.outer_radius = 2.6 - i*0.2; ring.mesh.inner_radius = 2.2 - i*0.2
+                ring.material_override = white_mat; ring.position.y = 2.4 + i*1.6; mesh_node.add_child(ring)
 
 func _update_timer_ui():
     for p in players:
@@ -725,3 +814,25 @@ func _end_match(message: String):
     await get_tree().create_timer(4.0).timeout
     get_tree().paused = false
     get_tree().change_scene_to_file("res://Scenes/ModeHub.tscn")
+
+func _animate_faction_structures(delta):
+    var t = Time.get_ticks_msec() * 0.001
+    for s in get_tree().get_nodes_in_group("Targetable"):
+        var f_mesh = s.get_meta("faction_mesh") if s.has_meta("faction_mesh") else null
+        if f_mesh and is_instance_valid(f_mesh):
+            if f_mesh.has_meta("reach_hover"):
+                var node = f_mesh.get_meta("reach_hover")
+                if is_instance_valid(node): node.position.y = 3.8 + sin(t * 2.5) * 0.35
+            if f_mesh.has_meta("reach_pillar"):
+                var node = f_mesh.get_meta("reach_pillar")
+                if is_instance_valid(node): node.rotation.y += delta * 0.6
+            if f_mesh.has_meta("void_heart"):
+                var node = f_mesh.get_meta("void_heart")
+                if is_instance_valid(node):
+                    var beat = 1.0 + abs(sin(t * 3.5)) * 0.18
+                    node.scale = Vector3(beat, beat, beat)
+            if f_mesh.has_meta("void_eye"):
+                var node = f_mesh.get_meta("void_eye")
+                if is_instance_valid(node):
+                    node.rotation.y = sin(t * 1.5) * 0.8
+                    node.rotation.x = cos(t * 1.2) * 0.3

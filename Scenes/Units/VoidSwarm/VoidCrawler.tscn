@@ -6,7 +6,19 @@
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_1"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_r6rl0"]
-albedo_color = Color(0.2, 0, 0.3, 1)
+albedo_color = Color(0.12, 0.02, 0.18, 1)
+roughness = 0.25
+metallic = 0.4
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_void_eyes"]
+albedo_color = Color(1, 0, 0.8, 1)
+emission_enabled = true
+emission = Color(1, 0, 0.85, 1)
+emission_energy_multiplier = 3.0
+
+[sub_resource type="SphereMesh" id="SphereMesh_eye"]
+radius = 0.15
+height = 0.3
 
 [sub_resource type="BoxMesh" id="BoxMesh_wuteu"]
 size = Vector3(1.5, 1, 2)
@@ -76,3 +88,13 @@ mesh = SubResource("BoxMesh_45ewf")
 transform = Transform3D(0.70710677, 0.70710677, 0, -0.70710677, 0.70710677, 0, 0, 0, 1, -1, 0.5, 0.8)
 material_override = SubResource("StandardMaterial3D_r6rl0")
 mesh = SubResource("BoxMesh_bkc2p")
+[node name="EyeLeft" type="MeshInstance3D" parent="VisualPivot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.3, 0.8, -1.0)
+material_override = SubResource("StandardMaterial3D_void_eyes")
+mesh = SubResource("SphereMesh_eye")
+
+[node name="EyeRight" type="MeshInstance3D" parent="VisualPivot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.3, 0.8, -1.0)
+material_override = SubResource("StandardMaterial3D_void_eyes")
+mesh = SubResource("SphereMesh_eye")
+

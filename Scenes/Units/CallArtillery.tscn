@@ -1,50 +1,37 @@
-[gd_scene load_steps=15 format=3]
+[gd_scene load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://Scripts/Spell.gd" id="1_script"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_1"]
 radius = 10.0
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_1"]
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_fire_outer"]
 transparency = 1
-albedo_color = Color(1, 0.5, 0, 0.5)
+albedo_color = Color(1.0, 0.4, 0.05, 0.65)
+emission_enabled = true
+emission = Color(1.0, 0.35, 0.0, 1)
+emission_energy_multiplier = 2.5
 
-[sub_resource type="SphereMesh" id="SphereMesh_1"]
-material = SubResource("StandardMaterial3D_1")
-radius = 10.0
-height = 20.0
+[sub_resource type="SphereMesh" id="SphereMesh_outer"]
+material = SubResource("StandardMaterial3D_fire_outer")
+radius = 8.5
+height = 17.0
 
-[sub_resource type="CapsuleMesh" id="CapsuleMesh_ms3ta"]
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_fire_core"]
+albedo_color = Color(1.0, 0.9, 0.4, 1)
+emission_enabled = true
+emission = Color(1.0, 0.8, 0.2, 1)
+emission_energy_multiplier = 4.0
 
-[sub_resource type="CapsuleMesh" id="CapsuleMesh_bjwom"]
+[sub_resource type="SphereMesh" id="SphereMesh_core"]
+material = SubResource("StandardMaterial3D_fire_core")
+radius = 4.5
+height = 9.0
 
-[sub_resource type="CapsuleMesh" id="CapsuleMesh_mstda"]
-
-[sub_resource type="CapsuleMesh" id="CapsuleMesh_pquv7"]
-
-[sub_resource type="Animation" id="Animation_mstda"]
-length = 0.5
-
-[sub_resource type="Animation" id="Animation_pquv7"]
-length = 0.5
-
-[sub_resource type="Animation" id="Animation_ms3ta"]
-loop_mode = 1
-
-[sub_resource type="Animation" id="Animation_paaff"]
-length = 0.5
-
-[sub_resource type="Animation" id="Animation_bjwom"]
-loop_mode = 1
-
-[sub_resource type="AnimationLibrary" id="AnimationLibrary_bmx4w"]
-_data = {
-&"attack": SubResource("Animation_mstda"),
-&"heal": SubResource("Animation_pquv7"),
-&"idle": SubResource("Animation_ms3ta"),
-&"repair": SubResource("Animation_paaff"),
-&"walk": SubResource("Animation_bjwom")
-}
+[sub_resource type="TorusMesh" id="TorusMesh_shockwave"]
+material = SubResource("StandardMaterial3D_fire_outer")
+inner_radius = 8.5
+outer_radius = 10.0
 
 [node name="CallArtillery" type="Area3D"]
 script = ExtResource("1_script")
@@ -53,27 +40,10 @@ script = ExtResource("1_script")
 shape = SubResource("SphereShape3D_1")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="."]
-mesh = SubResource("SphereMesh_1")
+mesh = SubResource("SphereMesh_outer")
 
-[node name="LeftArm" type="MeshInstance3D" parent="MeshInstance3D"]
-transform = Transform3D(0.2, 0, 0, 0, 0.6, 0, 0, 0, 0.2, -0.6, 0.2, 0)
-mesh = SubResource("CapsuleMesh_ms3ta")
+[node name="FireCore" type="MeshInstance3D" parent="MeshInstance3D"]
+mesh = SubResource("SphereMesh_core")
 
-[node name="RightArm" type="MeshInstance3D" parent="MeshInstance3D"]
-transform = Transform3D(0.2, 0, 0, 0, 0.6, 0, 0, 0, 0.2, 0.6, 0.2, 0)
-mesh = SubResource("CapsuleMesh_bjwom")
-
-[node name="LeftLeg" type="MeshInstance3D" parent="MeshInstance3D"]
-transform = Transform3D(0.25, 0, 0, 0, 0.6, 0, 0, 0, 0.25, -0.25, -0.6, 0)
-mesh = SubResource("CapsuleMesh_mstda")
-
-[node name="RightLeg" type="MeshInstance3D" parent="MeshInstance3D"]
-transform = Transform3D(0.25, 0, 0, 0, 0.6, 0, 0, 0, 0.25, 0.25, -0.6, 0)
-mesh = SubResource("CapsuleMesh_pquv7")
-
-[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
-libraries = {
-&"": SubResource("AnimationLibrary_bmx4w")
-}
-
-[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
+[node name="Shockwave" type="MeshInstance3D" parent="MeshInstance3D"]
+mesh = SubResource("TorusMesh_shockwave")

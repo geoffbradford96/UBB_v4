@@ -21,6 +21,21 @@ length = 0.5
 [sub_resource type="Animation" id="Animation_65uhf"]
 loop_mode = 1
 
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_spider_hull"]
+albedo_color = Color(0.22, 0.28, 0.2, 1)
+metallic = 0.6
+roughness = 0.5
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_spider_barrel"]
+albedo_color = Color(0.15, 0.16, 0.18, 1)
+metallic = 0.85
+roughness = 0.3
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_spider_legs"]
+albedo_color = Color(0.18, 0.2, 0.22, 1)
+metallic = 0.75
+roughness = 0.45
+
 [sub_resource type="AnimationLibrary" id="AnimationLibrary_pbnbh"]
 _data = {
 &"attack": SubResource("Animation_hw27j"),
@@ -47,25 +62,31 @@ script = ExtResource("2_65uhf")
 [node name="MeshInstance3D" type="CSGSphere3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
 radius = 0.8
+material = SubResource("StandardMaterial3D_spider_hull")
 
 [node name="SniperBarrel" type="CSGCylinder3D" parent="MeshInstance3D"]
+material = SubResource("StandardMaterial3D_spider_barrel")
 transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0, -1.5)
 radius = 0.1
 height = 3.0
 
 [node name="LeftLeg_0" type="CSGCylinder3D" parent="MeshInstance3D"]
+material = SubResource("StandardMaterial3D_spider_legs")
 transform = Transform3D(0.70710677, -0.49999997, 0.49999997, 0, 0.70710677, 0.70710677, -0.70710677, -0.49999997, 0.49999997, 0.56568545, -0.5, -0.56568545)
 radius = 0.1
 
 [node name="RightLeg_1" type="CSGCylinder3D" parent="MeshInstance3D"]
+material = SubResource("StandardMaterial3D_spider_legs")
 transform = Transform3D(-0.70710677, -0.49999997, 0.49999997, 0, 0.70710677, 0.70710677, -0.70710677, 0.49999997, -0.49999997, -0.56568545, -0.5, -0.56568545)
 radius = 0.1
 
 [node name="LeftLeg_2" type="CSGCylinder3D" parent="MeshInstance3D"]
+material = SubResource("StandardMaterial3D_spider_legs")
 transform = Transform3D(-0.7071068, 0.49999994, -0.49999994, 0, 0.70710677, 0.70710677, 0.7071067, 0.5, -0.5, -0.56568545, -0.5, 0.56568545)
 radius = 0.1
 
 [node name="RightLeg_3" type="CSGCylinder3D" parent="MeshInstance3D"]
+material = SubResource("StandardMaterial3D_spider_legs")
 transform = Transform3D(0.70710665, 0.50000006, -0.50000006, 0, 0.70710677, 0.70710677, 0.7071069, -0.4999999, 0.4999999, 0.56568545, -0.5, 0.56568545)
 radius = 0.1
 

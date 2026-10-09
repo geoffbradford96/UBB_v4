@@ -1,42 +1,36 @@
-[gd_scene load_steps=14 format=3]
+[gd_scene load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://Scripts/Spell.gd" id="1_script"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_1"]
 radius = 10.0
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_1"]
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_void_field"]
 transparency = 1
-albedo_color = Color(0.8, 0, 0.8, 0.8)
+albedo_color = Color(0.75, 0.05, 0.85, 0.6)
 emission_enabled = true
-emission = Color(0.8, 0, 0.8, 0.8)
+emission = Color(0.85, 0.1, 0.85, 1)
 emission_energy_multiplier = 3.0
 
-[sub_resource type="SphereMesh" id="SphereMesh_1"]
-material = SubResource("StandardMaterial3D_1")
-radius = 10.0
-height = 20.0
+[sub_resource type="SphereMesh" id="SphereMesh_field"]
+material = SubResource("StandardMaterial3D_void_field")
+radius = 8.0
+height = 16.0
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_hfskk"]
-albedo_color = Color(0.1, 0, 0.2, 1)
-metallic = 0.8
-roughness = 0.1
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_obsidian_core"]
+albedo_color = Color(0.12, 0.02, 0.18, 1)
+metallic = 0.85
+roughness = 0.2
 
-[sub_resource type="CapsuleMesh" id="CapsuleMesh_moj11"]
+[sub_resource type="SphereMesh" id="SphereMesh_core"]
+material = SubResource("StandardMaterial3D_obsidian_core")
+radius = 4.0
+height = 8.0
 
-[sub_resource type="CapsuleMesh" id="CapsuleMesh_l8cat"]
-
-[sub_resource type="CapsuleMesh" id="CapsuleMesh_bj56f"]
-
-[sub_resource type="CapsuleMesh" id="CapsuleMesh_npwfn"]
-
-[sub_resource type="CapsuleMesh" id="CapsuleMesh_pahac"]
-
-[sub_resource type="CapsuleMesh" id="CapsuleMesh_1boya"]
-
-[sub_resource type="CapsuleMesh" id="CapsuleMesh_6rb1v"]
-
-[sub_resource type="CapsuleMesh" id="CapsuleMesh_t7xo1"]
+[sub_resource type="TorusMesh" id="TorusMesh_ring"]
+material = SubResource("StandardMaterial3D_void_field")
+inner_radius = 8.5
+outer_radius = 10.0
 
 [node name="VoidMeteor" type="Area3D" ]
 script = ExtResource("1_script")
@@ -45,38 +39,10 @@ script = ExtResource("1_script")
 shape = SubResource("SphereShape3D_1")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, 0, -0.3, 0)
-mesh = SubResource("SphereMesh_1")
-surface_material_override/0 = SubResource("StandardMaterial3D_hfskk")
+mesh = SubResource("SphereMesh_field")
 
-[node name="LeftLeg_0" type="MeshInstance3D" parent="MeshInstance3D"]
-transform = Transform3D(0.049999997, -0.69282037, 0, 0.086602546, 0.39999998, 0, 0, 0, 0.1, -0.6, 0, -0.6)
-mesh = SubResource("CapsuleMesh_moj11")
+[node name="ObsidianCore" type="MeshInstance3D" parent="MeshInstance3D"]
+mesh = SubResource("SphereMesh_core")
 
-[node name="RightLeg_0" type="MeshInstance3D" parent="MeshInstance3D"]
-transform = Transform3D(0.049999997, 0.69282037, 0, -0.086602546, 0.39999998, 0, 0, 0, 0.1, 0.6, 0, -0.6)
-mesh = SubResource("CapsuleMesh_l8cat")
-
-[node name="LeftLeg_1" type="MeshInstance3D" parent="MeshInstance3D"]
-transform = Transform3D(0.049999997, -0.69282037, 0, 0.086602546, 0.39999998, 0, 0, 0, 0.1, -0.6, 0, -0.2)
-mesh = SubResource("CapsuleMesh_bj56f")
-
-[node name="RightLeg_1" type="MeshInstance3D" parent="MeshInstance3D"]
-transform = Transform3D(0.049999997, 0.69282037, 0, -0.086602546, 0.39999998, 0, 0, 0, 0.1, 0.6, 0, -0.2)
-mesh = SubResource("CapsuleMesh_npwfn")
-
-[node name="LeftLeg_2" type="MeshInstance3D" parent="MeshInstance3D"]
-transform = Transform3D(0.049999997, -0.69282037, 0, 0.086602546, 0.39999998, 0, 0, 0, 0.1, -0.6, 0, 0.2)
-mesh = SubResource("CapsuleMesh_pahac")
-
-[node name="RightLeg_2" type="MeshInstance3D" parent="MeshInstance3D"]
-transform = Transform3D(0.049999997, 0.69282037, 0, -0.086602546, 0.39999998, 0, 0, 0, 0.1, 0.6, 0, 0.2)
-mesh = SubResource("CapsuleMesh_1boya")
-
-[node name="LeftLeg_3" type="MeshInstance3D" parent="MeshInstance3D"]
-transform = Transform3D(0.049999997, -0.69282037, 0, 0.086602546, 0.39999998, 0, 0, 0, 0.1, -0.6, 0, 0.6)
-mesh = SubResource("CapsuleMesh_6rb1v")
-
-[node name="RightLeg_3" type="MeshInstance3D" parent="MeshInstance3D"]
-transform = Transform3D(0.049999997, 0.69282037, 0, -0.086602546, 0.39999998, 0, 0, 0, 0.1, 0.6, 0, 0.6)
-mesh = SubResource("CapsuleMesh_t7xo1")
+[node name="AccretionRing" type="MeshInstance3D" parent="MeshInstance3D"]
+mesh = SubResource("TorusMesh_ring")
