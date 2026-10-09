@@ -206,7 +206,7 @@ func _process(delta):
             if "Tower" in z.name: player_towers += 1
             
         var initial = initial_towers_per_team.get(p.team, 2)
-        var dynamic_rate = requisition_rate + ((initial - player_towers) * (1.0 / initial))
+        var dynamic_rate = requisition_rate + ((initial - player_towers) * (1.0 / max(1.0, float(initial))))
         if p.req < max_requisition:
             p.req += dynamic_rate * delta
             if p.req > max_requisition: p.req = max_requisition
@@ -353,7 +353,7 @@ func attempt_to_play_card(p: LocalPlayerState, data: Resource, target_position: 
 @rpc("any_peer", "call_local", "reliable")
 func sync_spawn_card(card_path: String, pos: Vector3, team: String, unique_id: String):
     var data = load(card_path)
-    if data == null: return
+    if data == null or not "unit_scene" in data or data.unit_scene == null: return
     
     var count = 1
     if "spawn_count" in data: count = data.spawn_count
@@ -789,7 +789,7 @@ func sync_spawn_hazard(rx: float, rz: float, is_mouth: bool, unique_name: String
     t.name = unique_name
     add_child(t)
     t.global_position = Vector3(rx, -5, rz)
-    var tw = create_tween()
+    var tw = t.create_tween()
     tw.tween_property(t, "position:y", 0.0, 1.0)
 
 func _end_match(message: String):
@@ -811,7 +811,7 @@ func _end_match(message: String):
         lbl.add_theme_constant_override("outline_size", 8)
         ui.add_child(lbl)
         
-    await get_tree().create_timer(4.0).timeout
+    await get_tree().create_timer(4.0, true, false, true).timeout
     get_tree().paused = false
     get_tree().change_scene_to_file("res://Scenes/ModeHub.tscn")
 

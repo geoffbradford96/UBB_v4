@@ -43,6 +43,7 @@ func _ready():
 		set_card_data(card_data)
 
 func set_card_data(data: Resource):
+	if not data: return
 	card_data = data
 	cost_label.text = str(data.cost)
 	name_label.text = data.card_name

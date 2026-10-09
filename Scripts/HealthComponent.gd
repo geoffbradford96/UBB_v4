@@ -144,7 +144,11 @@ func die():
 		var am = get_tree().current_scene
 		if am and am.has_method("_end_match"):
 			get_parent().remove_from_group("Targetable")
-			var my_team = "SideA" if multiplayer.is_server() or GameState.current_mode == "LOCAL" else "SideB"
+			var my_team = "SideA"
+			if am.get("players") and am.players.size() > 0:
+				my_team = am.players[0].team
+			elif not multiplayer.is_server() and GameState.current_mode.begins_with("ONLINE"):
+				my_team = "SideB"
 			
 			if GameState.game_mode == "DESTROY_BASE":
 				var my_bases_alive = false
@@ -156,7 +160,10 @@ func die():
 						else:
 							enemy_bases_alive = true
 							
-				if not my_bases_alive:
+				if not my_bases_alive and not enemy_bases_alive:
+					am._end_match("DRAW! All bases were destroyed simultaneously!")
+					return
+				elif not my_bases_alive:
 					if GameState.current_mode == "AI_VS_AI":
 						am._end_match("MATCH OVER! SideB DESTROYED ALL BASES!")
 					else:

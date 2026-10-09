@@ -27,7 +27,7 @@ func _physics_process(delta):
 	if not "target_recheck_timer" in self:
 		set_meta("target_recheck", 1.0)
 	var __target_timer = get_meta("target_recheck") if has_meta("target_recheck") else 1.0
-	__target_timer -= 0.016
+	__target_timer -= delta
 	set_meta("target_recheck", __target_timer)
 	
 	if current_target == null or not is_instance_valid(current_target) or __target_timer <= 0.0:
@@ -82,12 +82,14 @@ func _physics_process(delta):
 				if r_mesh:
 					var target_scale = 1.0 + (synergy * 0.6)
 					r_mesh.scale = r_mesh.scale.lerp(Vector3(target_scale, target_scale, target_scale), 0.1)
+			is_moving = true
 		else:
 			velocity.x = move_toward(velocity.x, 0, speed)
 			velocity.z = move_toward(velocity.z, 0, speed)
 			
 			attack_timer += delta
-			if attack_timer >= attack_rate:
+			var effective_rate = max(0.1, attack_rate)
+			if attack_timer >= effective_rate:
 				attack_timer = 0.0
 				shoot()
 	else:

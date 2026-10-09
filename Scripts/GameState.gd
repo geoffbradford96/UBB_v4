@@ -46,6 +46,19 @@ func load_decks():
 		if typeof(parsed) == TYPE_DICTIONARY:
 			for key in parsed.keys():
 				player_decks[key] = parsed[key]
+				
+	if not player_decks.has("Player1") or player_decks["Player1"].is_empty():
+		player_decks["Player1"] = ["CommanderCard", "CheapGruntCard", "SupportingFireCard", "MedicCard", "CallArtilleryCard", "SniperCard"]
+	if not player_decks.has("Guest1") or player_decks["Guest1"].is_empty():
+		player_decks["Guest1"] = ["VoidOverlordCard", "VoidCrawlerCard", "VoidSpitterCard", "VoidStalkerCard", "VoidMeteorCard", "VoidSpikerCard"]
+	if not player_decks.has("Guest2") or player_decks["Guest2"].is_empty():
+		player_decks["Guest2"] = ["GreatBeastSpeakerCard", "RimworlderGunnerCard", "RimworlderMeleeCard", "SkyBeetleCard", "StoneOctopusCard", "RimworlderLeviathanCard"]
+	if not player_decks.has("Guest3") or player_decks["Guest3"].is_empty():
+		player_decks["Guest3"] = ["ScrapCommanderCard", "ScrapMeleeCard", "ScrapRangedCard", "ScrapTankCard", "ScrapPlaneCard", "ScrapMechCard"]
+	if not player_decks.has("Guest4") or player_decks["Guest4"].is_empty():
+		player_decks["Guest4"] = ["ReachCommanderCard", "ReachMeleeCard", "ReachRangedCard", "ReachTankCard", "ReachPlaneCard", "ReachMechCard"]
+	if not player_decks.has("Guest5") or player_decks["Guest5"].is_empty():
+		player_decks["Guest5"] = ["CommanderCard", "HeavyTankCard", "DominionMechCard", "FighterPlaneCard", "HeroHunterCard", "RepairManCard"]
 
 # Backwards compatibility for older scripts that used player_deck
 var player_deck:

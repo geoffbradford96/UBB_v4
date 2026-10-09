@@ -21,7 +21,7 @@ func _physics_process(delta):
 	if not "target_recheck_timer" in self:
 		set_meta("target_recheck", 1.0)
 	var __target_timer = get_meta("target_recheck") if has_meta("target_recheck") else 1.0
-	__target_timer -= 0.016
+	__target_timer -= delta
 	set_meta("target_recheck", __target_timer)
 	
 	if current_target == null or not is_instance_valid(current_target) or __target_timer <= 0.0:
@@ -104,7 +104,10 @@ func shoot():
 	if projectile_scene:
 		var proj = projectile_scene.instantiate()
 		get_tree().current_scene.add_child(proj)
-		proj.global_position = global_position
+		var spawn_pos = global_position
+		var vp = get_node_or_null("VisualPivot")
+		if vp: spawn_pos.y += 5.0
+		proj.global_position = spawn_pos
 		proj.target = current_target
 		proj.set("damage", damage)
 		proj.set("speed", 30.0)

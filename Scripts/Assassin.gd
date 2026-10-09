@@ -45,7 +45,7 @@ func _physics_process(delta):
 	if not "target_recheck_timer" in self:
 		set_meta("target_recheck", 1.0)
 	var __target_timer = get_meta("target_recheck") if has_meta("target_recheck") else 1.0
-	__target_timer -= 0.016
+	__target_timer -= delta
 	set_meta("target_recheck", __target_timer)
 	
 	if current_target == null or not is_instance_valid(current_target) or __target_timer <= 0.0:
@@ -146,8 +146,9 @@ func find_new_target():
 	for e in enemies:
 		if is_instance_valid(e):
 			var d = global_position.distance_to(e.global_position)
-			# Is the enemy "off-lane"? (Lane is roughly X between -15 and 15)
-			if abs(e.global_position.x) > 15:
+			# Is the enemy a high-value backline target or off-lane flanker?
+			var is_priority = "Sniper" in e.name or "Ranged" in e.name or "Hunter" in e.name or "CommandBay" in e.name or abs(e.global_position.x) > 18
+			if is_priority:
 				if d < closest_off_lane_dist:
 					closest_off_lane_dist = d
 					off_lane_target = e

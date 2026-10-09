@@ -14,15 +14,17 @@ func _ready():
 		
 	# Wait 0.5s for explosion animation to finish expanding
 	await get_tree().create_timer(0.5).timeout
+	if not is_inside_tree(): return
 	
 	var my_team = ""
 	for g in get_groups():
 		if g.begins_with("Side"): my_team = g
 		
 	var enemies = []
-	for node in get_tree().get_nodes_in_group("Targetable"):
-		if not node.is_in_group(my_team):
-			enemies.append(node)
+	if my_team != "":
+		for node in get_tree().get_nodes_in_group("Targetable"):
+			if not node.is_in_group(my_team) and is_instance_valid(node):
+				enemies.append(node)
 			
 	for e in enemies:
 		if is_instance_valid(e):
@@ -37,4 +39,5 @@ func _ready():
 					
 	# Wait for particle effects to finish if any
 	await get_tree().create_timer(duration).timeout
-	queue_free()
+	if is_inside_tree():
+		queue_free()

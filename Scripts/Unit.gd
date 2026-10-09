@@ -53,7 +53,7 @@ func _physics_process(delta):
 	if not "target_recheck_timer" in self:
 		set_meta("target_recheck", 1.0)
 	var __target_timer = get_meta("target_recheck") if has_meta("target_recheck") else 1.0
-	__target_timer -= 0.016
+	__target_timer -= delta
 	set_meta("target_recheck", __target_timer)
 	
 	if current_target == null or not is_instance_valid(current_target) or __target_timer <= 0.0:
@@ -132,7 +132,7 @@ func _physics_process(delta):
 				
 			attack_timer -= delta
 			if attack_timer <= 0:
-				attack_timer = 1.0 / attack_speed
+				attack_timer = 1.0 / max(0.01, attack_speed)
 				var target_health = current_target.get_node_or_null("HealthComponent")
 				if target_health:
 					if "SkyJellyfish" in self.name or "StoneOctopus" in self.name:
@@ -191,8 +191,11 @@ func find_new_target():
 		if g.begins_with("Side"): my_team = g
 	var enemies = []
 	for node in get_tree().get_nodes_in_group("Targetable"):
-		if not node.is_in_group(my_team):
-			enemies.append(node)
+		if node != self and is_instance_valid(node):
+			if my_team != "" and not node.is_in_group(my_team):
+				enemies.append(node)
+			elif my_team == "" and not node.is_in_group("Beast"):
+				enemies.append(node)
 	
 	var closest_dist = 99999.0
 	for e in enemies:

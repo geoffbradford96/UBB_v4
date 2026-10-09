@@ -33,7 +33,7 @@ func _physics_process(delta):
 	if not "target_recheck_timer" in self:
 		set_meta("target_recheck", 1.0)
 	var __target_timer = get_meta("target_recheck") if has_meta("target_recheck") else 1.0
-	__target_timer -= 0.016
+	__target_timer -= delta
 	set_meta("target_recheck", __target_timer)
 	
 	if current_target == null or not is_instance_valid(current_target) or __target_timer <= 0.0:
@@ -44,9 +44,12 @@ func _physics_process(delta):
 	if current_target != null:
 		var dist = global_position.distance_to(current_target.global_position)
 		if dist > attack_range:
-			# Move towards target's Z axis, but stay strictly on the X axis flank!
-			var target_pos = current_target.global_position
-			target_pos.x = flank_x
+			# Move towards target, flanking along perpendicular line
+			var to_target = current_target.global_position - global_position
+			to_target.y = 0
+			var perp = Vector3(-to_target.z, 0, to_target.x).normalized() if to_target.length() > 0.1 else Vector3.RIGHT
+			var flank_offset = 20.0 * (1.0 if flank_x > 0 else -1.0)
+			var target_pos = current_target.global_position + (perp * flank_offset)
 			
 			var next_path_pos = target_pos
 			var new_velocity = global_position.direction_to(next_path_pos) * speed

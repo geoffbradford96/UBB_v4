@@ -19,7 +19,7 @@ func _physics_process(delta):
 	if not "target_recheck_timer" in self:
 		set_meta("target_recheck", 1.0)
 	var __target_timer = get_meta("target_recheck") if has_meta("target_recheck") else 1.0
-	__target_timer -= 0.016
+	__target_timer -= delta
 	set_meta("target_recheck", __target_timer)
 	
 	if current_target == null or not is_instance_valid(current_target) or __target_timer <= 0.0:
@@ -113,9 +113,10 @@ func find_new_target():
 	for g in get_groups():
 		if g.begins_with("Side"): my_team = g
 	var enemies = []
-	for node in get_tree().get_nodes_in_group("Targetable"):
-		if not node.is_in_group(my_team):
-			enemies.append(node)
+	if my_team != "":
+		for node in get_tree().get_nodes_in_group("Targetable"):
+			if not node.is_in_group(my_team) and is_instance_valid(node) and node != self:
+				enemies.append(node)
 	var closest_dist = 99999.0
 	for e in enemies:
 		if is_instance_valid(e):

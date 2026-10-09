@@ -89,6 +89,9 @@ func _on_card_clicked(card_ui):
 	emit_signal("ui_card_selected", card_ui, self)
 
 func _on_exit_button_pressed():
+	get_tree().paused = false
+	if multiplayer.has_multiplayer_peer():
+		multiplayer.multiplayer_peer = null
 	if GameState.current_mode == "ONLINE_HOST" or GameState.current_mode == "ONLINE_JOIN":
 		get_tree().change_scene_to_file("res://Scenes/MultiplayerMenu.tscn")
 	else:

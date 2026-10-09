@@ -1,4 +1,4 @@
-﻿extends CharacterBody3D
+extends CharacterBody3D
 
 @export var damage: float = 40.0
 @export var attack_range: float = 12.0
@@ -64,7 +64,12 @@ func _physics_process(delta):
                 if hp: hp.take_damage(damage)
                 # Slap animation
                 if mn:
+                    if has_meta("attack_tween"):
+                        var old_tw = get_meta("attack_tween")
+                        if is_instance_valid(old_tw) and old_tw.is_valid():
+                            old_tw.kill()
                     var tw = create_tween()
+                    set_meta("attack_tween", tw)
                     tw.tween_property(mn, "rotation_degrees:x", 60.0, 0.1)
                     tw.tween_property(mn, "rotation_degrees:x", 0.0, 0.2)
         else:
@@ -74,7 +79,7 @@ func find_new_target():
     current_target = null
     var enemies = []
     for node in get_tree().get_nodes_in_group("Targetable"):
-        if not node.is_in_group("Beast"):
+        if not node.is_in_group("Beast") and is_instance_valid(node) and node != self:
             enemies.append(node)
     
     var closest = 99999.0

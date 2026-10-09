@@ -5,7 +5,8 @@ func _on_host_pressed():
 	GameState.current_mode = "ONLINE_HOST"
 	GameState.host_game()
 	GameState.load_decks()
-	get_tree().change_scene_to_file("res://Scenes/Arena.tscn")
+	var target_map = GameState.map_selected if GameState.map_selected != "" else "Arena.tscn"
+	get_tree().change_scene_to_file("res://Scenes/" + target_map)
 
 func _on_join_pressed():
 	var ip = $VBoxContainer/IPInput.text
@@ -15,7 +16,8 @@ func _on_join_pressed():
 	GameState.current_mode = "ONLINE_JOIN"
 	GameState.join_game(ip)
 	GameState.load_decks()
-	get_tree().change_scene_to_file("res://Scenes/Arena.tscn")
+	var target_map = GameState.map_selected if GameState.map_selected != "" else "Arena.tscn"
+	get_tree().change_scene_to_file("res://Scenes/" + target_map)
 
 func _on_local_2p_pressed():
 	GameState.current_mode = "LOCAL_SPLIT_2P"

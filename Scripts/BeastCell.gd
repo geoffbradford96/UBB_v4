@@ -40,7 +40,7 @@ func find_new_target():
 	current_target = null
 	var enemies = []
 	for node in get_tree().get_nodes_in_group("Targetable"):
-		if not node.is_in_group("Beast") and is_instance_valid(node):
+		if not node.is_in_group("Beast") and is_instance_valid(node) and node != self:
 			enemies.append(node)
 	var closest = 99999.0
 	for e in enemies:

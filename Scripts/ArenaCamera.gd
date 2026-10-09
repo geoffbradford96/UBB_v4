@@ -40,8 +40,9 @@ func _process(delta):
 		is_snapped = true
 		target_position += move_dir.normalized() * 40.0 * delta
 		
-	target_position.x = clamp(target_position.x, -100, 100)
-	target_position.z = clamp(target_position.z, -100, 100)
+	var max_pan = 160.0 if GameState.map_selected == "Arena_6P.tscn" else (110.0 if GameState.map_selected == "Arena_4P.tscn" else 90.0)
+	target_position.x = clamp(target_position.x, -max_pan, max_pan)
+	target_position.z = clamp(target_position.z, -max_pan, max_pan)
 				
 	var camera_offset = Vector3(0, 20.0 * zoom_level, 16.0 * zoom_level)
 	

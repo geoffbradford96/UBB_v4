@@ -27,6 +27,13 @@ func _ready():
 	var health = get_node_or_null("HealthComponent")
 	if health:
 		health.connect("died", Callable(self, "_on_tower_destroyed"))
+		
+	# Check for units already spawned inside detection area
+	await get_tree().process_frame
+	var det = get_node_or_null("DetectionArea")
+	if det and is_instance_valid(det):
+		for b in det.get_overlapping_bodies():
+			_on_detection_area_body_entered(b)
 
 func _on_tower_destroyed():
 	# If this is a Player tower, tell the ArenaManager to speed up Requisition!
@@ -65,9 +72,14 @@ func shoot_at_target():
 		var mesh = proj.get_node_or_null("MeshInstance3D")
 		if mesh and mesh.mesh:
 			var mat = StandardMaterial3D.new()
-			mat.albedo_color = Color(0.2, 1.0, 0.2)
+			var laser_color = Color(0.2, 1.0, 0.2)
+			if faction == "Void": laser_color = Color(0.85, 0.1, 0.85)
+			elif faction == "The Reach": laser_color = Color(0.0, 0.85, 1.0)
+			elif faction == "Dominion": laser_color = Color(1.0, 0.65, 0.1)
+			elif faction == "Pirates": laser_color = Color(1.0, 0.45, 0.1)
+			mat.albedo_color = laser_color
 			mat.emission_enabled = true
-			mat.emission = Color(0.2, 1.0, 0.2)
+			mat.emission = laser_color
 			mat.emission_energy_multiplier = 3.0
 			mesh.set_surface_override_material(0, mat)
 
