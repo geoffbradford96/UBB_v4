@@ -20,6 +20,7 @@ signal health_changed(new_health, max_health)
 
 @export var max_health: float = 100.0
 var current_health: float
+var is_dead: bool = false
 
 var hp_bar: ProgressBar
 
@@ -74,11 +75,11 @@ func take_damage(amount: float):
 
 @rpc("authority", "call_local", "reliable")
 func sync_take_damage(amount: float):
+	if is_dead: return
 	current_health -= amount
 	if hp_bar:
 		hp_bar.value = current_health
 	emit_signal("health_changed", current_health, max_health)
-	print(get_parent().name, " took ", amount, " damage! Remaining HP: ", current_health)
 	
 	if current_health <= 0:
 		die()
@@ -99,9 +100,11 @@ func sync_heal(amount: float):
 	if hp_bar:
 		hp_bar.value = current_health
 	emit_signal("health_changed", current_health, max_health)
-	print(get_parent().name, " was healed! HP: ", current_health)
+	
 
 func die():
+	if is_dead: return
+	is_dead = true
 	# SCRAP TANK EXPLOSION
 	if "ScrapTank" in get_parent().name:
 		for e in get_tree().get_nodes_in_group("Targetable"):
@@ -124,31 +127,42 @@ func die():
 				var hp = a.get_node_or_null("HealthComponent")
 				if hp and hp.has_method("trigger_scrap_heal"): hp.trigger_scrap_heal()
 
-	print(get_parent().name, " was destroyed!")
+	#print(get_parent().name, " was destroyed!")
 	emit_signal("died")
 	
-	if "Base" in get_parent().name and GameState.game_mode == "DESTROY_BASE":
-		var my_team = "SideA" if multiplayer.is_server() or GameState.current_mode == "LOCAL" else "SideB"
-		
-		if get_parent().is_in_group(my_team):
-			print("DEFEAT! Your base was destroyed.")
-			await get_tree().create_timer(3.0).timeout
-			get_tree().change_scene_to_file("res://Scenes/ModeHub.tscn")
-			return
-		else:
-			# Check if there are any other enemy bases alive!
-			get_parent().remove_from_group("Targetable") # Make sure this base isn't counted
-			var enemies_alive = false
-			for b in get_tree().get_nodes_in_group("Targetable"):
-				if "Base" in b.name and not b.is_in_group(my_team) and b != get_parent():
-					enemies_alive = true
-					break
-					
-			if not enemies_alive:
-				print("VICTORY! All enemy bases destroyed.")
-				await get_tree().create_timer(3.0).timeout
-				get_tree().change_scene_to_file("res://Scenes/ModeHub.tscn")
-				return
+	if "Base" in get_parent().name:
+		var am = get_tree().current_scene
+		if am and am.has_method("_end_match"):
+			get_parent().remove_from_group("Targetable")
+			var my_team = "SideA" if multiplayer.is_server() or GameState.current_mode == "LOCAL" else "SideB"
+			
+			if GameState.game_mode == "DESTROY_BASE":
+				if get_parent().is_in_group(my_team):
+					am._end_match("DEFEAT! Your base was destroyed.")
+					return
+				else:
+					var enemies_alive = false
+					for b in get_tree().get_nodes_in_group("Targetable"):
+						if "Base" in b.name and not b.is_in_group(my_team) and b != get_parent():
+							enemies_alive = true
+							break
+					if not enemies_alive:
+						am._end_match("VICTORY! All enemy bases destroyed.")
+						return
+			else:
+				# Check for Sudden Death Last One Standing (applies to KOTH too!)
+				if am.get("sudden_death_active"):
+					var teams_alive = []
+					for b in get_tree().get_nodes_in_group("Targetable"):
+						if "Base" in b.name and b != get_parent():
+							for g in b.get_groups():
+								if g.begins_with("Side") and not teams_alive.has(g):
+									teams_alive.append(g)
+					if teams_alive.size() == 1:
+						am._end_match(teams_alive[0] + " WINS SUDDEN DEATH!")
+					elif teams_alive.size() == 0:
+						am._end_match("NO ONE SURVIVED SUDDEN DEATH!")
+
 
 	get_parent().queue_free()
 
@@ -181,3 +195,10 @@ func _process(delta):
 func trigger_scrap_heal():
 	if scrap_heal_time <= 0: print(get_parent().name, " triggers SCRAP HEAL!")
 	scrap_heal_time = 2.0
+
+func set_max_health(new_max: float):
+	max_health = new_max
+	current_health = new_max
+	if hp_bar:
+		hp_bar.max_value = max_health
+		hp_bar.value = current_health

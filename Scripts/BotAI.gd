@@ -50,7 +50,11 @@ func _process(delta):
 	for z in get_tree().get_nodes_in_group(my_team):
 		if "Tower" in z.name:
 			bot_towers += 1
-	var dynamic_rate = requisition_rate + ((2 - bot_towers) * 0.5)
+	var am = get_tree().current_scene
+	var initial = 2
+	if am and am.get("initial_towers_per_team"):
+		initial = am.initial_towers_per_team.get(my_team, 2)
+	var dynamic_rate = requisition_rate + ((initial - bot_towers) * (1.0 / initial))
 	if current_requisition < max_requisition:
 		current_requisition += dynamic_rate * delta
 		if current_requisition > max_requisition:
@@ -79,7 +83,7 @@ func evaluate_moves():
 	var has_commander = false
 	var my_units = get_tree().get_nodes_in_group(my_team)
 	for u in my_units:
-		if "Commander" in u.name or "Overlord" in u.name:
+		if u.is_in_group("CommanderUnit") or "Commander" in u.name or "Overlord" in u.name or "GreatBeastSpeaker" in u.name:
 			has_commander = true
 			break
 
@@ -134,15 +138,21 @@ func calculate_optimal_spawn(card: CardData):
 		
 	var right_dir = push_dir.cross(Vector3.UP).normalized()
 	
+	var target_pos = spawn_anchor.global_position
 	if card.card_name == "Sniper" or card.card_name == "VoidSpitter" or card.card_name == "SpiderTank":
-		var side_offset = right_dir * (30.0 if randf() > 0.5 else -30.0)
-		return spawn_anchor.global_position + (push_dir * randf_range(2, 5)) + side_offset
+		var side_offset = right_dir * (20.0 if randf() > 0.5 else -20.0)
+		target_pos += (push_dir * randf_range(2, 5)) + side_offset
 	elif card.card_name == "Assassin" or card.card_name == "VoidStalker":
-		var side_offset = right_dir * (18.0 if randf() > 0.5 else -18.0)
-		return spawn_anchor.global_position + (push_dir * randf_range(5, 10)) + side_offset
+		var side_offset = right_dir * (15.0 if randf() > 0.5 else -15.0)
+		target_pos += (push_dir * randf_range(5, 10)) + side_offset
 	else:
 		var side_offset = right_dir * randf_range(-5, 5)
-		return spawn_anchor.global_position + (push_dir * randf_range(5, 15)) + side_offset
+		target_pos += (push_dir * randf_range(5, 15)) + side_offset
+		
+	# Clamp deployment to valid distance (max 25)
+	if target_pos.distance_to(spawn_anchor.global_position) > 24.0:
+		target_pos = spawn_anchor.global_position + (target_pos - spawn_anchor.global_position).normalized() * 24.0
+	return target_pos
 
 
 func play_card(card: CardData, target_position: Vector3):
@@ -203,7 +213,7 @@ func generate_themed_deck(theme: String) -> Array:
 		new_deck.append(pool_commanders.pick_random())
 	
 	pool_units.shuffle()
-	for i in range(min(5, pool_units.size())):
+	for i in range(min(15, pool_units.size())):
 		new_deck.append(pool_units[i])
 		
 	return new_deck

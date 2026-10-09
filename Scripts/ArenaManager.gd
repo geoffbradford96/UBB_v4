@@ -64,7 +64,9 @@ func _ready():
             var pstate = LocalPlayerState.new()
             pstate.p_id = i + 1
             pstate.profile = profiles[i]
-            pstate.team = "SideB" if (is_6p and i >= 3) else ("SideA" if is_6p else teams[i])
+            if is_6p: pstate.team = "SideB" if i >= 3 else "SideA"
+            elif is_4p: pstate.team = "SideB" if i >= 2 else "SideA"
+            else: pstate.team = "SideB" if i == 1 else "SideA"
             
             var sub_c = SubViewportContainer.new()
             sub_c.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -126,10 +128,11 @@ func setup_match():
             players[0].ui.visible = false
     
     var teams_for_ai = []
+    total_slots = GameState.match_player_count
     if is_6p_mode:
         teams_for_ai = ["SideA", "SideA", "SideA", "SideB", "SideB", "SideB"]
     elif is_4p_mode:
-        teams_for_ai = ["SideA", "SideB", "SideC", "SideD"]
+        teams_for_ai = ["SideA", "SideA", "SideB", "SideB"]
     else:
         teams_for_ai = ["SideA", "SideB"]
     
@@ -178,13 +181,19 @@ func _process(delta):
         if beast_timer <= 0:
             beast_timer = beast_spawn_interval
             beast_spawn_interval = max(0.5, beast_spawn_interval - 0.2)
-            var rx = randf_range(-40.0, 40.0)
-            var rz = randf_range(-40.0, 40.0)
+            var hazard_count = get_tree().get_nodes_in_group("Beast").size()
+            if hazard_count > 60: return # Cap beast entities to avoid lag
+            var map_size = 40.0
+            if GameState.map_selected == "Arena_4P.tscn": map_size = 70.0
+            if GameState.map_selected == "Arena_6P.tscn": map_size = 110.0
+            var rx = randf_range(-map_size, map_size)
+            var rz = randf_range(-map_size, map_size)
+            var hazard_name = "BeastHazard_" + str(Time.get_ticks_usec())
             if multiplayer.has_multiplayer_peer() and multiplayer.multiplayer_peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED:
                 if multiplayer.is_server():
-                    rpc("sync_spawn_hazard", rx, rz, randi() % 3 == 0) # 33% chance for mouth
+                    rpc("sync_spawn_hazard", rx, rz, randi() % 3 == 0, hazard_name)
             else:
-                sync_spawn_hazard(rx, rz, randi() % 3 == 0)
+                sync_spawn_hazard(rx, rz, randi() % 3 == 0, hazard_name)
                 
     _update_timer_ui()
 
@@ -239,6 +248,14 @@ func _unhandled_input(event):
     if is_mouse_click:
         acted_player = players[0] # Mouse always drives P1
         screen_pos = event.position
+        if acted_player.cam and acted_player.cam.get_viewport() != get_viewport():
+            # Adjust mouse coordinates if cam is in a subviewport
+            var vp = acted_player.cam.get_viewport()
+            var win_size = get_viewport().get_visible_rect().size
+            var vp_size = vp.get_visible_rect().size
+            screen_pos.x = (screen_pos.x / win_size.x) * vp_size.x
+            screen_pos.y = (screen_pos.y / win_size.y) * vp_size.y
+
     elif event is InputEventJoypadButton and event.pressed:
         # We need to map standard UI accept or custom action to deployment
         for p in players:
@@ -281,8 +298,8 @@ func toggle_deployment_visuals(p: LocalPlayerState, should_show: bool, is_spell:
         if "Base" in s.name or "Tower" in s.name or "CommandBay" in s.name:
             var ring = MeshInstance3D.new()
             var torus = TorusMesh.new()
-            torus.inner_radius = 24.5
             torus.outer_radius = 25.0
+            torus.inner_radius = 24.5
             ring.mesh = torus
             var mat = StandardMaterial3D.new()
             mat.albedo_color = Color(0.2, 0.8, 1.0, 0.5)
@@ -303,7 +320,7 @@ func attempt_to_play_card(p: LocalPlayerState, data: Resource, target_position: 
     if data.card_type == "Commander":
         var has_commander = false
         for u in get_tree().get_nodes_in_group(p.team):
-            if "Commander" in u.name or "Overlord" in u.name:
+            if u.is_in_group("CommanderUnit") or "Commander" in u.name or "Overlord" in u.name or "GreatBeastSpeaker" in u.name:
                 has_commander = true
         if has_commander:
             print(p.team, " Cannot deploy! You already have an active Commander.")
@@ -355,6 +372,14 @@ func sync_spawn_card(card_path: String, pos: Vector3, team: String, unique_id: S
         if data.is_spell: unit.global_position = pos
         else: unit.global_position = pos + Vector3(randf_range(-2.0, 2.0), 2.0, randf_range(-2.0, 2.0))
         unit.add_to_group(team)
+        
+        var hc = unit.get_node_or_null("HealthComponent")
+        if hc and "max_hp" in data:
+            if hc.has_method("set_max_health"):
+                hc.set_max_health(data.max_hp)
+                
+        if "card_type" in data and data.card_type == "Commander":
+            unit.add_to_group("CommanderUnit")
 
 func _on_koth_tick():
     if get_tree().paused: return
@@ -383,10 +408,7 @@ func _on_koth_tick():
     if not tied and dominant_team != "":
         koth_points[dominant_team] += 1
         if koth_points[dominant_team] >= 100:
-            print(dominant_team, " WINS THE MATCH BY KOTH!")
-            get_tree().paused = true
-            await get_tree().create_timer(3.0).timeout
-            get_tree().change_scene_to_file("res://Scenes/ModeHub.tscn")
+            _end_match(dominant_team + " WINS THE MATCH BY KOTH!")
 
 
 func _get_team_faction(team: String) -> String:
@@ -459,8 +481,13 @@ func _build_structure_mesh(node, faction, is_tower):
     node.add_child(mesh_node)
     node.set_meta("faction_mesh", mesh_node)
     
+    var is_bay = "CommandBay" in node.name
     if faction == "Dominion":
-        if is_tower:
+        if is_bay:
+            var box = MeshInstance3D.new(); box.mesh = BoxMesh.new(); box.mesh.size = Vector3(4, 2, 4)
+            var mat = StandardMaterial3D.new(); mat.albedo_color = Color(0.2, 0.4, 0.8); mat.metallic = 0.8
+            box.material_override = mat; box.position.y = 1.0; mesh_node.add_child(box)
+        elif is_tower:
             var base = MeshInstance3D.new(); base.mesh = CylinderMesh.new(); base.mesh.height = 3.0; base.mesh.bottom_radius = 2.0; base.mesh.top_radius = 1.5
             var mat = StandardMaterial3D.new(); mat.albedo_color = Color(0.6, 0.65, 0.7); mat.metallic = 0.8
             base.material_override = mat; base.position.y = 1.5; mesh_node.add_child(base)
@@ -483,7 +510,11 @@ func _build_structure_mesh(node, faction, is_tower):
                 ant.material_override = mat; ant.position = Vector3(cos(i*PI/2)*3.0, 4.5, sin(i*PI/2)*3.0); mesh_node.add_child(ant)
                 
     elif faction == "Void":
-        if is_tower:
+        if is_bay:
+            var blob = MeshInstance3D.new(); blob.mesh = SphereMesh.new(); blob.mesh.radius = 2.0
+            var mat = StandardMaterial3D.new(); mat.albedo_color = Color(0.2, 0.0, 0.3)
+            blob.material_override = mat; blob.position.y = 1.0; mesh_node.add_child(blob)
+        elif is_tower:
             var spire = MeshInstance3D.new(); spire.mesh = CylinderMesh.new(); spire.mesh.height = 5.0; spire.mesh.bottom_radius = 1.0; spire.mesh.top_radius = 0.2
             var mat = StandardMaterial3D.new(); mat.albedo_color = Color(0.15, 0.05, 0.25)
             spire.material_override = mat; spire.position.y = 2.5; mesh_node.add_child(spire)
@@ -504,7 +535,11 @@ func _build_structure_mesh(node, faction, is_tower):
             mesh_node.set_meta("void_heart", heart)
             
     elif faction == "Rimworlders":
-        if is_tower:
+        if is_bay:
+            var tent = MeshInstance3D.new(); tent.mesh = CylinderMesh.new(); tent.mesh.bottom_radius = 2.5; tent.mesh.top_radius = 0; tent.mesh.height = 3.0
+            var mat = StandardMaterial3D.new(); mat.albedo_color = Color(0.5, 0.3, 0.1)
+            tent.material_override = mat; tent.position.y = 1.5; mesh_node.add_child(tent)
+        elif is_tower:
             var mat = StandardMaterial3D.new(); mat.albedo_color = Color(0.4, 0.25, 0.1)
             for i in range(4):
                 var leg = MeshInstance3D.new(); leg.mesh = CylinderMesh.new(); leg.mesh.height = 5.0; leg.mesh.bottom_radius = 0.3; leg.mesh.top_radius = 0.3
@@ -530,7 +565,10 @@ func _build_structure_mesh(node, faction, is_tower):
                 
     elif faction == "Pirates":
         var r_mat = StandardMaterial3D.new(); r_mat.albedo_color = Color(0.5, 0.25, 0.1); r_mat.metallic = 0.4
-        if is_tower:
+        if is_bay:
+            var crate = MeshInstance3D.new(); crate.mesh = BoxMesh.new(); crate.mesh.size = Vector3(3, 2.5, 3)
+            crate.material_override = r_mat; crate.position.y = 1.25; mesh_node.add_child(crate)
+        elif is_tower:
             var crane = MeshInstance3D.new(); crane.mesh = BoxMesh.new(); crane.mesh.size = Vector3(1, 6, 1)
             crane.material_override = r_mat; crane.position.y = 3.0; mesh_node.add_child(crane)
             var arm = MeshInstance3D.new(); arm.mesh = BoxMesh.new(); arm.mesh.size = Vector3(4, 0.5, 0.5)
@@ -553,7 +591,10 @@ func _build_structure_mesh(node, faction, is_tower):
     elif faction == "The Reach":
         var w_mat = StandardMaterial3D.new(); w_mat.albedo_color = Color(0.9, 0.95, 1.0); w_mat.roughness = 0.1
         var c_mat = StandardMaterial3D.new(); c_mat.albedo_color = Color(0.0, 0.8, 1.0); c_mat.emission_enabled = true; c_mat.emission = Color(0.0, 0.8, 1.0)
-        if is_tower:
+        if is_bay:
+            var dome = MeshInstance3D.new(); dome.mesh = SphereMesh.new(); dome.mesh.radius = 2.0; dome.mesh.height = 2.0
+            dome.material_override = w_mat; dome.position.y = 1.0; mesh_node.add_child(dome)
+        elif is_tower:
             var pad = MeshInstance3D.new(); pad.mesh = CylinderMesh.new(); pad.mesh.height = 0.5; pad.mesh.bottom_radius = 1.5; pad.mesh.top_radius = 1.5
             pad.material_override = w_mat; pad.position.y = 0.25; mesh_node.add_child(pad)
             var obelisk = MeshInstance3D.new(); obelisk.mesh = BoxMesh.new(); obelisk.mesh.size = Vector3(1.2, 4.0, 1.2)
@@ -567,27 +608,28 @@ func _build_structure_mesh(node, faction, is_tower):
             var pillar = MeshInstance3D.new(); pillar.mesh = CylinderMesh.new(); pillar.mesh.height = 6.0; pillar.mesh.bottom_radius = 1.5; pillar.mesh.top_radius = 1.5
             pillar.material_override = c_mat; pillar.position.y = 3.5; mesh_node.add_child(pillar)
             for i in range(3):
-                var ring = MeshInstance3D.new(); ring.mesh = TorusMesh.new(); ring.mesh.inner_radius = 2.0; ring.mesh.outer_radius = 2.5
+                var ring = MeshInstance3D.new(); ring.mesh = TorusMesh.new(); ring.mesh.outer_radius = 2.5; ring.mesh.inner_radius = 2.0
                 ring.material_override = w_mat; ring.position.y = 2.0 + i*1.5; mesh_node.add_child(ring)
             mesh_node.set_meta("reach_pillar", pillar)
 
 
 func _update_timer_ui():
-    var ui = get_node_or_null("InGameUI")
-    if not ui: return
-    var label = ui.get_node_or_null("TimerLabel")
-    if not label: return
-    
-    if not sudden_death_active:
-        var m = int(floor(match_timer / 60.0))
-        var s = int(match_timer) % 60
-        label.text = str(m) + ":" + ("0" if s < 10 else "") + str(s)
-        label.modulate = Color(1, 1, 1)
-        label.scale = Vector2(1.0, 1.0)
-    else:
-        label.text = "SUDDEN DEATH!"
-        label.modulate = Color(1, 0, 0)
-        label.scale = Vector2(1.2 + sin(Time.get_ticks_msec()*0.01)*0.1, 1.2 + sin(Time.get_ticks_msec()*0.01)*0.1)
+    for p in players:
+        var ui = p.ui
+        if not ui: continue
+        var label = ui.get_node_or_null("TimerLabel")
+        if not label: continue
+        
+        if not sudden_death_active:
+            var m = int(floor(match_timer / 60.0))
+            var s = int(match_timer) % 60
+            label.text = str(m) + ":" + ("0" if s < 10 else "") + str(s)
+            label.modulate = Color(1, 1, 1)
+            label.scale = Vector2(1.0, 1.0)
+        else:
+            label.text = "SUDDEN DEATH!"
+            label.modulate = Color(1, 0, 0)
+            label.scale = Vector2(1.2 + sin(Time.get_ticks_msec()*0.01)*0.1, 1.2 + sin(Time.get_ticks_msec()*0.01)*0.1)
 
 func _start_beast_of_nothingness():
     print("THE BEAST OF NOTHINGNESS AWAKENS!")
@@ -641,11 +683,35 @@ func _start_beast_of_nothingness():
     tw.tween_property(beast_root, "position:y", 20.0, 30.0) # slowly rise (to y=20 so mouth frames the arena)
 
 @rpc("authority", "call_local", "reliable")
-func sync_spawn_hazard(rx: float, rz: float, is_mouth: bool):
+func sync_spawn_hazard(rx: float, rz: float, is_mouth: bool, unique_name: String):
     var scn = beast_mouth_scene if is_mouth else beast_tentacle_scene
     if not scn: return
     var t = scn.instantiate()
+    t.name = unique_name
     add_child(t)
     t.global_position = Vector3(rx, -5, rz)
     var tw = create_tween()
     tw.tween_property(t, "position:y", 0.0, 1.0)
+
+func _end_match(message: String):
+    if get_tree().paused: return
+    get_tree().paused = true
+    print(message)
+    var ui = get_node_or_null("InGameUI")
+    if not ui and players.size() > 0: ui = players[0].ui
+    
+    if ui:
+        var lbl = Label.new()
+        lbl.text = message
+        lbl.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+        lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+        lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+        lbl.add_theme_font_size_override("font_size", 48)
+        lbl.add_theme_color_override("font_color", Color(1, 0.8, 0))
+        lbl.add_theme_color_override("font_outline_color", Color(0, 0, 0))
+        lbl.add_theme_constant_override("outline_size", 8)
+        ui.add_child(lbl)
+        
+    await get_tree().create_timer(4.0).timeout
+    get_tree().paused = false
+    get_tree().change_scene_to_file("res://Scenes/ModeHub.tscn")

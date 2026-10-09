@@ -40,6 +40,12 @@ func _ready():
 	timer_option.select(2) # Default 10 min
 	_update_players_dropdown(0)
 	
+	GameState.ai_difficulty = "MEDIUM"
+	GameState.game_mode = "DESTROY_BASE"
+	GameState.map_selected = "Arena.tscn"
+	GameState.match_player_count = 2
+	GameState.sudden_death_timer = 600.0
+	
 func _update_players_dropdown(map_index: int):
 	players_option.clear()
 	if map_index == 2:

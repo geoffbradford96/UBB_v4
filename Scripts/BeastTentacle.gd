@@ -41,14 +41,10 @@ func _ready():
     self.set_meta("mesh_node", mesh_node)
 
 func _physics_process(delta):
-    if not is_on_floor():
-        velocity.y -= 9.8 * delta
-    else:
-        velocity.y = 0
-    move_and_slide()
+    pass
     
     var mn = get_meta("mesh_node")
-    if mn:
+    if mn and attack_timer < attack_rate - 0.3: # Only sway if not attacking right now
         mn.rotation_degrees.x = sin(Time.get_ticks_msec() * 0.003) * 15.0
         
     if current_target == null or not is_instance_valid(current_target):

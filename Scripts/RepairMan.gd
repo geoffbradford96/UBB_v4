@@ -14,7 +14,14 @@ func _physics_process(delta):
 	if not is_on_floor():
 		velocity.y -= 9.8 * delta
 		
-	if current_target == null or not is_instance_valid(current_target):
+	if not "target_recheck_timer" in self:
+		set_meta("target_recheck", 1.0)
+	var __target_timer = get_meta("target_recheck") if has_meta("target_recheck") else 1.0
+	__target_timer -= 0.016
+	set_meta("target_recheck", __target_timer)
+	
+	if current_target == null or not is_instance_valid(current_target) or __target_timer <= 0.0:
+		if __target_timer <= 0.0: set_meta("target_recheck", 1.0)
 		find_new_target()
 		
 	var is_moving = false
@@ -90,6 +97,7 @@ func _physics_process(delta):
 	# Anti-stuck wall sliding
 	if is_on_wall():
 		var wall_normal = get_wall_normal()
+		if wall_normal.length() < 0.1: wall_normal = Vector3.UP
 		var slide_vel = velocity.slide(wall_normal)
 		if slide_vel.length() < speed * 0.5:
 			var perp = Vector3(wall_normal.z, 0, -wall_normal.x)

@@ -40,11 +40,7 @@ func _ready():
 	self.set_meta("mesh_node", mesh_node)
 
 func _physics_process(delta):
-	if not is_on_floor():
-		velocity.y -= 9.8 * delta
-	else:
-		velocity.y = 0
-	move_and_slide()
+	pass
 	
 	var mn = get_meta("mesh_node")
 	if mn:
@@ -54,6 +50,8 @@ func _physics_process(delta):
 	spawn_timer += delta
 	if spawn_timer >= spawn_interval:
 		spawn_timer = 0.0
+		var cell_count = get_tree().get_nodes_in_group("Beast").size()
+		if cell_count > 60: return
 		if multiplayer.has_multiplayer_peer() and multiplayer.multiplayer_peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED:
 			if multiplayer.is_server():
 				rpc("sync_spawn_cell")
