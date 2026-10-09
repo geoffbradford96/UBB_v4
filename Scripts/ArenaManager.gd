@@ -45,7 +45,6 @@ func _ready():
         var is_4p = (GameState.current_mode == "LOCAL_SPLIT_4P" or GameState.map_selected == "Arena_4P.tscn")
         var is_6p = (GameState.map_selected == "Arena_6P.tscn")
         var p_count = 6 if is_6p else (4 if is_4p else 2)
-        var teams = ["SideA", "SideB", "SideC", "SideD", "SideE", "SideF"]
         var profiles = ["Player1", "Guest1", "Guest2", "Guest3", "Guest4", "Guest5"]
         
         if original_ui: original_ui.get_parent().remove_child(original_ui)
@@ -106,7 +105,8 @@ func _ready():
         var pstate = LocalPlayerState.new()
         pstate.p_id = 1
         pstate.profile = "Player1"
-        pstate.team = "SideA" if multiplayer.is_server() else "SideB"
+        var is_srv = multiplayer.is_server() if multiplayer.has_multiplayer_peer() else true
+        pstate.team = "SideA" if is_srv else "SideB"
         pstate.ui = original_ui
         pstate.cam = original_cam
         if pstate.ui: pstate.ui.connect("ui_card_selected", Callable(self, "_on_ui_card_selected"))
@@ -125,7 +125,7 @@ func setup_match():
     if GameState.current_mode == "AI_VS_AI":
         start_bot_idx = 0
         if players.size() > 0 and players[0].ui:
-            players[0].ui.visible = false
+            players[0].ui.visible = true # Keep spectator match UI visible!
     
     var teams_for_ai = []
     if is_6p_mode:
@@ -141,19 +141,28 @@ func setup_match():
     if GameState.current_mode.begins_with("ONLINE"):
         return # Do not spawn AIs in online PvP matches!
         
+    var profiles_for_slots = ["Player1", "Guest1", "Guest2", "Guest3", "Guest4", "Guest5"]
     for i in range(start_bot_idx, total_slots):
         var bot = BotAI.new()
         bot.my_team = teams_for_ai[i]
+        bot.profile = profiles_for_slots[i] if i < profiles_for_slots.size() else "Guest1"
         
         # Pick enemy team
         bot.enemy_team = "SideB" if bot.my_team == "SideA" else "SideA"
         
-        if GameState.ai_difficulty == "EASY": bot.requisition_rate = 0.3
-        elif GameState.ai_difficulty == "MEDIUM": bot.requisition_rate = 0.5
-        elif GameState.ai_difficulty == "HARD": bot.requisition_rate = 0.8
+        # Base requisition rate matches player's base (0.5), balanced by difficulty
+        if GameState.ai_difficulty == "EASY":
+            bot.requisition_rate = 0.4
+            bot.think_interval = 1.3
+        elif GameState.ai_difficulty == "MEDIUM":
+            bot.requisition_rate = 0.5
+            bot.think_interval = 1.0
+        elif GameState.ai_difficulty == "HARD":
+            bot.requisition_rate = 0.6
+            bot.think_interval = 0.7
         
         add_child(bot)
-        print("Spawned BotAI for ", bot.my_team)
+        print("Spawned BotAI for ", bot.my_team, " with profile ", bot.profile)
 
     if GameState.game_mode == "KOTH":
         var timer = Timer.new()
@@ -200,19 +209,40 @@ func _process(delta):
     _update_timer_ui()
     _animate_faction_structures(delta)
 
-    for p in players:
-        var player_towers = 0
-        for z in get_tree().get_nodes_in_group(p.team):
-            if "Tower" in z.name: player_towers += 1
-            
-        var initial = initial_towers_per_team.get(p.team, 2)
-        var dynamic_rate = requisition_rate + ((initial - player_towers) * (1.0 / max(1.0, float(initial))))
-        if p.req < max_requisition:
-            p.req += dynamic_rate * delta
-            if p.req > max_requisition: p.req = max_requisition
-            
-        if p.ui:
-            p.ui.update_requisition(p.req, max_requisition)
+    if GameState.current_mode == "AI_VS_AI" and players.size() > 0 and players[0].ui:
+        var bot_a: BotAI = null
+        var bot_b: BotAI = null
+        for b in get_children():
+            if b is BotAI:
+                if b.my_team == "SideA" and bot_a == null: bot_a = b
+                elif b.my_team != "SideA" and bot_b == null: bot_b = b
+        if bot_a:
+            players[0].ui.update_requisition(bot_a.current_requisition, bot_a.max_requisition)
+        if bot_b:
+            players[0].ui.update_enemy_requisition(bot_b.current_requisition, bot_b.max_requisition, bot_b.my_team)
+    else:
+        for p in players:
+            var player_towers = 0
+            for z in get_tree().get_nodes_in_group(p.team):
+                if "Tower" in z.name: player_towers += 1
+                
+            var initial = initial_towers_per_team.get(p.team, 2)
+            var dynamic_rate = requisition_rate + ((initial - player_towers) * (1.0 / max(1.0, float(initial))))
+            if p.req < max_requisition:
+                p.req += dynamic_rate * delta
+                if p.req > max_requisition: p.req = max_requisition
+                
+            if p.ui:
+                p.ui.update_requisition(p.req, max_requisition)
+                # Find opposing bot or player to update enemy requisition display
+                var enemy_req = 0.0
+                var enemy_name = "Enemy AI"
+                for b in get_children():
+                    if b is BotAI and b.my_team != p.team:
+                        enemy_req = b.current_requisition
+                        enemy_name = b.my_team + " AI"
+                        break
+                p.ui.update_enemy_requisition(enemy_req, max_requisition, enemy_name)
 
 func _on_ui_card_selected(card_ui, ui_instance):
     var p = _get_player_by_ui(ui_instance)

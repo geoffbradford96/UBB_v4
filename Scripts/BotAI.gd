@@ -10,33 +10,31 @@ var hand: Array = []
 var discard: Array = []
 
 var think_timer: float = 0.0
-var think_interval: float = 2.0
+var think_interval: float = 1.0
 var active_commander: Node3D = null
 
 @export var my_team: String = "SideB"
 @export var enemy_team: String = "SideA"
 
-var ai_profile: String = ""
+var profile: String = ""
 
 func _ready():
-	var profiles = ["Void Charcon", "Dominion Planet Commander", "Mixed Hordes of the Unknown Realm", "The Great Beast Speaker", "The Scrap Pirate King", "The Reach Queen"]
-	ai_profile = profiles.pick_random()
-	print(my_team + " is playing as: " + ai_profile)
-	
-	if ai_profile == "Void Charcon":
-		deck = generate_themed_deck("Void")
-	elif ai_profile == "Dominion Planet Commander":
-		deck = generate_themed_deck("Dominion")
-	elif ai_profile == "The Great Beast Speaker":
-		deck = generate_themed_deck("Rimworlders")
-	elif ai_profile == "The Scrap Pirate King":
-		deck = generate_themed_deck("Pirates")
-	elif ai_profile == "The Reach Queen":
-		deck = generate_themed_deck("The Reach")
+	# If a profile was assigned (e.g. Player1, Guest1, etc.) and has a saved deck, load it!
+	if profile != "" and GameState.player_decks.has(profile) and GameState.player_decks[profile].size() > 0:
+		deck = GameState.player_decks[profile].duplicate()
+		print(my_team + " BotAI initialized with deck from profile: " + profile)
 	else:
-		deck = generate_themed_deck("Random")
+		# Fallback: create a tailored 6-card deck (1 Commander + 5 Units/Spells)
+		var theme = "Void"
+		if my_team == "SideA": theme = "Dominion"
+		elif "Guest2" in profile or "Rimworld" in profile: theme = "Rimworlders"
+		elif "Guest3" in profile or "Pirate" in profile: theme = "Pirates"
+		elif "Guest4" in profile or "Reach" in profile: theme = "The Reach"
+		deck = generate_themed_deck(theme)
+		print(my_team + " BotAI generated standard 6-card deck for faction: " + theme)
 		
 	deck.shuffle()
+	# Draw starting hand of 3 cards (identical to player hand in HandContainer)
 	draw_to_hand()
 	draw_to_hand()
 	draw_to_hand()
@@ -44,8 +42,9 @@ func _ready():
 func _process(delta):
 	if multiplayer.has_multiplayer_peer() and multiplayer.multiplayer_peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED:
 		if not multiplayer.is_server():
-			return # Let the server handle AI thinking in online matches!
+			return # Let the server authority handle AI thinking in online matches!
 
+	# Unified Requisition (Energy) generation: base rate + tower catchup bonus
 	var bot_towers = 0
 	for z in get_tree().get_nodes_in_group(my_team):
 		if "Tower" in z.name:
@@ -54,6 +53,7 @@ func _process(delta):
 	var initial = 2
 	if am and am.get("initial_towers_per_team"):
 		initial = am.initial_towers_per_team.get(my_team, 2)
+		
 	var dynamic_rate = requisition_rate + ((initial - bot_towers) * (1.0 / max(1.0, float(initial))))
 	if current_requisition < max_requisition:
 		current_requisition += dynamic_rate * delta
@@ -89,20 +89,24 @@ func evaluate_moves():
 
 	var valid_hand = []
 	for c in hand:
-		if c.card_type == "Commander" and has_commander: continue
+		if c.card_type == "Commander" and has_commander:
+			continue
 		valid_hand.append(c)
 		
-	if valid_hand.is_empty(): return
+	if valid_hand.is_empty():
+		return
 	
+	# Prioritize highest impact cards affordable with current energy
 	valid_hand.sort_custom(func(a, b): return a.cost > b.cost)
 	
 	for c in valid_hand:
 		if current_requisition >= c.cost:
-			if c == valid_hand[0] or randf() > 0.5:
-				var spawn_pos = calculate_optimal_spawn(c)
-				if spawn_pos != null:
-					play_card(c, spawn_pos)
-				return
+			var spawn_pos = calculate_optimal_spawn(c)
+			if spawn_pos != null:
+				play_card(c, spawn_pos)
+				# If AI still has sufficient energy, loop to potentially play another card
+				if current_requisition < 15.0:
+					break
 
 func calculate_optimal_spawn(card: CardData):
 	if card.is_spell:
@@ -149,11 +153,10 @@ func calculate_optimal_spawn(card: CardData):
 		var side_offset = right_dir * randf_range(-5, 5)
 		target_pos += (push_dir * randf_range(5, 15)) + side_offset
 		
-	# Clamp deployment to valid distance (max 25)
+	# Clamp deployment to valid distance from friendly structure (max 24.0m, matching player's 25.0m rule)
 	if target_pos.distance_to(spawn_anchor.global_position) > 24.0:
 		target_pos = spawn_anchor.global_position + (target_pos - spawn_anchor.global_position).normalized() * 24.0
 	return target_pos
-
 
 func play_card(card: CardData, target_position: Vector3):
 	current_requisition -= card.cost
@@ -162,7 +165,7 @@ func play_card(card: CardData, target_position: Vector3):
 	var file_name = card.resource_path.get_file().trim_suffix(".tres").trim_suffix(".remap")
 	discard.append(file_name)
 	
-	print(my_team, " AI played ", card.card_name, " at ", target_position)
+	print(my_team, " AI spent ", card.cost, " energy on ", card.card_name, " | Energy remaining: ", snapped(current_requisition, 0.1))
 	
 	var am = get_tree().current_scene
 	if am and am.has_method("sync_spawn_card"):
@@ -213,7 +216,8 @@ func generate_themed_deck(theme: String) -> Array:
 		new_deck.append(pool_commanders.pick_random())
 	
 	pool_units.shuffle()
-	for i in range(min(15, pool_units.size())):
+	# Pick exactly 5 units/spells to form standard 6-card deck
+	for i in range(min(5, pool_units.size())):
 		new_deck.append(pool_units[i])
 		
 	return new_deck

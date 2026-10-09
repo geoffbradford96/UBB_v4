@@ -38,7 +38,7 @@ func _ready():
     # Dorsal Crystalline Spines (2 Rows of 4 Razor Spines)
     for i in range(8):
         var side = -1.0 if (i % 2 == 0) else 1.0
-        var row = i / 2
+        var row = float(int(i / 2.0))
         var spike = MeshInstance3D.new()
         spike.mesh = CylinderMesh.new()
         spike.mesh.top_radius = 0.02
@@ -57,7 +57,8 @@ func _ready():
         eye.mesh.radius = 0.15
         eye.material_override = mat_eyes
         var side = -1.0 if (i % 2 == 0) else 1.0
-        eye.position = Vector3(side * (0.3 + (i / 2) * 0.25), 1.6 + (i / 2) * 0.2, -1.8)
+        var row_offset = float(int(i / 2.0))
+        eye.position = Vector3(side * (0.3 + row_offset * 0.25), 1.6 + row_offset * 0.2, -1.8)
         mesh_node.add_child(eye)
 
     # Scuttling Chitin Legs (6 Spider-like Needle Legs)
@@ -69,7 +70,7 @@ func _ready():
         leg.mesh.height = 2.2
         leg.material_override = mat_chitin
         var side = -1.0 if (i % 2 == 0) else 1.0
-        var row = i / 2
+        var row = float(int(i / 2.0))
         leg.position = Vector3(side * 1.4, 0.7, (row - 1.0) * 1.1)
         leg.rotation_degrees.z = side * 35.0
         mesh_node.add_child(leg)

@@ -84,8 +84,8 @@ func _ready():
         leg.mesh.bottom_radius = 0.8
         leg.mesh.height = 2.6
         leg.material_override = mat_hide
-        var x = (i % 2 - 0.5) * 3.6
-        var z = (i / 2 - 0.5) * 3.0
+        var x = (float(i % 2) - 0.5) * 3.6
+        var z = (float(int(i / 2.0)) - 0.5) * 3.0
         leg.position = Vector3(x, 1.3, z)
         leg.rotation_degrees.z = 12 if x < 0 else -12
         mesh_node.add_child(leg)

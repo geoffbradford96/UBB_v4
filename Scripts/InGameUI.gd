@@ -30,7 +30,12 @@ func _ready():
 		
 	var exit_btn = get_node_or_null("ExitButton")
 	if exit_btn:
+		if GameState.current_mode == "AI_VS_AI":
+			exit_btn.text = "Exit Match"
 		exit_btn.connect("pressed", Callable(self, "_on_exit_button_pressed"))
+		
+	# Create top panel for Enemy / Opponent Requisition display
+	_build_enemy_req_ui()
 		
 	crosshair = ColorRect.new()
 	crosshair.color = Color(1, 1, 1, 0.8)
@@ -97,7 +102,56 @@ func _on_exit_button_pressed():
 	else:
 		get_tree().change_scene_to_file("res://Scenes/ModeHub.tscn")
 
+var enemy_req_bar: ProgressBar = null
+var enemy_req_label: Label = null
+
+func _build_enemy_req_ui():
+	var top_panel = PanelContainer.new()
+	top_panel.name = "EnemyReqPanel"
+	top_panel.offset_left = 130.0
+	top_panel.offset_top = 18.0
+	top_panel.offset_right = 370.0
+	top_panel.offset_bottom = 62.0
+	
+	var vbox = VBoxContainer.new()
+	top_panel.add_child(vbox)
+	
+	enemy_req_label = Label.new()
+	enemy_req_label.text = "Enemy Energy: 0 / 100"
+	enemy_req_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	enemy_req_label.add_theme_font_size_override("font_size", 12)
+	vbox.add_child(enemy_req_label)
+	
+	enemy_req_bar = ProgressBar.new()
+	enemy_req_bar.custom_minimum_size = Vector2(230, 14)
+	enemy_req_bar.show_percentage = false
+	enemy_req_bar.max_value = 100.0
+	enemy_req_bar.value = 0.0
+	
+	var style_bg = StyleBoxFlat.new()
+	style_bg.bg_color = Color(0.2, 0.1, 0.1, 0.85)
+	style_bg.corner_radius_top_left = 4; style_bg.corner_radius_top_right = 4
+	style_bg.corner_radius_bottom_left = 4; style_bg.corner_radius_bottom_right = 4
+	
+	var style_fill = StyleBoxFlat.new()
+	style_fill.bg_color = Color(0.85, 0.25, 0.2)
+	style_fill.corner_radius_top_left = 4; style_fill.corner_radius_top_right = 4
+	style_fill.corner_radius_bottom_left = 4; style_fill.corner_radius_bottom_right = 4
+	
+	enemy_req_bar.add_theme_stylebox_override("background", style_bg)
+	enemy_req_bar.add_theme_stylebox_override("fill", style_fill)
+	vbox.add_child(enemy_req_bar)
+	
+	add_child(top_panel)
+
 func update_requisition(current: float, max_req: float):
 	req_bar.max_value = max_req
 	req_bar.value = current
-	req_label.text = "Requisition: " + str(floor(current)) + " / " + str(max_req)
+	var prefix = "SideA Energy" if GameState.current_mode == "AI_VS_AI" else "Requisition"
+	req_label.text = prefix + ": " + str(floor(current)) + " / " + str(max_req)
+
+func update_enemy_requisition(current: float, max_req: float, label_prefix: String = "Enemy"):
+	if enemy_req_bar and enemy_req_label:
+		enemy_req_bar.max_value = max_req
+		enemy_req_bar.value = current
+		enemy_req_label.text = label_prefix + " Energy: " + str(floor(current)) + " / " + str(max_req)
