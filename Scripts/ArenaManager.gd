@@ -128,12 +128,14 @@ func setup_match():
             players[0].ui.visible = false
     
     var teams_for_ai = []
-    total_slots = GameState.match_player_count
     if is_6p_mode:
+        total_slots = 6
         teams_for_ai = ["SideA", "SideA", "SideA", "SideB", "SideB", "SideB"]
     elif is_4p_mode:
+        total_slots = max(GameState.match_player_count, 4)
         teams_for_ai = ["SideA", "SideA", "SideB", "SideB"]
     else:
+        total_slots = 2
         teams_for_ai = ["SideA", "SideB"]
     
     if GameState.current_mode.begins_with("ONLINE"):
@@ -623,7 +625,10 @@ func _update_timer_ui():
         if not sudden_death_active:
             var m = int(floor(match_timer / 60.0))
             var s = int(match_timer) % 60
-            label.text = str(m) + ":" + ("0" if s < 10 else "") + str(s)
+            var time_str = str(m) + ":" + ("0" if s < 10 else "") + str(s)
+            if GameState.game_mode == "KOTH":
+                time_str += " | Hill [A:" + str(koth_points["SideA"]) + " B:" + str(koth_points["SideB"]) + "]"
+            label.text = time_str
             label.modulate = Color(1, 1, 1)
             label.scale = Vector2(1.0, 1.0)
         else:
@@ -679,6 +684,11 @@ func _start_beast_of_nothingness():
         eye.position = Vector3(cos(angle) * 62, -48, sin(angle) * 62)
         beast_root.add_child(eye)
         
+    var scale_factor = 1.0
+    if GameState.map_selected == "Arena_4P.tscn": scale_factor = 1.5
+    elif GameState.map_selected == "Arena_6P.tscn": scale_factor = 2.2
+    beast_root.scale = Vector3(scale_factor, 1.0, scale_factor)
+
     var tw = create_tween()
     tw.tween_property(beast_root, "position:y", 20.0, 30.0) # slowly rise (to y=20 so mouth frames the arena)
 

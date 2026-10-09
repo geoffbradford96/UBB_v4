@@ -1,5 +1,7 @@
 extends CharacterBody3D
 
+@export var unit_attribute: String = "Mechanical"
+
 @export var speed: float = 8.0
 @export var attack_range: float = 15.0
 @export var damage: float = 15.0

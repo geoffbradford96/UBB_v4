@@ -26,6 +26,10 @@ top_radius = 15.0
 bottom_radius = 15.0
 height = 0.2
 
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_grass"]
+albedo_color = Color(0.2, 0.5, 0.15, 1)
+roughness = 0.8
+
 [sub_resource type="PlaneMesh" id="PlaneMesh_arena"]
 size = Vector2(200, 200)
 
@@ -76,6 +80,7 @@ script = ExtResource("3_yw5vl")
 [node name="Ground" type="StaticBody3D" parent="."]
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Ground"]
+material = SubResource("StandardMaterial3D_grass")
 mesh = SubResource("PlaneMesh_arena")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Ground"]
@@ -109,13 +114,13 @@ size = Vector3(10, 5, 10)
 script = ExtResource("5_quofm")
 max_health = 2000.0
 
-[node name="PlayerTowerLeft" type="StaticBody3D" parent="." groups=["SideB"] instance=ExtResource("6_y8d4a")]
+[node name="PlayerTowerLeft" type="StaticBody3D" parent="." groups=["SideA"] instance=ExtResource("6_y8d4a")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15, 0, 40)
 script = ExtResource("7_5hvej")
 projectile_scene = ExtResource("8_c88e0")
 team = "SideA"
 
-[node name="PlayerTowerRight" type="StaticBody3D" parent="." groups=["SideB"] instance=ExtResource("6_y8d4a")]
+[node name="PlayerTowerRight" type="StaticBody3D" parent="." groups=["SideA"] instance=ExtResource("6_y8d4a")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 0, 40)
 script = ExtResource("7_5hvej")
 projectile_scene = ExtResource("8_c88e0")

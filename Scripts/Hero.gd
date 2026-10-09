@@ -25,7 +25,7 @@ func _ready():
 	if not mesh: mesh = self # fallback
 	add_to_group("Targetable")
 		# Dynamically assign attribute based on name if not set manually
-	if "Tank" in name or "Walker" in name or "Plane" in name or "Tower" in name or "Base" in name or "CommandBay" in name:
+	if "Tank" in name or "Walker" in name or "Plane" in name or "Tower" in name or "Base" in name or "CommandBay" in name or "Mech" in name or "Leviathan" in name or "Spiker" in name:
 		unit_attribute = "Mechanical"
 	elif "Jellyfish" in name or "Beetle" in name or "Octopus" in name or "Squid" in name or "GreatBeastSpeaker" in name:
 		unit_attribute = "Beast"

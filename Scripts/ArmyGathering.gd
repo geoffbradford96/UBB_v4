@@ -49,6 +49,8 @@ func build_ui():
 	profile_dropdown.add_item("Guest1")
 	profile_dropdown.add_item("Guest2")
 	profile_dropdown.add_item("Guest3")
+	profile_dropdown.add_item("Guest4")
+	profile_dropdown.add_item("Guest5")
 	
 	# Select correct dropdown item based on GameState
 	for i in range(profile_dropdown.item_count):

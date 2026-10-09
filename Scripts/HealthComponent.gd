@@ -23,16 +23,17 @@ var current_health: float
 var is_dead: bool = false
 
 var hp_bar: ProgressBar
+var hp_viewport: SubViewport = null
 
 func _ready():
 	get_parent().add_to_group("Targetable")
 	current_health = max_health
 	
 	# Create Health Bar UI dynamically
-	var viewport = SubViewport.new()
-	viewport.transparent_bg = true
-	viewport.size = Vector2i(200, 30)
-	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	hp_viewport = SubViewport.new()
+	hp_viewport.transparent_bg = true
+	hp_viewport.size = Vector2i(200, 30)
+	hp_viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
 	
 	hp_bar = ProgressBar.new()
 	hp_bar.min_value = 0
@@ -48,22 +49,29 @@ func _ready():
 	hp_bar.add_theme_stylebox_override("background", style_bg)
 	hp_bar.add_theme_stylebox_override("fill", style_fg)
 	
-	viewport.add_child(hp_bar)
+	hp_viewport.add_child(hp_bar)
 	
 	var sprite = Sprite3D.new()
 	sprite.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	sprite.texture = viewport.get_texture()
+	sprite.texture = hp_viewport.get_texture()
 	
 	if "Base" in get_parent().name:
 		sprite.position = Vector3(0, 6.0, 0)
-		viewport.size = Vector2i(400, 40)
+		hp_viewport.size = Vector2i(400, 40)
 	elif "Tower" in get_parent().name:
 		sprite.position = Vector3(0, 7.5, 0)
 	else:
 		sprite.position = Vector3(0, 3.0, 0)
 		
-	get_parent().call_deferred("add_child", viewport)
+	get_parent().call_deferred("add_child", hp_viewport)
 	get_parent().call_deferred("add_child", sprite)
+
+func _refresh_hp_visuals():
+	if hp_bar:
+		hp_bar.max_value = max_health
+		hp_bar.value = current_health
+	if hp_viewport:
+		hp_viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
 
 func take_damage(amount: float):
 	if multiplayer.has_multiplayer_peer() and multiplayer.multiplayer_peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED:
@@ -79,6 +87,7 @@ func sync_take_damage(amount: float):
 	current_health -= amount
 	if hp_bar:
 		hp_bar.value = current_health
+		if hp_viewport: hp_viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
 	emit_signal("health_changed", current_health, max_health)
 	
 	if current_health <= 0:
@@ -99,6 +108,7 @@ func sync_heal(amount: float):
 		current_health = max_health
 	if hp_bar:
 		hp_bar.value = current_health
+		if hp_viewport: hp_viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
 	emit_signal("health_changed", current_health, max_health)
 	
 
@@ -137,18 +147,27 @@ func die():
 			var my_team = "SideA" if multiplayer.is_server() or GameState.current_mode == "LOCAL" else "SideB"
 			
 			if GameState.game_mode == "DESTROY_BASE":
-				if get_parent().is_in_group(my_team):
-					am._end_match("DEFEAT! Your base was destroyed.")
+				var my_bases_alive = false
+				var enemy_bases_alive = false
+				for b in get_tree().get_nodes_in_group("Targetable"):
+					if "Base" in b.name and b != get_parent():
+						if b.is_in_group(my_team):
+							my_bases_alive = true
+						else:
+							enemy_bases_alive = true
+							
+				if not my_bases_alive:
+					if GameState.current_mode == "AI_VS_AI":
+						am._end_match("MATCH OVER! SideB DESTROYED ALL BASES!")
+					else:
+						am._end_match("DEFEAT! All your team's bases were destroyed.")
 					return
-				else:
-					var enemies_alive = false
-					for b in get_tree().get_nodes_in_group("Targetable"):
-						if "Base" in b.name and not b.is_in_group(my_team) and b != get_parent():
-							enemies_alive = true
-							break
-					if not enemies_alive:
+				elif not enemy_bases_alive:
+					if GameState.current_mode == "AI_VS_AI":
+						am._end_match("MATCH OVER! SideA DESTROYED ALL BASES!")
+					else:
 						am._end_match("VICTORY! All enemy bases destroyed.")
-						return
+					return
 			else:
 				# Check for Sudden Death Last One Standing (applies to KOTH too!)
 				if am.get("sudden_death_active"):
@@ -180,7 +199,9 @@ func _process(delta):
 		scrap_heal_time -= delta
 		current_health += 15.0 * delta
 		if current_health > max_health: current_health = max_health
-		if hp_bar: hp_bar.value = current_health
+		if hp_bar:
+			hp_bar.value = current_health
+			if hp_viewport: hp_viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
 		emit_signal("health_changed", current_health, max_health)
 			
 	if current_health > 0 and current_health < max_health:
@@ -188,7 +209,9 @@ func _process(delta):
 		if parent and parent.get("unit_attribute") == "Organic":
 			current_health += 1.0 * delta # Slow regen: 1 HP per second
 			if current_health > max_health: current_health = max_health
-			if hp_bar: hp_bar.value = current_health
+			if hp_bar:
+				hp_bar.value = current_health
+				if hp_viewport: hp_viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
 			emit_signal("health_changed", current_health, max_health)
 
 
@@ -202,3 +225,4 @@ func set_max_health(new_max: float):
 	if hp_bar:
 		hp_bar.max_value = max_health
 		hp_bar.value = current_health
+		if hp_viewport: hp_viewport.render_target_update_mode = SubViewport.UPDATE_ONCE

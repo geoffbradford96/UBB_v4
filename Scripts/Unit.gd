@@ -38,8 +38,11 @@ func _ready():
 	base_mesh_pos = mesh.position
 	var health = get_node_or_null("HealthComponent")
 	if health:
-		health.max_health = max_health
-		health.current_health = max_health
+		if max_health != 100.0:
+			health.max_health = max_health
+			health.current_health = max_health
+		else:
+			max_health = health.max_health
 
 func _physics_process(delta):
 	# Apply gravity
@@ -76,7 +79,7 @@ func _physics_process(delta):
 			# --- Separation / Collision Avoidance ---
 			var my_team = ""
 			for g in get_groups():
-				if g.begins_with("Side"): my_team = g
+				if g.begins_with("Side") or g == "Beast": my_team = g
 			var space_state = get_world_3d().direct_space_state
 			var query = PhysicsShapeQueryParameters3D.new()
 			var shape = SphereShape3D.new()

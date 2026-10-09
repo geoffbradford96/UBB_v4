@@ -25,12 +25,6 @@ func _ready():
 
 func _physics_process(delta):
     super._physics_process(delta)
-    # Simple procedural bobbing/walking animation
-    if Vector2(velocity.x, velocity.z).length() > 0.1 and mesh:
-        walk_time += delta * speed * 3.0
-        mesh.position.y = abs(sin(walk_time)) * 0.5
-    elif mesh:
-        mesh.position.y = 0
-
+    # Floating hovering animation
     if mesh:
         mesh.position.y = sin(Time.get_ticks_msec() * 0.002) * 0.5 + 0.5

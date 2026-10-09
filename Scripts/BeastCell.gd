@@ -40,18 +40,12 @@ func find_new_target():
 	current_target = null
 	var enemies = []
 	for node in get_tree().get_nodes_in_group("Targetable"):
-		if not node.is_in_group("Beast"):
+		if not node.is_in_group("Beast") and is_instance_valid(node):
 			enemies.append(node)
 	var closest = 99999.0
 	for e in enemies:
 		if is_instance_valid(e):
 			var d = global_position.distance_to(e.global_position)
-			var effective_range = attack_range + 0.5
-			if "Base" in e.name:
-				effective_range += 5.5
-			elif "Tower" in e.name or "CommandBay" in e.name:
-				effective_range += 2.5
-				
-			if d < effective_range and d < closest:
+			if d < closest:
 				closest = d
 				current_target = e

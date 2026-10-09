@@ -14,13 +14,13 @@ func _physics_process(delta):
 			is_placing_mine = false
 			if mine_scene:
 				var mine = mine_scene.instantiate()
-				get_tree().current_scene.add_child(mine)
-				mine.global_position = global_position
-				
 				var friendly_group = ""
 				for g in get_groups():
 					if g.begins_with("Side"): friendly_group = g
-				mine.add_to_group(friendly_group)
+				if friendly_group != "":
+					mine.add_to_group(friendly_group)
+				get_tree().current_scene.add_child(mine)
+				mine.global_position = global_position
 		move_and_slide()
 		return
 		

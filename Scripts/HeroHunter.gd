@@ -1,5 +1,7 @@
 extends CharacterBody3D
 
+@export var unit_attribute: String = "Organic"
+
 @export var speed: float = 4.5
 @export var attack_range: float = 12.0 # laser variant, more range, less damage
 @export var damage: float = 8.0

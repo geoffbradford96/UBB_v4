@@ -9,7 +9,7 @@ func _ready():
     
 
     var mat_rust = StandardMaterial3D.new(); mat_rust.albedo_color = Color(0.6, 0.3, 0.1); mat_rust.roughness = 0.9
-    var body = MeshInstance3D.new(); body.mesh = CylinderMesh.new(); body.mesh.radius = 1.2; body.mesh.height = 2.0
+    var body = MeshInstance3D.new(); body.mesh = CylinderMesh.new(); body.mesh.top_radius = 1.2; body.mesh.bottom_radius = 1.2; body.mesh.height = 2.0
     body.material_override = mat_rust; body.position.y = 2.5; body.rotation_degrees.x = 90
     mesh_node.add_child(body)
     var leg1 = MeshInstance3D.new(); leg1.mesh = BoxMesh.new(); leg1.mesh.size = Vector3(0.4, 2.5, 0.4)

@@ -114,13 +114,13 @@ size = Vector3(10, 5, 10)
 script = ExtResource("6_health")
 max_health = 2000.0
 
-[node name="PlayerTowerLeft" type="StaticBody3D" parent="." groups=["SideB"] instance=ExtResource("5_tower")]
+[node name="PlayerTowerLeft" type="StaticBody3D" parent="." groups=["SideA"] instance=ExtResource("5_tower")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15, 0, 40)
 script = ExtResource("7_2tw1v")
 projectile_scene = ExtResource("8_0ds76")
 team = "SideA"
 
-[node name="PlayerTowerRight" type="StaticBody3D" parent="." groups=["SideB"] instance=ExtResource("5_tower")]
+[node name="PlayerTowerRight" type="StaticBody3D" parent="." groups=["SideA"] instance=ExtResource("5_tower")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 0, 40)
 script = ExtResource("7_2tw1v")
 projectile_scene = ExtResource("8_0ds76")

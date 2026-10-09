@@ -1,5 +1,7 @@
 extends CharacterBody3D
 
+@export var unit_attribute: String = "Organic"
+
 @export var speed: float = 5.0
 @export var heal_range: float = 3.0
 @export var heal_amount: float = 50.0

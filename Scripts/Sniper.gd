@@ -1,5 +1,7 @@
 extends CharacterBody3D
 
+@export var unit_attribute: String = "Organic"
+
 @export var speed: float = 4.0
 @export var attack_range: float = 35.0 # Must be >30 to reach the center lane from the flank!
 @export var damage: float = 40.0

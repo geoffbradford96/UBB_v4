@@ -16,7 +16,7 @@ func _ready():
     head.material_override = mat_beast; head.position = Vector3(0, 3.0, 2.5)
     mesh_node.add_child(head)
     for i in range(4):
-        var leg = MeshInstance3D.new(); leg.mesh = CylinderMesh.new(); leg.mesh.radius = 0.6; leg.mesh.height = 3.0
+        var leg = MeshInstance3D.new(); leg.mesh = CylinderMesh.new(); leg.mesh.top_radius = 0.6; leg.mesh.bottom_radius = 0.6; leg.mesh.height = 3.0
         leg.material_override = mat_beast
         var x = (i%2 - 0.5)*4.0; var z = (i/2 - 0.5)*3.0
         leg.position = Vector3(x, 1.5, z)

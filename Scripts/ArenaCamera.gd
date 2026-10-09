@@ -20,7 +20,7 @@ func _process(delta):
 	if hero == null or not is_instance_valid(hero):
 		var potential_heroes = get_tree().get_nodes_in_group(assigned_team)
 		for p in potential_heroes:
-			if "Commander" in p.name:
+			if p.is_in_group("CommanderUnit") or "Commander" in p.name or "Overlord" in p.name or "GreatBeastSpeaker" in p.name:
 				hero = p
 				return_to_hero()
 				break
@@ -65,3 +65,7 @@ func _unhandled_input(event):
 			zoom_level = clamp(zoom_level - 0.1, min_zoom, max_zoom)
 		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
 			zoom_level = clamp(zoom_level + 0.1, min_zoom, max_zoom)
+
+func snap_to(pos: Vector3):
+	target_position = pos
+	is_snapped = true
