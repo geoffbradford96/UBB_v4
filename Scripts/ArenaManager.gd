@@ -206,6 +206,10 @@ func _process(delta):
             else:
                 sync_spawn_hazard(rx, rz, randi() % 3 == 0, hazard_name)
                 
+    var b_root = get_node_or_null("BeastOfNothingness")
+    if b_root and is_instance_valid(b_root):
+        b_root.rotation.y += delta * 0.04
+                
     _update_timer_ui()
     _animate_faction_structures(delta)
 
@@ -273,6 +277,11 @@ func _get_player_by_device(device: int) -> LocalPlayerState:
     return null
 
 func _unhandled_input(event):
+    if event is InputEventKey and event.pressed and not event.echo:
+        if event.keycode == KEY_F8:
+            print("DEBUG: Triggering Endgame Sudden Death collapse in 2 seconds!")
+            match_timer = 2.0
+
     var is_mouse_click = (event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed)
     
     var acted_player = null
@@ -782,7 +791,7 @@ func _start_beast_of_nothingness():
     var teeth_mat = StandardMaterial3D.new()
     teeth_mat.albedo_color = Color(0.7, 0.7, 0.7)
     for i in range(45):
-        var angle = i * 8 * (3.14159/180.0)
+        var angle = i * 8 * (PI / 180.0)
         var tooth = MeshInstance3D.new()
         tooth.mesh = CylinderMesh.new()
         tooth.mesh.top_radius = 0.0
@@ -791,8 +800,22 @@ func _start_beast_of_nothingness():
         tooth.material_override = teeth_mat
         tooth.position = Vector3(cos(angle) * 55, -45, sin(angle) * 55)
         tooth.rotation_degrees.x = -15
-        tooth.rotation_degrees.y = -angle * (180.0/3.14159)
+        tooth.rotation_degrees.y = -angle * (180.0/PI)
         beast_root.add_child(tooth)
+        
+    # Inner ring of razor fangs
+    for i in range(30):
+        var angle = (i * 12 + 6) * (PI / 180.0)
+        var inner_tooth = MeshInstance3D.new()
+        inner_tooth.mesh = CylinderMesh.new()
+        inner_tooth.mesh.top_radius = 0.0
+        inner_tooth.mesh.bottom_radius = 2.0
+        inner_tooth.mesh.height = 10.0
+        inner_tooth.material_override = teeth_mat
+        inner_tooth.position = Vector3(cos(angle) * 48, -46, sin(angle) * 48)
+        inner_tooth.rotation_degrees.x = -25
+        inner_tooth.rotation_degrees.y = -angle * (180.0/PI)
+        beast_root.add_child(inner_tooth)
         
     for i in range(40):
         var eye = MeshInstance3D.new()
@@ -825,6 +848,25 @@ func sync_spawn_hazard(rx: float, rz: float, is_mouth: bool, unique_name: String
     t.global_position = Vector3(rx, -5, rz)
     var tw = t.create_tween()
     tw.tween_property(t, "position:y", 0.0, 1.0)
+    
+    # Ground eruption shockwave burst
+    var burst = MeshInstance3D.new()
+    var tm = TorusMesh.new()
+    tm.inner_radius = 1.0; tm.outer_radius = 2.4
+    burst.mesh = tm
+    var bmat = StandardMaterial3D.new()
+    bmat.albedo_color = Color(0.35, 0.08, 0.45, 0.8)
+    bmat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+    bmat.emission_enabled = true
+    bmat.emission = Color(0.4, 0.05, 0.5)
+    bmat.emission_energy_multiplier = 2.0
+    burst.material_override = bmat
+    add_child(burst)
+    burst.global_position = Vector3(rx, 0.05, rz)
+    var btw = burst.create_tween()
+    btw.tween_property(burst, "scale", Vector3(2.2, 1.0, 2.2), 0.6)
+    btw.parallel().tween_property(bmat, "albedo_color:a", 0.0, 0.6)
+    btw.tween_callback(burst.queue_free)
 
 func _end_match(message: String):
     if get_tree().paused: return
