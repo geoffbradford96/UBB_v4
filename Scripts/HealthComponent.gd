@@ -190,6 +190,27 @@ func die():
 						am._end_match("NO ONE SURVIVED SUDDEN DEATH!")
 
 
+	# Destruction burst effect
+	var parent_pos = get_parent().global_position
+	var puff = MeshInstance3D.new()
+	var sm = SphereMesh.new()
+	sm.radius = 1.0 if not "Base" in get_parent().name else 3.0
+	sm.height = sm.radius * 2.0
+	puff.mesh = sm
+	var p_mat = StandardMaterial3D.new()
+	p_mat.albedo_color = Color(0.9, 0.45, 0.1, 0.8)
+	p_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	p_mat.emission_enabled = true
+	p_mat.emission = Color(1.0, 0.5, 0.1)
+	p_mat.emission_energy_multiplier = 2.5
+	puff.material_override = p_mat
+	get_tree().current_scene.add_child(puff)
+	puff.global_position = parent_pos + Vector3(0, 1.0, 0)
+	var tw = puff.create_tween()
+	tw.tween_property(puff, "scale", Vector3(1.5, 1.5, 1.5), 0.25)
+	tw.parallel().tween_property(p_mat, "albedo_color:a", 0.0, 0.25)
+	tw.tween_callback(puff.queue_free)
+
 	get_parent().queue_free()
 
 

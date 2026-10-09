@@ -27,14 +27,13 @@ func _ready():
 	eye.position = Vector3(0, 0.8, 0.7)
 	mesh_node.add_child(eye)
 
-func _physics_process(delta):
-	super._physics_process(delta)
-	if Vector2(velocity.x, velocity.z).length() > 0.1 and mesh:
+func _animate_mesh(delta: float, moving: bool):
+	if moving and mesh:
 		walk_time += delta * speed * 4.0
-		var s = sin(walk_time)*0.2
+		var s = sin(walk_time) * 0.2
 		mesh.scale = Vector3(1.0 + s, 1.0 - s, 1.0 + s)
 	elif mesh:
-		mesh.scale = Vector3(1, 1, 1)
+		mesh.scale = mesh.scale.lerp(Vector3.ONE, 10.0 * delta)
 
 func find_new_target():
 	current_target = null

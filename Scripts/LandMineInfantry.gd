@@ -10,8 +10,12 @@ func _physics_process(delta):
 	if is_placing_mine:
 		velocity = Vector3.ZERO
 		place_timer -= delta
+		_animate_mesh(delta, false)
+		if mesh:
+			mesh.position.y = lerp(mesh.position.y, base_mesh_pos.y - 0.35, 10.0 * delta)
 		if place_timer <= 0:
 			is_placing_mine = false
+			if mesh: mesh.position.y = base_mesh_pos.y
 			if mine_scene:
 				var mine = mine_scene.instantiate()
 				var friendly_group = ""

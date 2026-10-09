@@ -75,13 +75,11 @@ func _ready():
         leg.rotation_degrees.z = side * 35.0
         mesh_node.add_child(leg)
 
-func _physics_process(delta):
-    super._physics_process(delta)
-    # Fast erratic insectoid scuttle
-    if Vector2(velocity.x, velocity.z).length() > 0.1 and mesh:
+func _animate_mesh(delta: float, moving: bool):
+    if moving and mesh:
         walk_time += delta * speed * 6.0
-        mesh.position.y = abs(sin(walk_time)) * 0.15
-        mesh.rotation_degrees.y = sin(walk_time * 0.5) * 5.0
+        mesh.position.y = base_mesh_pos.y + abs(sin(walk_time)) * 0.15
+        mesh.rotation.y = sin(walk_time * 0.5) * 0.08
     elif mesh:
-        mesh.position.y = 0
-        mesh.rotation_degrees.y = 0
+        mesh.position.y = lerp(mesh.position.y, base_mesh_pos.y, 12.0 * delta)
+        mesh.rotation.y = lerp(mesh.rotation.y, 0.0, 12.0 * delta)

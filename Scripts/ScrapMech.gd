@@ -104,13 +104,11 @@ func _ready():
         foot.position = Vector3(side * 1.25, 0.15, -0.1)
         mesh_node.add_child(foot)
 
-func _physics_process(delta):
-    super._physics_process(delta)
-    # Staggering clunky mechanical gait
-    if Vector2(velocity.x, velocity.z).length() > 0.1 and mesh:
+func _animate_mesh(delta: float, moving: bool):
+    if moving and mesh:
         walk_time += delta * speed * 3.2
-        mesh.position.y = abs(sin(walk_time)) * 0.4
-        mesh.rotation_degrees.z = sin(walk_time) * 4.5
+        mesh.position.y = base_mesh_pos.y + abs(sin(walk_time)) * 0.4
+        mesh.rotation.z = sin(walk_time) * 0.08
     elif mesh:
-        mesh.position.y = 0
-        mesh.rotation_degrees.z = 0
+        mesh.position.y = lerp(mesh.position.y, base_mesh_pos.y, 10.0 * delta)
+        mesh.rotation.z = lerp(mesh.rotation.z, 0.0, 10.0 * delta)

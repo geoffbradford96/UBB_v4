@@ -55,6 +55,15 @@ func _process(delta):
 			current_target = null
 			
 	if current_target != null:
+		var f_mesh = get_meta("faction_mesh") if has_meta("faction_mesh") else null
+		if f_mesh and is_instance_valid(f_mesh):
+			if f_mesh.has_meta("dominion_turret"):
+				var turret = f_mesh.get_meta("dominion_turret")
+				if is_instance_valid(turret):
+					var dir = (current_target.global_position - turret.global_position).normalized()
+					var ang = atan2(dir.x, dir.z) - global_rotation.y
+					turret.rotation.y = lerp_angle(turret.rotation.y, ang, 8.0 * delta)
+		
 		fire_timer += delta
 		if fire_timer >= fire_rate:
 			fire_timer = 0.0
@@ -69,6 +78,16 @@ func shoot_at_target():
 		proj.set("damage", 25.0)
 		proj.set("speed", 25.0)
 		
+		# Turret firing recoil kick
+		var f_mesh = get_meta("faction_mesh") if has_meta("faction_mesh") else null
+		if f_mesh and is_instance_valid(f_mesh):
+			if f_mesh.has_meta("dominion_turret"):
+				var turret = f_mesh.get_meta("dominion_turret")
+				if is_instance_valid(turret):
+					var tw = create_tween()
+					tw.tween_property(turret, "position:z", -0.3, 0.06)
+					tw.tween_property(turret, "position:z", 0.0, 0.15)
+		
 		var mesh = proj.get_node_or_null("MeshInstance3D")
 		if mesh and mesh.mesh:
 			var mat = StandardMaterial3D.new()
@@ -77,6 +96,7 @@ func shoot_at_target():
 			elif faction == "The Reach": laser_color = Color(0.0, 0.85, 1.0)
 			elif faction == "Dominion": laser_color = Color(1.0, 0.65, 0.1)
 			elif faction == "Pirates": laser_color = Color(1.0, 0.45, 0.1)
+			elif faction == "Rimworlders": laser_color = Color(1.0, 0.35, 0.05)
 			mat.albedo_color = laser_color
 			mat.emission_enabled = true
 			mat.emission = laser_color

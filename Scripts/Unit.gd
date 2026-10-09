@@ -176,14 +176,17 @@ func _physics_process(delta):
 			if ap.has_animation("idle") and ap.current_animation != "idle":
 				ap.play("idle", 0.2)
 	elif mesh:
-		if is_moving:
-			walk_time += delta * speed * 3.5
-			mesh.position.y = base_mesh_pos.y + abs(sin(walk_time)) * 0.15
-			mesh.rotation.z = sin(walk_time) * 0.06
-		else:
-			mesh.position.y = lerp(mesh.position.y, base_mesh_pos.y, 10.0 * delta)
-			mesh.rotation.z = lerp(mesh.rotation.z, 0.0, 10.0 * delta)
-				
+		_animate_mesh(delta, is_moving)
+
+func _animate_mesh(delta: float, moving: bool):
+	if moving:
+		walk_time += delta * speed * 3.5
+		mesh.position.y = base_mesh_pos.y + abs(sin(walk_time)) * 0.15
+		mesh.rotation.z = sin(walk_time) * 0.06
+	else:
+		mesh.position.y = lerp(mesh.position.y, base_mesh_pos.y, 10.0 * delta)
+		mesh.rotation.z = lerp(mesh.rotation.z, 0.0, 10.0 * delta)
+
 func find_new_target():
 	current_target = null
 	var my_team = ""

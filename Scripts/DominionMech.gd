@@ -85,13 +85,11 @@ func _ready():
         foot.position = Vector3(side * 0.9, 0.15, -0.2)
         mesh_node.add_child(foot)
 
-func _physics_process(delta):
-    super._physics_process(delta)
-    # Procedural biped walking gait with bob and slight roll
-    if Vector2(velocity.x, velocity.z).length() > 0.1 and mesh:
+func _animate_mesh(delta: float, moving: bool):
+    if moving and mesh:
         walk_time += delta * speed * 3.5
-        mesh.position.y = abs(sin(walk_time)) * 0.35
-        mesh.rotation_degrees.z = sin(walk_time) * 3.0
+        mesh.position.y = base_mesh_pos.y + abs(sin(walk_time)) * 0.35
+        mesh.rotation.z = sin(walk_time) * 0.05
     elif mesh:
-        mesh.position.y = 0
-        mesh.rotation_degrees.z = 0
+        mesh.position.y = lerp(mesh.position.y, base_mesh_pos.y, 10.0 * delta)
+        mesh.rotation.z = lerp(mesh.rotation.z, 0.0, 10.0 * delta)

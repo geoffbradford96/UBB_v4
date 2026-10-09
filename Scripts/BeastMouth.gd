@@ -1,4 +1,4 @@
-﻿extends CharacterBody3D
+extends CharacterBody3D
 
 @export var spawn_interval: float = 3.0
 var spawn_timer: float = 0.0
@@ -65,3 +65,8 @@ func sync_spawn_cell():
 		get_tree().current_scene.add_child(c)
 		c.global_position = global_position + Vector3(0, 1.0, 0)
 		c.add_to_group("Beast")
+		var mn = get_meta("mesh_node") if has_meta("mesh_node") else null
+		if mn and is_instance_valid(mn):
+			var tw = create_tween()
+			tw.tween_property(mn, "scale", Vector3(1.3, 0.6, 1.3), 0.1)
+			tw.tween_property(mn, "scale", Vector3(1.0, 1.0, 1.0), 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)

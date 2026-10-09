@@ -538,6 +538,7 @@ func _build_structure_mesh(node, faction, is_tower):
             dish_pole.material_override = steel_mat; dish_pole.position = Vector3(-1.5, 3.3, -1.2); mesh_node.add_child(dish_pole)
             var dish = MeshInstance3D.new(); dish.mesh = CylinderMesh.new(); dish.mesh.top_radius = 0.8; dish.mesh.bottom_radius = 0.1; dish.mesh.height = 0.3
             dish.material_override = steel_mat; dish.position = Vector3(-1.5, 4.2, -1.2); dish.rotation_degrees.x = 45; mesh_node.add_child(dish)
+            mesh_node.set_meta("dominion_dish", dish)
             # Crates
             var c1 = MeshInstance3D.new(); c1.mesh = BoxMesh.new(); c1.mesh.size = Vector3(1.2, 1.0, 1.2)
             c1.material_override = steel_mat; c1.position = Vector3(1.6, 0.5, 1.8); mesh_node.add_child(c1)
@@ -549,6 +550,7 @@ func _build_structure_mesh(node, faction, is_tower):
             ring.material_override = steel_mat; ring.position.y = 3.2; mesh_node.add_child(ring)
             var turret = MeshInstance3D.new(); turret.mesh = BoxMesh.new(); turret.mesh.size = Vector3(2.2, 1.2, 2.4)
             turret.material_override = steel_mat; turret.position.y = 4.0; mesh_node.add_child(turret)
+            mesh_node.set_meta("dominion_turret", turret)
             # Twin heavy barrels
             for i in range(2):
                 var barrel = MeshInstance3D.new(); barrel.mesh = CylinderMesh.new(); barrel.mesh.height = 2.5; barrel.mesh.bottom_radius = 0.22; barrel.mesh.top_radius = 0.2
@@ -654,6 +656,7 @@ func _build_structure_mesh(node, faction, is_tower):
             stone_ring.material_override = stone_mat; stone_ring.position.y = 1.0; mesh_node.add_child(stone_ring)
             var fire = MeshInstance3D.new(); fire.mesh = SphereMesh.new(); fire.mesh.radius = 2.2
             fire.material_override = fire_mat; fire.position.y = 2.8; mesh_node.add_child(fire)
+            mesh_node.set_meta("rimworld_fire", fire)
             # Gigantic Beast Tusks
             for i in range(4):
                 var mammoth_tusk = MeshInstance3D.new(); mammoth_tusk.mesh = CylinderMesh.new(); mammoth_tusk.mesh.height = 6.0; mammoth_tusk.mesh.bottom_radius = 0.55; mammoth_tusk.mesh.top_radius = 0.05
@@ -685,6 +688,7 @@ func _build_structure_mesh(node, faction, is_tower):
             derrick.material_override = rust_mat; derrick.position.y = 2.75; mesh_node.add_child(derrick)
             var crane_boom = MeshInstance3D.new(); crane_boom.mesh = BoxMesh.new(); crane_boom.mesh.size = Vector3(4.2, 0.6, 0.8)
             crane_boom.material_override = scrap_yellow; crane_boom.position = Vector3(1.6, 5.6, 0); mesh_node.add_child(crane_boom)
+            mesh_node.set_meta("pirate_crane", crane_boom)
             var cannon = MeshInstance3D.new(); cannon.mesh = CylinderMesh.new(); cannon.mesh.height = 3.0; cannon.mesh.top_radius = 0.3; cannon.mesh.bottom_radius = 0.35
             cannon.material_override = dark_metal; cannon.rotation_degrees.x = 90; cannon.position = Vector3(0, 4.5, 1.5); mesh_node.add_child(cannon)
         else:
@@ -866,3 +870,17 @@ func _animate_faction_structures(delta):
                 if is_instance_valid(node):
                     node.rotation.y = sin(t * 1.5) * 0.8
                     node.rotation.x = cos(t * 1.2) * 0.3
+            if f_mesh.has_meta("dominion_dish"):
+                var node = f_mesh.get_meta("dominion_dish")
+                if is_instance_valid(node): node.rotation.y += delta * 1.5
+            if f_mesh.has_meta("dominion_turret"):
+                var node = f_mesh.get_meta("dominion_turret")
+                if is_instance_valid(node): node.rotation.y = sin(t * 0.8) * 0.35
+            if f_mesh.has_meta("rimworld_fire"):
+                var node = f_mesh.get_meta("rimworld_fire")
+                if is_instance_valid(node):
+                    var fl = 1.0 + sin(t * 7.0) * 0.12
+                    node.scale = Vector3(fl, 1.0 + cos(t * 9.0) * 0.15, fl)
+            if f_mesh.has_meta("pirate_crane"):
+                var node = f_mesh.get_meta("pirate_crane")
+                if is_instance_valid(node): node.rotation.y = sin(t * 0.5) * 0.4

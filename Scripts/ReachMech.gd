@@ -78,13 +78,11 @@ func _ready():
     pylon.position.y = 1.3
     mesh_node.add_child(pylon)
 
-func _physics_process(delta):
-    super._physics_process(delta)
-    # Anti-gravity hover pulsation and banking
+func _animate_mesh(delta: float, moving: bool):
     if mesh:
         var hover = sin(Time.get_ticks_msec() * 0.003) * 0.35 + 0.35
-        mesh.position.y = hover
-        if Vector2(velocity.x, velocity.z).length() > 0.1:
-            mesh.rotation_degrees.z = lerp(mesh.rotation_degrees.z, -velocity.x * 2.5, delta * 5.0)
+        mesh.position.y = base_mesh_pos.y + hover
+        if moving:
+            mesh.rotation.z = lerp(mesh.rotation.z, -velocity.x * 0.04, delta * 5.0)
         else:
-            mesh.rotation_degrees.z = lerp(mesh.rotation_degrees.z, 0.0, delta * 5.0)
+            mesh.rotation.z = lerp(mesh.rotation.z, 0.0, delta * 5.0)

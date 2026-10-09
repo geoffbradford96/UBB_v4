@@ -44,7 +44,12 @@ func _physics_process(delta):
     pass
     
     var mn = get_meta("mesh_node")
-    if mn and attack_timer < attack_rate - 0.3: # Only sway if not attacking right now
+    var is_tweening = false
+    if has_meta("attack_tween"):
+        var tw = get_meta("attack_tween")
+        if is_instance_valid(tw) and tw.is_running():
+            is_tweening = true
+    if mn and not is_tweening:
         mn.rotation_degrees.x = sin(Time.get_ticks_msec() * 0.003) * 15.0
         
     if current_target == null or not is_instance_valid(current_target):

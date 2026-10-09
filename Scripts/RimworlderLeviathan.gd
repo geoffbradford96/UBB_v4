@@ -90,13 +90,11 @@ func _ready():
         leg.rotation_degrees.z = 12 if x < 0 else -12
         mesh_node.add_child(leg)
 
-func _physics_process(delta):
-    super._physics_process(delta)
-    # Heavy primal lumbering locomotion
-    if Vector2(velocity.x, velocity.z).length() > 0.1 and mesh:
+func _animate_mesh(delta: float, moving: bool):
+    if moving and mesh:
         walk_time += delta * speed * 2.8
-        mesh.position.y = abs(sin(walk_time)) * 0.35
-        mesh.rotation_degrees.z = sin(walk_time) * 2.5
+        mesh.position.y = base_mesh_pos.y + abs(sin(walk_time)) * 0.35
+        mesh.rotation.z = sin(walk_time) * 0.04
     elif mesh:
-        mesh.position.y = 0
-        mesh.rotation_degrees.z = 0
+        mesh.position.y = lerp(mesh.position.y, base_mesh_pos.y, 10.0 * delta)
+        mesh.rotation.z = lerp(mesh.rotation.z, 0.0, 10.0 * delta)

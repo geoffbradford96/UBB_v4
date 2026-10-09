@@ -37,7 +37,13 @@ func _ready():
 				if hp:
 					hp.take_damage(damage)
 					
-	# Wait for particle effects to finish if any
-	await get_tree().create_timer(duration).timeout
+	# Fade/shrink out smoothly before freeing
+	var remaining_time = max(0.1, duration - 0.5)
+	if mesh and is_instance_valid(mesh):
+		var fade_tw = create_tween()
+		fade_tw.tween_property(mesh, "scale", Vector3(0.01, 0.01, 0.01), remaining_time).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		await fade_tw.finished
+	else:
+		await get_tree().create_timer(remaining_time).timeout
 	if is_inside_tree():
 		queue_free()

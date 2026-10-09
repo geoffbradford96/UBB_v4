@@ -1,6 +1,7 @@
 extends CharacterBody3D
 
 @export var unit_attribute: String = "Mechanical"
+var faction: String = "Dominion"
 
 @export var damage: float = 5.0
 @export var attack_range: float = 10.0
@@ -62,9 +63,15 @@ func shoot():
 		var mesh = proj.get_node_or_null("MeshInstance3D")
 		if mesh and mesh.mesh:
 			var mat = StandardMaterial3D.new()
-			mat.albedo_color = Color(0.8, 0.2, 1.0)
+			var laser_color = Color(0.2, 1.0, 0.2)
+			if faction == "Void": laser_color = Color(0.85, 0.1, 0.85)
+			elif faction == "The Reach": laser_color = Color(0.0, 0.85, 1.0)
+			elif faction == "Dominion": laser_color = Color(1.0, 0.65, 0.1)
+			elif faction == "Pirates": laser_color = Color(1.0, 0.45, 0.1)
+			elif faction == "Rimworlders": laser_color = Color(1.0, 0.35, 0.05)
+			mat.albedo_color = laser_color
 			mat.emission_enabled = true
-			mat.emission = Color(0.8, 0.2, 1.0)
+			mat.emission = laser_color
 			mat.emission_energy_multiplier = 2.0
 			mesh.set_surface_override_material(0, mat)
 

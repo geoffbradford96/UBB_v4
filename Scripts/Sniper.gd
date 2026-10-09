@@ -72,6 +72,7 @@ func _physics_process(delta):
 
 	var horiz_vel = Vector3(velocity.x, 0, velocity.z)
 	var anim_mesh = get_node_or_null("MeshInstance3D")
+	if not anim_mesh: anim_mesh = get_node_or_null("VisualPivot")
 	if horiz_vel.length() > 0.1:
 		var look_target = global_position + horiz_vel
 		if global_position.distance_to(look_target) > 0.1:
@@ -89,6 +90,9 @@ func _physics_process(delta):
 		if anim_mesh:
 			anim_mesh.rotation.z = lerp(anim_mesh.rotation.z, 0.0, 10.0 * delta)
 			anim_mesh.rotation.x = lerp(anim_mesh.rotation.x, 0.0, 10.0 * delta)
+			
+	if anim_mesh:
+		anim_mesh.position.z = lerp(anim_mesh.position.z, 0.0, 10.0 * delta)
 	# Anti-stuck wall sliding
 	if is_on_wall():
 		var wall_normal = get_wall_normal()
@@ -122,6 +126,12 @@ func shoot():
 		proj.set("damage", damage)
 		proj.set("speed", 40.0) # Sniper bullets are fast!
 		
+		# Sniper rifle recoil kick
+		var anim_mesh = get_node_or_null("MeshInstance3D")
+		if not anim_mesh: anim_mesh = get_node_or_null("VisualPivot")
+		if anim_mesh:
+			anim_mesh.position.z += 0.25
+		
 		# Visual Polish: Blue laser trace
 		var mesh = proj.get_node_or_null("MeshInstance3D")
 		if mesh and mesh.mesh:
@@ -138,9 +148,10 @@ func find_new_target():
 	for g in get_groups():
 		if g.begins_with("Side"): my_team = g
 	var enemies = []
-	for node in get_tree().get_nodes_in_group("Targetable"):
-		if not node.is_in_group(my_team):
-			enemies.append(node)
+	if my_team != "":
+		for node in get_tree().get_nodes_in_group("Targetable"):
+			if not node.is_in_group(my_team) and is_instance_valid(node) and node != self:
+				enemies.append(node)
 	var closest_dist = 99999.0
 	for e in enemies:
 		if is_instance_valid(e):

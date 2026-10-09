@@ -90,6 +90,7 @@ func _physics_process(delta):
 
 	var horiz_vel = Vector3(velocity.x, 0, velocity.z)
 	var anim_mesh = get_node_or_null("MeshInstance3D")
+	if not anim_mesh: anim_mesh = get_node_or_null("VisualPivot")
 	if horiz_vel.length() > 0.1:
 		var look_target = global_position + horiz_vel
 		if global_position.distance_to(look_target) > 0.1:

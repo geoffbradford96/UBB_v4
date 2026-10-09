@@ -19,11 +19,12 @@ func _gui_input(event):
 
 func set_selected(selected: bool):
 	is_selected = selected
+	var target_y = -22.0 if is_selected else 0.0
+	var tw = create_tween()
+	tw.tween_property(self, "position:y", target_y, 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	if is_selected:
-		position.y = -20
-		background.color = Color(0.2, 0.5, 0.2)
+		background.color = Color(0.2, 0.65, 0.25)
 	else:
-		position.y = 0
 		if card_data and "is_spell" in card_data and card_data.is_spell:
 			background.color = Color(0.4, 0.1, 0.1)
 		elif card_data and "card_type" in card_data and card_data.card_type == "Commander":

@@ -12,8 +12,11 @@ var min_zoom: float = 0.5
 var max_zoom: float = 3.0
 
 func _ready():
-	target_position = Vector3(0, 0, 0)
+	var base_z = 60.0 if assigned_team == "SideA" else -60.0
+	target_position = Vector3(0, 0, base_z)
 	is_snapped = true
+	var camera_offset = Vector3(0, 20.0 * zoom_level, 16.0 * zoom_level)
+	global_position = target_position + camera_offset
 
 func _process(delta):
 	# Find the Commander if we don't have one and we're not manually exploring

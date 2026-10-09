@@ -59,14 +59,15 @@ func _physics_process(delta):
 
 	var horiz_vel = Vector3(velocity.x, 0, velocity.z)
 	var anim_mesh = get_node_or_null("MeshInstance3D")
+	if not anim_mesh: anim_mesh = get_node_or_null("VisualPivot")
 	if horiz_vel.length() > 0.1:
 		var look_target = global_position + horiz_vel
 		if global_position.distance_to(look_target) > 0.1:
 			look_at(look_target, Vector3.UP)
 		if anim_mesh:
 			var t = Time.get_ticks_msec() / 1000.0 * speed * 2.0
-			anim_mesh.rotation.z = sin(t) * 0.1
-			anim_mesh.rotation.x = cos(t) * 0.1
+			anim_mesh.rotation.z = lerp(anim_mesh.rotation.z, -velocity.x * 0.04 + sin(t) * 0.05, 8.0 * delta)
+			anim_mesh.rotation.x = lerp(anim_mesh.rotation.x, -velocity.z * 0.02, 8.0 * delta)
 	else:
 		if current_target != null and is_instance_valid(current_target):
 			var look_target = current_target.global_position
@@ -74,8 +75,8 @@ func _physics_process(delta):
 			if global_position.distance_to(look_target) > 0.1:
 				look_at(look_target, Vector3.UP)
 		if anim_mesh:
-			anim_mesh.rotation.z = lerp(anim_mesh.rotation.z, 0.0, 10.0 * delta)
-			anim_mesh.rotation.x = lerp(anim_mesh.rotation.x, 0.0, 10.0 * delta)
+			anim_mesh.rotation.z = lerp(anim_mesh.rotation.z, 0.0, 8.0 * delta)
+			anim_mesh.rotation.x = lerp(anim_mesh.rotation.x, 0.0, 8.0 * delta)
 	# Anti-stuck wall sliding
 	if is_on_wall():
 		var wall_normal = get_wall_normal()
@@ -118,9 +119,10 @@ func find_new_target():
 	for g in get_groups():
 		if g.begins_with("Side"): my_team = g
 	var enemies = []
-	for node in get_tree().get_nodes_in_group("Targetable"):
-		if not node.is_in_group(my_team):
-			enemies.append(node)
+	if my_team != "":
+		for node in get_tree().get_nodes_in_group("Targetable"):
+			if not node.is_in_group(my_team) and is_instance_valid(node) and node != self:
+				enemies.append(node)
 	var closest_dist = 99999.0
 	for e in enemies:
 		if is_instance_valid(e):
