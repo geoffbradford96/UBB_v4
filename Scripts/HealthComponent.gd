@@ -165,11 +165,11 @@ func die():
 				elif teams_alive.size() == 1:
 					var winner = teams_alive[0]
 					if GameState.current_mode == "AI_VS_AI":
-						am._end_match("MATCH OVER! " + winner + " IS VICTORIOUS!")
+						am._end_match("MATCH OVER! " + winner + " IS VICTORIOUS!", winner)
 					elif winner == my_team:
-						am._end_match("VICTORY! All opposing bases destroyed.")
+						am._end_match("VICTORY! All opposing bases destroyed.", winner)
 					else:
-						am._end_match("DEFEAT! " + winner + " destroyed all opposing bases.")
+						am._end_match("DEFEAT! " + winner + " destroyed all opposing bases.", winner)
 					return
 
 

@@ -113,6 +113,29 @@ func _ready():
         players.append(pstate)
         
     setup_match()
+    
+    if multiplayer.has_multiplayer_peer():
+        if not multiplayer.peer_disconnected.is_connected(_on_peer_disconnected):
+            multiplayer.peer_disconnected.connect(_on_peer_disconnected)
+        if not multiplayer.server_disconnected.is_connected(_on_server_disconnected):
+            multiplayer.server_disconnected.connect(_on_server_disconnected)
+
+func _exit_tree():
+    if multiplayer.has_multiplayer_peer():
+        if multiplayer.peer_disconnected.is_connected(_on_peer_disconnected):
+            multiplayer.peer_disconnected.disconnect(_on_peer_disconnected)
+        if multiplayer.server_disconnected.is_connected(_on_server_disconnected):
+            multiplayer.server_disconnected.disconnect(_on_server_disconnected)
+
+func _on_peer_disconnected(id: int):
+    print("Multiplayer peer disconnected: ", id)
+    if GameState.current_mode.begins_with("ONLINE"):
+        _end_match("OPPONENT DISCONNECTED! Victory by forfeit.")
+
+func _on_server_disconnected():
+    print("Multiplayer server disconnected.")
+    if GameState.current_mode.begins_with("ONLINE"):
+        _end_match("HOST DISCONNECTED FROM SERVER.")
 
 func setup_match():
 
@@ -185,8 +208,11 @@ func _process(delta):
         match_timer -= delta
         if match_timer <= 0:
             match_timer = 0
-            sudden_death_active = true
-            _start_beast_of_nothingness()
+            if multiplayer.has_multiplayer_peer() and multiplayer.multiplayer_peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED:
+                if multiplayer.is_server():
+                    rpc("sync_start_sudden_death")
+            else:
+                sync_start_sudden_death()
     else:
         beast_timer -= delta
         if beast_timer <= 0:
@@ -238,15 +264,33 @@ func _process(delta):
                 
             if p.ui:
                 p.ui.update_requisition(p.req, max_requisition)
-                # Find opposing bot or player to update enemy requisition display
-                var enemy_req = 0.0
-                var enemy_name = "Enemy AI"
-                for b in get_children():
-                    if b is BotAI and b.my_team != p.team:
-                        enemy_req = b.current_requisition
-                        enemy_name = b.my_team + " AI"
-                        break
-                p.ui.update_enemy_requisition(enemy_req, max_requisition, enemy_name)
+                if multiplayer.has_multiplayer_peer() and multiplayer.multiplayer_peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED:
+                    # Synchronize requisition across network for live enemy meter
+                    rpc("sync_requisition", p.team, p.req)
+                else:
+                    # Find opposing bot to update enemy requisition display
+                    var enemy_req = 0.0
+                    var enemy_name = "Enemy AI"
+                    for b in get_children():
+                        if b is BotAI and b.my_team != p.team:
+                            enemy_req = b.current_requisition
+                            enemy_name = b.my_team + " AI"
+                            break
+                    p.ui.update_enemy_requisition(enemy_req, max_requisition, enemy_name)
+
+@rpc("authority", "call_local", "reliable")
+func sync_start_sudden_death():
+    sudden_death_active = true
+    match_timer = 0.0
+    _start_beast_of_nothingness()
+
+@rpc("any_peer", "unreliable")
+func sync_requisition(team: String, req_val: float):
+    if is_nan(req_val) or is_inf(req_val): return
+    req_val = clampf(req_val, 0.0, max_requisition)
+    for p in players:
+        if p.ui and p.team != team:
+            p.ui.update_enemy_requisition(req_val, max_requisition, "Opponent (" + team + ")")
 
 func _on_ui_card_selected(card_ui, ui_instance):
     var p = _get_player_by_ui(ui_instance)
@@ -391,6 +435,27 @@ func attempt_to_play_card(p: LocalPlayerState, data: Resource, target_position: 
 
 @rpc("any_peer", "call_local", "reliable")
 func sync_spawn_card(card_path: String, pos: Vector3, team: String, unique_id: String):
+    # Security: Strict validation of card path
+    if not card_path.begins_with("res://Data/Cards/") or not (card_path.ends_with(".tres") or card_path.ends_with(".tres.remap")):
+        push_warning("Security: Rejected unauthorized card path in RPC: " + str(card_path))
+        return
+        
+    # Security: Validate position coordinates (finite, non-NaN, within arena bounds)
+    if is_nan(pos.x) or is_nan(pos.y) or is_nan(pos.z) or is_inf(pos.x) or is_inf(pos.y) or is_inf(pos.z):
+        push_warning("Security: Rejected NaN/Inf position in sync_spawn_card")
+        return
+    if abs(pos.x) > 200.0 or abs(pos.z) > 200.0:
+        push_warning("Security: Rejected out-of-bounds spawn position: " + str(pos))
+        return
+        
+    # Security: Validate caller authority to prevent team spoofing
+    if multiplayer.has_multiplayer_peer() and multiplayer.multiplayer_peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED:
+        var sender_id = multiplayer.get_remote_sender_id()
+        if sender_id != 0 and sender_id != 1: # Sent by client peer
+            if team == "SideA":
+                push_warning("Security: Client attempted to spawn unit for SideA (Host). Overriding to SideB.")
+                team = "SideB"
+
     var data = load(card_path)
     if data == null or not "unit_scene" in data or data.unit_scene == null: return
     
@@ -428,6 +493,10 @@ func sync_spawn_card(card_path: String, pos: Vector3, team: String, unique_id: S
 
 func _on_koth_tick():
     if get_tree().paused: return
+    if multiplayer.has_multiplayer_peer() and multiplayer.multiplayer_peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED:
+        if not multiplayer.is_server():
+            return
+            
     var koth_zone = get_node_or_null("KotH_Zone")
     if not koth_zone: return
     var bodies = koth_zone.get_overlapping_bodies()
@@ -452,8 +521,15 @@ func _on_koth_tick():
             tied = true
     if not tied and dominant_team != "":
         koth_points[dominant_team] += 1
+        if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
+            rpc("sync_koth_points", dominant_team, koth_points[dominant_team])
         if koth_points[dominant_team] >= 100:
-            _end_match(dominant_team + " WINS THE MATCH BY KOTH!")
+            _end_match(dominant_team + " WINS THE MATCH BY KOTH!", dominant_team)
+
+@rpc("authority", "unreliable")
+func sync_koth_points(team: String, points: int):
+    if koth_points.has(team):
+        koth_points[team] = points
 
 
 func _get_team_faction(team: String) -> String:
@@ -868,16 +944,39 @@ func sync_spawn_hazard(rx: float, rz: float, is_mouth: bool, unique_name: String
     btw.parallel().tween_property(bmat, "albedo_color:a", 0.0, 0.6)
     btw.tween_callback(burst.queue_free)
 
-func _end_match(message: String):
+func _end_match(message: String, winning_team: String = ""):
+    if multiplayer.has_multiplayer_peer() and multiplayer.multiplayer_peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED:
+        if multiplayer.is_server():
+            rpc("sync_end_match", message, winning_team)
+        else:
+            if "DISCONNECTED" in message:
+                sync_end_match(message, winning_team)
+    else:
+        sync_end_match(message, winning_team)
+
+@rpc("authority", "call_local", "reliable")
+func sync_end_match(message: String, winning_team: String = ""):
     if get_tree().paused: return
     get_tree().paused = true
-    print(message)
+    
+    var my_team = "SideA"
+    if players.size() == 1:
+        my_team = players[0].team
+        
+    var final_message = message
+    if winning_team != "" and players.size() == 1 and GameState.current_mode != "AI_VS_AI":
+        if winning_team == my_team:
+            final_message = "VICTORY! " + (message if not message.begins_with("DEFEAT") else "All opposing bases destroyed.")
+        else:
+            final_message = "DEFEAT! " + winning_team + " is victorious."
+            
+    print(final_message)
     var ui = get_node_or_null("InGameUI")
     if not ui and players.size() > 0: ui = players[0].ui
     
     if ui:
         var lbl = Label.new()
-        lbl.text = message
+        lbl.text = final_message
         lbl.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
         lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
         lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -889,6 +988,7 @@ func _end_match(message: String):
         
     await get_tree().create_timer(4.0, true, false, true).timeout
     get_tree().paused = false
+    GameState.disconnect_multiplayer()
     get_tree().change_scene_to_file("res://Scenes/ModeHub.tscn")
 
 func _animate_faction_structures(delta):

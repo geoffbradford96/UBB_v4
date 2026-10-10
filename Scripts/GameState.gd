@@ -67,18 +67,34 @@ var player_deck:
 	set(value):
 		player_decks["Player1"] = value
 
-func host_game():
+func host_game() -> Error:
+	disconnect_multiplayer()
+	peer = ENetMultiplayerPeer.new()
 	var error = peer.create_server(8910, match_player_count) 
 	if error == OK:
 		multiplayer.multiplayer_peer = peer
 		print("Hosting game on port 8910")
 	else:
-		print("Failed to host game: ", error)
+		print("Failed to host game on port 8910: Error ", error)
+	return error
 
-func join_game(ip: String):
-	var error = peer.create_client(ip, 8910)
+func join_game(ip: String) -> Error:
+	disconnect_multiplayer()
+	peer = ENetMultiplayerPeer.new()
+	var clean_ip = ip.strip_edges()
+	if clean_ip.is_empty():
+		clean_ip = "127.0.0.1"
+	var error = peer.create_client(clean_ip, 8910)
 	if error == OK:
 		multiplayer.multiplayer_peer = peer
-		print("Joining game at ", ip)
+		print("Connecting to game at ", clean_ip, ":8910")
 	else:
-		print("Failed to join game: ", error)
+		print("Failed to join game at ", clean_ip, ": Error ", error)
+	return error
+
+func disconnect_multiplayer():
+	if multiplayer.has_multiplayer_peer():
+		multiplayer.multiplayer_peer = null
+	if peer:
+		peer.close()
+	peer = ENetMultiplayerPeer.new()
