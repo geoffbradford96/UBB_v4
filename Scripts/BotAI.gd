@@ -15,6 +15,7 @@ var active_commander: Node3D = null
 
 @export var my_team: String = "SideB"
 @export var enemy_team: String = "SideA"
+@export var difficulty: String = "MEDIUM"
 
 var profile: String = ""
 
@@ -102,6 +103,30 @@ func assess_threats() -> Dictionary:
 		if node != null and is_instance_valid(node) and not node.is_in_group(my_team):
 			var hc = node.get_node_or_null("HealthComponent")
 			if hc and hc.is_dead: continue
+			
+			# Check stealth brush visibility:
+			# If target is stealthed in tall grass, AI cannot target it unless an ally is within 4.5m
+			if GameState.is_unit_stealthed_from(node, null):
+				var spotted = false
+				for ally in get_tree().get_nodes_in_group(my_team):
+					if is_instance_valid(ally) and ally is Node3D:
+						if ally.global_position.distance_to(node.global_position) <= 4.5:
+							spotted = true
+							break
+				if not spotted:
+					continue # Hidden in grass from bot!
+					
+			# Check territorial neutral creatures (scorpions & swarm ants)
+			if node.is_in_group("NeutralCreature"):
+				var max_neutral_dist = 10.0 if difficulty == "HARD" else (16.0 if difficulty == "MEDIUM" else 22.0)
+				var threatening_structure = false
+				for s in my_structures:
+					if s.global_position.distance_to(node.global_position) <= max_neutral_dist:
+						threatening_structure = true
+						break
+				if not threatening_structure:
+					continue # Ignore neutral creatures outside of dangerous proximity
+					
 			all_hostiles.append(node)
 			
 	var endangered_structure: Node3D = null
@@ -130,7 +155,11 @@ func assess_threats() -> Dictionary:
 				close_hostiles.append(h)
 				var prox_factor = (25.0 - d) / 25.0
 				var is_beast = h.is_in_group("Beast")
-				var beast_mult = 1.6 if (is_beast and is_sudden_death) else 1.0
+				var beast_mult = 1.0
+				if is_beast and is_sudden_death:
+					if difficulty == "HARD": beast_mult = 2.4
+					elif difficulty == "MEDIUM": beast_mult = 1.6
+					else: beast_mult = 1.1
 				threat_score += (18.0 * prox_factor * beast_mult) * base_mult
 				
 		if threat_score > highest_threat_score and not close_hostiles.is_empty():
@@ -186,6 +215,13 @@ func evaluate_moves():
 			return a.cost > b.cost
 		)
 	else:
+		# Difficulty-based tempo / energy banking:
+		# HARD bots save energy for powerful pushes (6+ energy) unless near energy cap or threatened
+		if difficulty == "HARD" and threat_info.threat_score < 10.0 and current_requisition < 6.0:
+			return
+		elif difficulty == "MEDIUM" and threat_info.threat_score < 8.0 and current_requisition < 4.0:
+			return
+			
 		# Standard priority: highest impact / cost first
 		valid_hand.sort_custom(func(a, b): return a.cost > b.cost)
 	
@@ -224,6 +260,7 @@ func calculate_optimal_spawn(card: CardData, threat_info: Dictionary):
 			if not u.is_in_group(my_team) and not "Base" in u.name and not "Tower" in u.name and is_instance_valid(u):
 				var hp = u.get_node_or_null("HealthComponent")
 				if hp and hp.is_dead: continue
+				if GameState.is_unit_stealthed_from(u, null): continue
 				all_targets.append(u)
 				
 		if all_targets.size() > 0:
@@ -244,10 +281,14 @@ func calculate_optimal_spawn(card: CardData, threat_info: Dictionary):
 	if my_structures.is_empty():
 		return null
 		
+	var am = get_tree().current_scene
+	var anchor: Node3D = null
+	var target_pos: Vector3 = Vector3.ZERO
+		
 	# 2. Defensive Interception Deployment when under threat
 	if threat_info.threat_score > 12.0 and threat_info.endangered_structure != null:
-		var anchor = threat_info.endangered_structure
-		var target_pos = anchor.global_position
+		anchor = threat_info.endangered_structure
+		target_pos = anchor.global_position
 		
 		if threat_info.closest_hostile != null and is_instance_valid(threat_info.closest_hostile):
 			var to_threat = (threat_info.closest_hostile.global_position - anchor.global_position)
@@ -266,42 +307,79 @@ func calculate_optimal_spawn(card: CardData, threat_info: Dictionary):
 				target_pos = anchor.global_position + (threat_dir * intercept_dist) + (side_dir * randf_range(-3.0, 3.0))
 		else:
 			target_pos += Vector3(randf_range(-6.0, 6.0), 0, randf_range(-6.0, 6.0))
-			
-		# Clamp to valid deployment range (max 24.0m from anchor)
-		if target_pos.distance_to(anchor.global_position) > 24.0:
-			target_pos = anchor.global_position + (target_pos - anchor.global_position).normalized() * 24.0
-		return target_pos
 		
-	# 3. Offense / Pushing Deployment (Standard or Sudden Death counter-attack)
-	var spawn_anchor = my_structures[0]
-	var center = Vector3(0, 0, 0)
-	for s in my_structures:
-		if s.global_position.distance_to(center) < spawn_anchor.global_position.distance_to(center):
-			spawn_anchor = s
-			
-	var push_dir = (center - spawn_anchor.global_position).normalized()
-	if push_dir.length() < 0.1:
-		push_dir = Vector3(0, 0, 1)
-		
-	var right_dir = push_dir.cross(Vector3.UP).normalized()
-	var target_pos = spawn_anchor.global_position
-	
-	if card.card_name in ["Sniper", "VoidSpitter", "SpiderTank", "ReachRanged", "RimworlderGunner"]:
-		var side_offset = right_dir * (18.0 if randf() > 0.5 else -18.0)
-		target_pos += (push_dir * randf_range(3.0, 7.0)) + side_offset
-	elif card.card_name in ["Assassin", "VoidStalker", "ReachHunter"]:
-		var side_offset = right_dir * (14.0 if randf() > 0.5 else -14.0)
-		target_pos += (push_dir * randf_range(8.0, 16.0)) + side_offset
 	else:
-		var side_offset = right_dir * randf_range(-5.0, 5.0)
-		target_pos += (push_dir * randf_range(8.0, 18.0)) + side_offset
+		# 3. Offense / Pushing Deployment (Standard or Sudden Death counter-attack)
+		var spawn_anchor = my_structures[0]
+		var center = Vector3(0, 0, 0)
+		for s in my_structures:
+			if s.global_position.distance_to(center) < spawn_anchor.global_position.distance_to(center):
+				spawn_anchor = s
+		anchor = spawn_anchor
+				
+		var push_dir = (center - spawn_anchor.global_position).normalized()
+		if push_dir.length() < 0.1:
+			push_dir = Vector3(0, 0, 1)
+			
+		var right_dir = push_dir.cross(Vector3.UP).normalized()
+		target_pos = spawn_anchor.global_position
 		
-	# In Sudden Death: push further forward if territory is secure
-	if threat_info.is_sudden_death:
-		target_pos += push_dir * 4.0
+		# Tactical Stealth Ambush for long-range and flanking units
+		var is_ambusher = card.card_name in ["Sniper", "VoidSpitter", "SpiderTank", "ReachRanged", "RimworlderGunner", "Assassin", "VoidStalker", "ReachHunter", "SupportingFire"]
+		var ambush_chance = 0.65 if difficulty == "HARD" else (0.30 if difficulty == "MEDIUM" else 0.0)
+		var ambushed = false
+		if is_ambusher and randf() < ambush_chance and am and "placed_feature_records" in am:
+			var candidate_brushes = []
+			for feat in am.placed_feature_records:
+				if feat.get("type", "") == "brush":
+					var b_pos = feat.get("pos", Vector3.ZERO)
+					if b_pos.distance_to(spawn_anchor.global_position) <= 24.0:
+						candidate_brushes.append(b_pos)
+			if candidate_brushes.size() > 0:
+				var b_chosen = candidate_brushes.pick_random()
+				target_pos = b_chosen + Vector3(randf_range(-1.2, 1.2), 0, randf_range(-1.2, 1.2))
+				ambushed = true
+				
+		if not ambushed:
+			if card.card_name in ["Sniper", "VoidSpitter", "SpiderTank", "ReachRanged", "RimworlderGunner"]:
+				var side_offset = right_dir * (18.0 if randf() > 0.5 else -18.0)
+				target_pos += (push_dir * randf_range(3.0, 7.0)) + side_offset
+			elif card.card_name in ["Assassin", "VoidStalker", "ReachHunter"]:
+				var side_offset = right_dir * (14.0 if randf() > 0.5 else -14.0)
+				target_pos += (push_dir * randf_range(8.0, 16.0)) + side_offset
+			else:
+				var side_offset = right_dir * randf_range(-5.0, 5.0)
+				target_pos += (push_dir * randf_range(8.0, 18.0)) + side_offset
+				
+			# In Sudden Death: push further forward if territory is secure
+			if threat_info.is_sudden_death:
+				target_pos += push_dir * 4.0
+
+	# 4. Scorching Dunes: Solar Flare Light Beam Avoidance
+	if am and "current_solar_beam" in am and am.current_solar_beam != null and is_instance_valid(am.current_solar_beam):
+		var beam_pos = am.current_solar_beam.global_position
+		if target_pos.distance_to(beam_pos) < 7.5:
+			var avoid_chance = 1.0 if difficulty == "HARD" else (0.70 if difficulty == "MEDIUM" else 0.20)
+			if randf() < avoid_chance:
+				var away_dir = (target_pos - beam_pos).normalized()
+				if away_dir.length() < 0.1: away_dir = Vector3(1, 0, 0)
+				target_pos = beam_pos + (away_dir * 8.5)
+
+	# 5. Sand Dune Blocker Avoidance (Prevent spawning inside impassable dunes)
+	if am and "placed_feature_records" in am:
+		for feat in am.placed_feature_records:
+			if feat.get("type", "") == "dune":
+				var d_pos = feat.get("pos", Vector3.ZERO)
+				var d_rad = feat.get("radius", 9.5)
+				if target_pos.distance_to(d_pos) < d_rad:
+					var shift_dir = (target_pos - d_pos).normalized()
+					if shift_dir.length() < 0.1: shift_dir = Vector3(0, 0, 1)
+					target_pos = d_pos + (shift_dir * (d_rad + 2.0))
+
+	# 6. Clamp to valid deployment range (max 24.0m from anchor)
+	if anchor and target_pos.distance_to(anchor.global_position) > 24.0:
+		target_pos = anchor.global_position + (target_pos - anchor.global_position).normalized() * 24.0
 		
-	if target_pos.distance_to(spawn_anchor.global_position) > 24.0:
-		target_pos = spawn_anchor.global_position + (target_pos - spawn_anchor.global_position).normalized() * 24.0
 	return target_pos
 
 func play_card(card: CardData, target_position: Vector3):

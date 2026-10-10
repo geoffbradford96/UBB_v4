@@ -1,4 +1,4 @@
-﻿extends CharacterBody3D
+extends CharacterBody3D
 
 @export var unit_attribute: String = "Organic"
 
@@ -39,6 +39,11 @@ func _physics_process(delta):
 	# Apply gravity
 	if not is_on_floor():
 		velocity.y -= 9.8 * delta
+		
+	if has_meta("stealth_revealed_timer"):
+		var __s_timer = get_meta("stealth_revealed_timer", 0.0)
+		if __s_timer > 0.0:
+			set_meta("stealth_revealed_timer", max(0.0, __s_timer - delta))
 		
 	var is_moving = false
 		
@@ -157,6 +162,7 @@ func _physics_process(delta):
 				attack_timer = 1.0 / max(0.01, attack_speed)
 				var target_health = current_target.get_node_or_null("HealthComponent")
 				if target_health:
+					set_meta("stealth_revealed_timer", 2.0)
 					target_health.take_damage(attack_damage)
 					var ap2 = get_node_or_null("AnimationPlayer")
 					if ap2 and ap2.has_animation("attack"):

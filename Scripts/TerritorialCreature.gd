@@ -1,4 +1,4 @@
-﻿extends CharacterBody3D
+extends CharacterBody3D
 class_name TerritorialCreature
 
 @export var creature_type: String = "Scorpion" # "Scorpion" or "SwarmAnt"
@@ -232,6 +232,11 @@ func _physics_process(delta):
 	if not is_on_floor():
 		velocity.y -= 9.8 * delta
 		
+	if has_meta("stealth_revealed_timer"):
+		var __s_timer = get_meta("stealth_revealed_timer", 0.0)
+		if __s_timer > 0.0:
+			set_meta("stealth_revealed_timer", max(0.0, __s_timer - delta))
+		
 	# Retargeting check
 	recheck_timer -= delta
 	if recheck_timer <= 0.0:
@@ -271,6 +276,7 @@ func _physics_process(delta):
 				attack_timer = 1.0 / max(0.01, attack_speed)
 				var th = current_target.get_node_or_null("HealthComponent")
 				if th and not th.is_dead:
+					set_meta("stealth_revealed_timer", 2.0)
 					th.take_damage(attack_damage)
 					# Visual attack lunge
 					if visual_mesh:
@@ -309,6 +315,15 @@ func _physics_process(delta):
 			else:
 				velocity.x = move_toward(velocity.x, 0, speed)
 				velocity.z = move_toward(velocity.z, 0, speed)
+				
+	# Anti-stuck wall sliding against rocks and dunes
+	if is_on_wall():
+		var wall_normal = get_wall_normal()
+		if wall_normal.length() < 0.1: wall_normal = Vector3.UP
+		var slide_vel = velocity.slide(wall_normal)
+		if slide_vel.length() < speed * 0.5:
+			var perp = Vector3(wall_normal.z, 0, -wall_normal.x)
+			velocity += perp * speed * 1.5
 				
 	move_and_slide()
 	

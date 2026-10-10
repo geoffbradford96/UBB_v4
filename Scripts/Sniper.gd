@@ -1,4 +1,4 @@
-﻿extends CharacterBody3D
+extends CharacterBody3D
 
 @export var unit_attribute: String = "Organic"
 
@@ -29,6 +29,11 @@ func _physics_process(delta):
 
 	if not is_on_floor():
 		velocity.y -= 9.8 * delta
+		
+	if has_meta("stealth_revealed_timer"):
+		var __s_timer = get_meta("stealth_revealed_timer", 0.0)
+		if __s_timer > 0.0:
+			set_meta("stealth_revealed_timer", max(0.0, __s_timer - delta))
 		
 	if not "target_recheck_timer" in self:
 		set_meta("target_recheck", 1.0)
@@ -70,6 +75,7 @@ func _physics_process(delta):
 			attack_timer += delta
 			if attack_timer >= attack_rate:
 				attack_timer = 0.0
+				set_meta("stealth_revealed_timer", 2.0)
 				shoot()
 
 	else:

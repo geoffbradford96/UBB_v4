@@ -112,6 +112,11 @@ func is_unit_stealthed_from(target: Node3D, observer: Node3D) -> bool:
 	if target.global_position.y > 4.5:
 		return false
 		
+	# If target recently fired/attacked, it is temporarily revealed for retaliation
+	if target.has_meta("stealth_revealed_timer"):
+		if target.get_meta("stealth_revealed_timer", 0.0) > 0.0:
+			return false
+		
 	# Friendly / same team check
 	if observer != null and is_instance_valid(observer):
 		var target_team = ""

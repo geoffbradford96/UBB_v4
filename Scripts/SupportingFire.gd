@@ -1,4 +1,4 @@
-﻿extends CharacterBody3D
+extends CharacterBody3D
 
 @export var unit_attribute: String = "Organic"
 
@@ -15,6 +15,11 @@ var projectile_scene = preload("res://Scenes/Projectile.tscn")
 func _physics_process(delta):
 	if not is_on_floor():
 		velocity.y -= 9.8 * delta
+		
+	if has_meta("stealth_revealed_timer"):
+		var __s_timer = get_meta("stealth_revealed_timer", 0.0)
+		if __s_timer > 0.0:
+			set_meta("stealth_revealed_timer", max(0.0, __s_timer - delta))
 		
 	if not "target_recheck_timer" in self:
 		set_meta("target_recheck", 1.0)
@@ -97,6 +102,7 @@ func _physics_process(delta):
 				ap.play("idle", 0.2)
 
 func shoot():
+	set_meta("stealth_revealed_timer", 2.0)
 	if projectile_scene:
 		var proj = projectile_scene.instantiate()
 		get_tree().current_scene.add_child(proj)

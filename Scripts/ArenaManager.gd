@@ -17,6 +17,7 @@ var beast_mouth_scene = preload("res://Scenes/BeastMouth.tscn")
 const StealthBrushScript = preload("res://Scripts/StealthBrush.gd")
 const TerritorialCreatureScript = preload("res://Scripts/TerritorialCreature.gd")
 const SolarBeamHazardScript = preload("res://Scripts/SolarBeamHazard.gd")
+var placed_feature_records: Array = []
 
 
 var initial_towers_per_team = {}
@@ -180,6 +181,7 @@ func setup_match():
         
         # Pick enemy team
         bot.enemy_team = "SideB" if bot.my_team == "SideA" else "SideA"
+        bot.difficulty = GameState.ai_difficulty
         
         # Base requisition rate matches player's base (0.5), balanced by difficulty
         if GameState.ai_difficulty == "EASY":
@@ -241,8 +243,9 @@ func _process(delta):
             var map_size = 40.0
             if GameState.map_selected == "Arena_4P.tscn": map_size = 70.0
             if GameState.map_selected == "Arena_6P.tscn": map_size = 110.0
-            var rx = randf_range(-map_size, map_size)
-            var rz = randf_range(-map_size, map_size)
+            var h_pos = _get_clear_hazard_pos(map_size)
+            var rx = h_pos.x
+            var rz = h_pos.z
             var hazard_name = "BeastHazard_" + str(Time.get_ticks_usec())
             if multiplayer.has_multiplayer_peer() and multiplayer.multiplayer_peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED:
                 if multiplayer.is_server():
@@ -1153,61 +1156,99 @@ func _apply_biome_visuals(biome_name: String):
                 sky_mat.ground_horizon_color = Color(0.85, 0.62, 0.38)
         solar_beam_timer = randf_range(10.0, 25.0)
 
-func _is_pos_clear(pos: Vector3, min_path_dist: float, min_struct_dist: float) -> bool:
+func _get_clear_hazard_pos(map_size: float) -> Vector3:
+    var attempts = 0
+    while attempts < 35:
+        attempts += 1
+        var candidate = Vector3(randf_range(-map_size, map_size), 0.0, randf_range(-map_size, map_size))
+        
+        var obstructed = false
+        for s in get_tree().get_nodes_in_group("Targetable"):
+            if not is_instance_valid(s): continue
+            if ("Base" in s.name or "Tower" in s.name or "CommandBay" in s.name) and candidate.distance_to(s.global_position) < 8.0:
+                obstructed = true
+                break
+        if obstructed: continue
+        
+        for feat in placed_feature_records:
+            if feat.get("type", "") == "dune" and candidate.distance_to(feat["pos"]) < feat["radius"] * 0.95:
+                obstructed = true
+                break
+            elif (feat.get("type", "") == "pit" or feat.get("type", "") == "hill") and candidate.distance_to(feat["pos"]) < 7.5:
+                obstructed = true
+                break
+            elif feat.get("type", "") == "tree" and candidate.distance_to(feat["pos"]) < 2.5:
+                obstructed = true
+                break
+        if not obstructed:
+            return candidate
+            
+    return Vector3(randf_range(-map_size * 0.6, map_size * 0.6), 0.0, randf_range(-map_size * 0.6, map_size * 0.6))
+
+func _is_pos_clear(pos: Vector3, min_path_dist: float, min_struct_dist: float, self_radius: float = 3.0) -> bool:
     if abs(pos.x) > 78.0 or abs(pos.z) > 78.0: return false
     
     for node in get_tree().get_nodes_in_group("Targetable"):
         if not is_instance_valid(node): continue
         if "Base" in node.name or "Tower" in node.name or "CommandBay" in node.name:
-            if pos.distance_to(node.global_position) < min_struct_dist:
+            if pos.distance_to(node.global_position) < min_struct_dist + self_radius:
                 return false
                 
     if GameState.game_mode == "KOTH" or get_node_or_null("KotH_Zone") != null:
-        if pos.distance_to(Vector3.ZERO) < 18.0:
+        if pos.distance_to(Vector3.ZERO) < 18.0 + self_radius:
             return false
             
     if GameState.map_selected == "Arena.tscn":
-        if abs(pos.x) < 14.0 + min_path_dist and abs(pos.z) < 85.0:
+        if abs(pos.x) < (13.0 + min_path_dist + self_radius) and abs(pos.z) < 85.0:
             return false
     elif GameState.map_selected == "Arena_4P.tscn":
-        if (abs(pos.x) < 14.0 + min_path_dist or abs(pos.z) < 14.0 + min_path_dist):
+        if abs(pos.x) < (13.0 + min_path_dist + self_radius) or abs(pos.z) < (13.0 + min_path_dist + self_radius):
             return false
     elif GameState.map_selected == "Arena_6P.tscn":
-        if pos.length() < 18.0: return false
+        if pos.length() < (20.0 + self_radius): return false
         var angle = atan2(pos.z, pos.x)
         for rad_deg in [0, 60, 120, 180, 240, 300]:
             var target_rad = deg_to_rad(rad_deg)
             var diff = abs(angle_difference(angle, target_rad))
             var dist_to_lane = pos.length() * sin(diff)
-            if diff < PI / 5.0 and dist_to_lane < 12.0 + min_path_dist:
+            if diff < PI / 5.0 and dist_to_lane < (13.0 + min_path_dist + self_radius):
                 return false
+
+    for feat in placed_feature_records:
+        var min_sep = feat.get("radius", 3.0) + self_radius
+        if pos.distance_to(feat.get("pos", Vector3.ZERO)) < min_sep:
+            return false
                 
     return true
 
 # --- Sunny Plains Generation ---
 func _generate_sunny_plains(parent: Node3D):
+    placed_feature_records.clear()
+    
     var tree_count = randi_range(26, 34)
     var attempts = 0
     var placed_trees = 0
-    while placed_trees < tree_count and attempts < 250:
+    while placed_trees < tree_count and attempts < 300:
         attempts += 1
         var candidate = Vector3(randf_range(-75.0, 75.0), 0.0, randf_range(-75.0, 75.0))
-        if _is_pos_clear(candidate, 5.0, 14.0):
+        if _is_pos_clear(candidate, 5.0, 14.0, 3.2):
             _create_procedural_tree(parent, candidate)
+            placed_feature_records.append({"pos": candidate, "radius": 3.2, "type": "tree"})
             placed_trees += 1
             
     var brush_count = randi_range(8, 12)
     attempts = 0
     var placed_brush = 0
-    while placed_brush < brush_count and attempts < 200:
+    while placed_brush < brush_count and attempts < 250:
         attempts += 1
         var side = -1.0 if randf() < 0.5 else 1.0
-        var candidate = Vector3(side * randf_range(16.0, 55.0), 0.0, randf_range(-60.0, 60.0))
-        if _is_pos_clear(candidate, 2.5, 12.0):
+        var candidate = Vector3(side * randf_range(18.0, 55.0), 0.0, randf_range(-60.0, 60.0))
+        if _is_pos_clear(candidate, 3.0, 12.0, 6.0):
             var brush = StealthBrushScript.new()
             brush.position = candidate
             brush.setup_visuals(randf_range(4.5, 6.2))
             parent.add_child(brush)
+            placed_feature_records.append({"pos": candidate, "radius": 6.0, "type": "brush"})
             placed_brush += 1
 
 func _create_procedural_tree(parent: Node3D, pos: Vector3):
@@ -1292,25 +1333,43 @@ func _create_procedural_tree(parent: Node3D, pos: Vector3):
 
 # --- Scorching Sand Dunes Generation ---
 func _generate_scorching_dunes(parent: Node3D):
+    placed_feature_records.clear()
+    
+    # 1. Higher Sand Dunes (14 to 18 obstacle dunes)
     var dune_count = randi_range(14, 18)
     var attempts = 0
     var placed_dunes = 0
-    while placed_dunes < dune_count and attempts < 250:
+    while placed_dunes < dune_count and attempts < 350:
         attempts += 1
         var candidate = Vector3(randf_range(-72.0, 72.0), 0.0, randf_range(-72.0, 72.0))
-        if _is_pos_clear(candidate, 6.0, 15.0):
+        if _is_pos_clear(candidate, 6.0, 16.0, 9.5):
             _create_sand_dune_blocker(parent, candidate)
+            placed_feature_records.append({"pos": candidate, "radius": 9.5, "type": "dune"})
             placed_dunes += 1
             
+    # 2. Scorpion Pits (2 territorial pits, each with 15 scorpions)
     for i in range(2):
-        var side_x = -42.0 if i == 0 else 42.0
-        var pit_pos = Vector3(side_x + randf_range(-8.0, 8.0), 0.0, randf_range(-45.0, 45.0))
-        _create_scorpion_pit(parent, pit_pos)
+        var side_x = -1.0 if i == 0 else 1.0
+        attempts = 0
+        while attempts < 100:
+            attempts += 1
+            var pit_candidate = Vector3(side_x * randf_range(28.0, 52.0), 0.0, randf_range(-45.0, 45.0))
+            if _is_pos_clear(pit_candidate, 6.0, 16.0, 8.5):
+                _create_scorpion_pit(parent, pit_candidate)
+                placed_feature_records.append({"pos": pit_candidate, "radius": 8.5, "type": "pit"})
+                break
         
+    # 3. Ant Hills (2 territorial ant hills, each with 50 swarm ants)
     for i in range(2):
-        var side_x = 35.0 if i == 0 else -35.0
-        var hill_pos = Vector3(side_x + randf_range(-10.0, 10.0), 0.0, randf_range(-35.0, 35.0))
-        _create_ant_hill(parent, hill_pos)
+        var side_x = 1.0 if i == 0 else -1.0
+        attempts = 0
+        while attempts < 100:
+            attempts += 1
+            var hill_candidate = Vector3(side_x * randf_range(25.0, 48.0), 0.0, randf_range(-38.0, 38.0))
+            if _is_pos_clear(hill_candidate, 6.0, 16.0, 8.0):
+                _create_ant_hill(parent, hill_candidate)
+                placed_feature_records.append({"pos": hill_candidate, "radius": 8.0, "type": "hill"})
+                break
 
 func _create_sand_dune_blocker(parent: Node3D, pos: Vector3):
     var dune = StaticBody3D.new()
