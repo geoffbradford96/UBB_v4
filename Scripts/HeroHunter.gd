@@ -1,4 +1,4 @@
-extends CharacterBody3D
+﻿extends CharacterBody3D
 
 @export var unit_attribute: String = "Organic"
 
@@ -149,6 +149,7 @@ func find_new_target():
 		if is_instance_valid(e):
 			var target_hc = e.get_node_or_null("HealthComponent")
 			if target_hc and target_hc.is_dead: continue
+			if GameState.is_unit_stealthed_from(e, self): continue
 			
 			# Tunnel vision on alive enemy Commander!
 			if e.is_in_group("CommanderUnit") or "Commander" in e.name or "Overlord" in e.name or "GreatBeastSpeaker" in e.name:

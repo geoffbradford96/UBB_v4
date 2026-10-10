@@ -1,7 +1,8 @@
-﻿extends Control
+extends Control
 
 @onready var role_option = $CenterContainer/VBoxContainer/HBoxRole/RoleDropdown
 @onready var map_option = $CenterContainer/VBoxContainer/HBoxMap/MapDropdown
+@onready var biome_option = $CenterContainer/VBoxContainer/HBoxBiome/BiomeDropdown
 @onready var mode_option = $CenterContainer/VBoxContainer/HBoxMode/ModeDropdown
 @onready var players_option = $CenterContainer/VBoxContainer/HBoxPlayers/PlayersDropdown
 @onready var diff_option = $CenterContainer/VBoxContainer/HBoxDiff/DiffDropdown
@@ -14,6 +15,11 @@ func _ready():
 	map_option.add_item("1v1 Map")
 	map_option.add_item("4-Player Map")
 	map_option.add_item("3v3 KOTH Map")
+
+	biome_option.add_item("Sunny Plains")
+	biome_option.add_item("Scorching Sand Dunes")
+	biome_option.add_item("Random Biome")
+	biome_option.select(0)
 	
 	mode_option.add_item("Destroy Base")
 	mode_option.add_item("King of the Hill")
@@ -68,6 +74,13 @@ func _on_start_pressed():
 		GameState.map_selected = "Arena_4P.tscn"
 	else:
 		GameState.map_selected = "Arena_6P.tscn"
+		
+	if biome_option.selected == 0:
+		GameState.map_biome = "SUNNY_PLAINS"
+	elif biome_option.selected == 1:
+		GameState.map_biome = "SCORCHING_DUNES"
+	else:
+		GameState.map_biome = "RANDOM"
 		
 	if mode_option.selected == 0:
 		GameState.game_mode = "DESTROY_BASE"

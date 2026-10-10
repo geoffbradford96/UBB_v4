@@ -1,4 +1,4 @@
-extends CharacterBody3D
+﻿extends CharacterBody3D
 
 @export var damage: float = 45.0
 @export var attack_range: float = 14.0
@@ -191,6 +191,7 @@ func find_new_target():
 		if is_instance_valid(e):
 			var hc = e.get_node_or_null("HealthComponent")
 			if hc and hc.is_dead: continue
+			if GameState.is_unit_stealthed_from(e, self): continue
 			var d = global_position.distance_to(e.global_position)
 			var effective_range = attack_range + 0.5
 			if "Base" in e.name: effective_range += 5.5

@@ -1,4 +1,4 @@
-extends StaticBody3D
+﻿extends StaticBody3D
 
 var faction: String = "Dominion"
 
@@ -45,11 +45,12 @@ func _on_tower_destroyed():
 var targets_in_range: Array = []
 
 func _process(delta):
-	# Clean up dead targets from our array
+	# Clean up dead or stealthed targets from our array
 	targets_in_range = targets_in_range.filter(func(t):
 		if not is_instance_valid(t): return false
 		var hc = t.get_node_or_null("HealthComponent")
 		if hc and hc.is_dead: return false
+		if GameState.is_unit_stealthed_from(t, self): return false
 		return t.is_in_group("Targetable")
 	)
 	

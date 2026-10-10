@@ -1,7 +1,12 @@
 extends Node3D
+class_name ArenaManager
 
 @export var max_requisition: float = 100.0
 var requisition_rate: float = 0.5
+
+var active_biome: String = "SUNNY_PLAINS"
+var solar_beam_timer: float = 15.0
+var current_solar_beam: Node3D = null
 
 var match_timer: float = 600.0
 var sudden_death_active: bool = false
@@ -9,6 +14,9 @@ var beast_timer: float = 0.0
 var beast_spawn_interval: float = 5.0
 var beast_tentacle_scene = preload("res://Scenes/BeastTentacle.tscn")
 var beast_mouth_scene = preload("res://Scenes/BeastMouth.tscn")
+const StealthBrushScript = preload("res://Scripts/StealthBrush.gd")
+const TerritorialCreatureScript = preload("res://Scripts/TerritorialCreature.gd")
+const SolarBeamHazardScript = preload("res://Scripts/SolarBeamHazard.gd")
 
 
 var initial_towers_per_team = {}
@@ -201,6 +209,16 @@ func setup_match():
             if "Tower" in z.name: count += 1
         initial_towers_per_team[t] = max(count, 2)
         
+    var chosen_biome = GameState.map_biome if ("map_biome" in GameState and GameState.map_biome != "") else "SUNNY_PLAINS"
+    if chosen_biome == "RANDOM":
+        chosen_biome = "SUNNY_PLAINS" if randf() < 0.5 else "SCORCHING_DUNES"
+    var map_seed = randi()
+    if multiplayer.has_multiplayer_peer() and multiplayer.multiplayer_peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED:
+        if multiplayer.is_server():
+            rpc("sync_map_environment", chosen_biome, map_seed)
+    else:
+        _apply_map_environment(chosen_biome, map_seed)
+        
 func _process(delta):
     if get_tree().paused: return
 
@@ -238,6 +256,24 @@ func _process(delta):
                 
     _update_timer_ui()
     _animate_faction_structures(delta)
+    _update_stealth_visibility()
+
+    if active_biome == "SCORCHING_DUNES":
+        if current_solar_beam == null or not is_instance_valid(current_solar_beam):
+            current_solar_beam = null
+            solar_beam_timer -= delta
+            if solar_beam_timer <= 0.0:
+                var is_host = not (multiplayer.has_multiplayer_peer() and multiplayer.multiplayer_peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED and not multiplayer.is_server())
+                if is_host:
+                    var beam_dur = randf_range(20.0, 50.0)
+                    var spawn_x = randf_range(-55.0, 55.0)
+                    var spawn_z = randf_range(-55.0, 55.0)
+                    var beam_id = "SolarBeam_" + str(Time.get_ticks_usec())
+                    solar_beam_timer = randf_range(10.0, 30.0)
+                    if multiplayer.has_multiplayer_peer() and multiplayer.multiplayer_peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED:
+                        rpc("sync_spawn_solar_beam", spawn_x, spawn_z, beam_dur, beam_id)
+                    else:
+                        sync_spawn_solar_beam(spawn_x, spawn_z, beam_dur, beam_id)
 
     if GameState.current_mode == "AI_VS_AI" and players.size() > 0 and players[0].ui:
         var bot_a: BotAI = null
@@ -1031,3 +1067,411 @@ func _animate_faction_structures(delta):
             if f_mesh.has_meta("pirate_crane"):
                 var node = f_mesh.get_meta("pirate_crane")
                 if is_instance_valid(node): node.rotation.y = sin(t * 0.5) * 0.4
+
+# =========================================================================
+# MAP BIOME & PROCEDURAL ENVIRONMENT GENERATION
+# =========================================================================
+
+@rpc("authority", "call_local", "reliable")
+func sync_map_environment(biome_name: String, seed_val: int):
+    _apply_map_environment(biome_name, seed_val)
+
+func _apply_map_environment(biome_name: String, seed_val: int):
+    active_biome = biome_name
+    seed(seed_val)
+    print("Applying Map Biome: ", active_biome, " with seed: ", seed_val)
+    
+    _apply_biome_visuals(active_biome)
+    
+    var old_env = get_node_or_null("EnvironmentFeatures")
+    if old_env: old_env.queue_free()
+    
+    var env_root = Node3D.new()
+    env_root.name = "EnvironmentFeatures"
+    add_child(env_root)
+    
+    if active_biome == "SUNNY_PLAINS":
+        _generate_sunny_plains(env_root)
+    elif active_biome == "SCORCHING_DUNES":
+        _generate_scorching_dunes(env_root)
+
+func _apply_biome_visuals(biome_name: String):
+    var ground = get_node_or_null("Ground")
+    var dir_light = get_node_or_null("DirectionalLight3D")
+    var world_env = get_node_or_null("WorldEnvironment")
+    
+    if biome_name == "SUNNY_PLAINS":
+        if ground:
+            var g_mesh = ground.get_node_or_null("MeshInstance3D")
+            if g_mesh:
+                var g_mat = StandardMaterial3D.new()
+                g_mat.albedo_color = Color(0.24, 0.54, 0.16)
+                g_mat.roughness = 0.85
+                g_mesh.material_override = g_mat
+            for child in ground.get_children():
+                if child is MeshInstance3D and child.name.begins_with("Path"):
+                    var p_mat = StandardMaterial3D.new()
+                    p_mat.albedo_color = Color(0.40, 0.28, 0.16)
+                    p_mat.roughness = 0.9
+                    child.material_override = p_mat
+        if dir_light:
+            dir_light.light_color = Color(1.0, 0.98, 0.90)
+            dir_light.light_energy = 1.15
+            dir_light.shadow_enabled = true
+        if world_env and world_env.environment and world_env.environment.sky:
+            var sky_mat = world_env.environment.sky.sky_material
+            if sky_mat is ProceduralSkyMaterial:
+                sky_mat.sky_top_color = Color(0.18, 0.35, 0.70)
+                sky_mat.sky_horizon_color = Color(0.65, 0.75, 0.88)
+                sky_mat.ground_bottom_color = Color(0.15, 0.15, 0.15)
+                sky_mat.ground_horizon_color = Color(0.65, 0.75, 0.88)
+                
+    elif biome_name == "SCORCHING_DUNES":
+        if ground:
+            var g_mesh = ground.get_node_or_null("MeshInstance3D")
+            if g_mesh:
+                var g_mat = StandardMaterial3D.new()
+                g_mat.albedo_color = Color(0.88, 0.72, 0.44) # Desert golden sand
+                g_mat.roughness = 0.95
+                g_mesh.material_override = g_mat
+            for child in ground.get_children():
+                if child is MeshInstance3D and child.name.begins_with("Path"):
+                    var p_mat = StandardMaterial3D.new()
+                    p_mat.albedo_color = Color(0.78, 0.62, 0.48) # Sandstone path
+                    p_mat.roughness = 0.82
+                    child.material_override = p_mat
+        if dir_light:
+            dir_light.light_color = Color(1.0, 0.94, 0.80)
+            dir_light.light_energy = 1.45
+            dir_light.shadow_enabled = true
+        if world_env and world_env.environment and world_env.environment.sky:
+            var sky_mat = world_env.environment.sky.sky_material
+            if sky_mat is ProceduralSkyMaterial:
+                sky_mat.sky_top_color = Color(0.25, 0.45, 0.75)
+                sky_mat.sky_horizon_color = Color(0.95, 0.72, 0.45) # Amber heat haze
+                sky_mat.ground_bottom_color = Color(0.35, 0.22, 0.10)
+                sky_mat.ground_horizon_color = Color(0.85, 0.62, 0.38)
+        solar_beam_timer = randf_range(10.0, 25.0)
+
+func _is_pos_clear(pos: Vector3, min_path_dist: float, min_struct_dist: float) -> bool:
+    if abs(pos.x) > 78.0 or abs(pos.z) > 78.0: return false
+    
+    for node in get_tree().get_nodes_in_group("Targetable"):
+        if not is_instance_valid(node): continue
+        if "Base" in node.name or "Tower" in node.name or "CommandBay" in node.name:
+            if pos.distance_to(node.global_position) < min_struct_dist:
+                return false
+                
+    if GameState.game_mode == "KOTH" or get_node_or_null("KotH_Zone") != null:
+        if pos.distance_to(Vector3.ZERO) < 18.0:
+            return false
+            
+    if GameState.map_selected == "Arena.tscn":
+        if abs(pos.x) < 14.0 + min_path_dist and abs(pos.z) < 85.0:
+            return false
+    elif GameState.map_selected == "Arena_4P.tscn":
+        if (abs(pos.x) < 14.0 + min_path_dist or abs(pos.z) < 14.0 + min_path_dist):
+            return false
+    elif GameState.map_selected == "Arena_6P.tscn":
+        if pos.length() < 18.0: return false
+        var angle = atan2(pos.z, pos.x)
+        for rad_deg in [0, 60, 120, 180, 240, 300]:
+            var target_rad = deg_to_rad(rad_deg)
+            var diff = abs(angle_difference(angle, target_rad))
+            var dist_to_lane = pos.length() * sin(diff)
+            if diff < PI / 5.0 and dist_to_lane < 12.0 + min_path_dist:
+                return false
+                
+    return true
+
+# --- Sunny Plains Generation ---
+func _generate_sunny_plains(parent: Node3D):
+    var tree_count = randi_range(26, 34)
+    var attempts = 0
+    var placed_trees = 0
+    while placed_trees < tree_count and attempts < 250:
+        attempts += 1
+        var candidate = Vector3(randf_range(-75.0, 75.0), 0.0, randf_range(-75.0, 75.0))
+        if _is_pos_clear(candidate, 5.0, 14.0):
+            _create_procedural_tree(parent, candidate)
+            placed_trees += 1
+            
+    var brush_count = randi_range(8, 12)
+    attempts = 0
+    var placed_brush = 0
+    while placed_brush < brush_count and attempts < 200:
+        attempts += 1
+        var side = -1.0 if randf() < 0.5 else 1.0
+        var candidate = Vector3(side * randf_range(16.0, 55.0), 0.0, randf_range(-60.0, 60.0))
+        if _is_pos_clear(candidate, 2.5, 12.0):
+            var brush = StealthBrushScript.new()
+            brush.position = candidate
+            brush.setup_visuals(randf_range(4.5, 6.2))
+            parent.add_child(brush)
+            placed_brush += 1
+
+func _create_procedural_tree(parent: Node3D, pos: Vector3):
+    var tree_root = StaticBody3D.new()
+    tree_root.position = pos
+    tree_root.collision_layer = 1
+    tree_root.collision_mask = 0
+    
+    var col = CollisionShape3D.new()
+    var cyl = CylinderShape3D.new()
+    cyl.radius = 0.5
+    cyl.height = 3.5
+    col.shape = cyl
+    col.position.y = 1.75
+    tree_root.add_child(col)
+    
+    var style = randi() % 3
+    var scale_var = randf_range(0.85, 1.3)
+    tree_root.scale = Vector3(scale_var, scale_var, scale_var)
+    tree_root.rotation.y = randf() * TAU
+    
+    var bark_mat = StandardMaterial3D.new()
+    bark_mat.albedo_color = Color(0.36, 0.22, 0.12) if style != 2 else Color(0.82, 0.82, 0.78)
+    bark_mat.roughness = 0.85
+    
+    var trunk = MeshInstance3D.new()
+    var trunk_mesh = CylinderMesh.new()
+    trunk_mesh.top_radius = 0.28
+    trunk_mesh.bottom_radius = 0.42
+    trunk_mesh.height = 3.2
+    trunk.mesh = trunk_mesh
+    trunk.material_override = bark_mat
+    trunk.position.y = 1.6
+    tree_root.add_child(trunk)
+    
+    if style == 0:
+        var leaf_mat = StandardMaterial3D.new()
+        leaf_mat.albedo_color = Color(0.20, 0.56, 0.16)
+        leaf_mat.roughness = 0.75
+        for f_pos in [Vector3(0, 3.4, 0), Vector3(0.6, 3.8, 0.4), Vector3(-0.5, 3.6, -0.4)]:
+            var leaves = MeshInstance3D.new()
+            var sph = SphereMesh.new()
+            sph.radius = 1.3
+            sph.height = 2.4
+            leaves.mesh = sph
+            leaves.material_override = leaf_mat
+            leaves.position = f_pos
+            tree_root.add_child(leaves)
+    elif style == 1:
+        var pine_mat = StandardMaterial3D.new()
+        pine_mat.albedo_color = Color(0.14, 0.42, 0.18)
+        pine_mat.roughness = 0.8
+        var tiers = [
+            {"r": 1.6, "y": 2.6, "h": 1.4},
+            {"r": 1.2, "y": 3.6, "h": 1.3},
+            {"r": 0.8, "y": 4.5, "h": 1.2}
+        ]
+        for t in tiers:
+            var cone = MeshInstance3D.new()
+            var c_mesh = CylinderMesh.new()
+            c_mesh.top_radius = 0.05
+            c_mesh.bottom_radius = t["r"]
+            c_mesh.height = t["h"]
+            cone.mesh = c_mesh
+            cone.material_override = pine_mat
+            cone.position.y = t["y"]
+            tree_root.add_child(cone)
+    else:
+        var birch_mat = StandardMaterial3D.new()
+        birch_mat.albedo_color = Color(0.32, 0.66, 0.22)
+        birch_mat.roughness = 0.75
+        var crown = MeshInstance3D.new()
+        var sph = SphereMesh.new()
+        sph.radius = 1.5
+        sph.height = 2.6
+        crown.mesh = sph
+        crown.material_override = birch_mat
+        crown.position.y = 3.8
+        tree_root.add_child(crown)
+        
+    parent.add_child(tree_root)
+
+# --- Scorching Sand Dunes Generation ---
+func _generate_scorching_dunes(parent: Node3D):
+    var dune_count = randi_range(14, 18)
+    var attempts = 0
+    var placed_dunes = 0
+    while placed_dunes < dune_count and attempts < 250:
+        attempts += 1
+        var candidate = Vector3(randf_range(-72.0, 72.0), 0.0, randf_range(-72.0, 72.0))
+        if _is_pos_clear(candidate, 6.0, 15.0):
+            _create_sand_dune_blocker(parent, candidate)
+            placed_dunes += 1
+            
+    for i in range(2):
+        var side_x = -42.0 if i == 0 else 42.0
+        var pit_pos = Vector3(side_x + randf_range(-8.0, 8.0), 0.0, randf_range(-45.0, 45.0))
+        _create_scorpion_pit(parent, pit_pos)
+        
+    for i in range(2):
+        var side_x = 35.0 if i == 0 else -35.0
+        var hill_pos = Vector3(side_x + randf_range(-10.0, 10.0), 0.0, randf_range(-35.0, 35.0))
+        _create_ant_hill(parent, hill_pos)
+
+func _create_sand_dune_blocker(parent: Node3D, pos: Vector3):
+    var dune = StaticBody3D.new()
+    dune.position = pos
+    dune.collision_layer = 1
+    dune.collision_mask = 0
+    
+    var r_base = randf_range(6.5, 9.5)
+    var h = randf_range(3.2, 4.2)
+    
+    var col = CollisionShape3D.new()
+    var cyl = CylinderShape3D.new()
+    cyl.radius = r_base * 0.85
+    cyl.height = h
+    col.shape = cyl
+    col.position.y = h * 0.5
+    dune.add_child(col)
+    
+    var dune_mesh = MeshInstance3D.new()
+    var c_mesh = CylinderMesh.new()
+    c_mesh.top_radius = r_base * 0.25
+    c_mesh.bottom_radius = r_base
+    c_mesh.height = h
+    dune_mesh.mesh = c_mesh
+    
+    var dune_mat = StandardMaterial3D.new()
+    dune_mat.albedo_color = Color(0.86, 0.70, 0.42)
+    dune_mat.roughness = 0.95
+    dune_mesh.material_override = dune_mat
+    dune_mesh.position.y = h * 0.5
+    dune_mesh.rotation.y = randf() * TAU
+    dune.add_child(dune_mesh)
+    
+    dune.scale = Vector3(randf_range(1.1, 1.6), 1.0, randf_range(0.8, 1.2))
+    parent.add_child(dune)
+
+func _create_scorpion_pit(parent: Node3D, pos: Vector3):
+    var pit_node = Node3D.new()
+    pit_node.position = pos
+    parent.add_child(pit_node)
+    
+    var pit_floor = MeshInstance3D.new()
+    var pf_cyl = CylinderMesh.new()
+    pf_cyl.top_radius = 6.8
+    pf_cyl.bottom_radius = 7.2
+    pf_cyl.height = 0.12
+    var pf_mat = StandardMaterial3D.new()
+    pf_mat.albedo_color = Color(0.64, 0.42, 0.26)
+    pf_mat.roughness = 0.95
+    pit_floor.mesh = pf_cyl
+    pit_floor.material_override = pf_mat
+    pit_floor.position.y = 0.06
+    pit_node.add_child(pit_floor)
+    
+    var rock_mat = StandardMaterial3D.new()
+    rock_mat.albedo_color = Color(0.72, 0.55, 0.40)
+    rock_mat.roughness = 0.8
+    for r in range(8):
+        var ang = (TAU / 8.0) * r + randf_range(-0.15, 0.15)
+        var rock = MeshInstance3D.new()
+        var r_box = BoxMesh.new()
+        var r_sz = randf_range(1.0, 1.8)
+        r_box.size = Vector3(r_sz, randf_range(0.6, 1.2), r_sz)
+        rock.mesh = r_box
+        rock.material_override = rock_mat
+        rock.position = Vector3(cos(ang) * 6.5, 0.4, sin(ang) * 6.5)
+        rock.rotation = Vector3(randf() * 0.4, randf() * TAU, randf() * 0.4)
+        pit_node.add_child(rock)
+        
+    for s in range(15):
+        var ang = randf() * TAU
+        var dist = randf_range(0.8, 4.8)
+        var scorp = TerritorialCreatureScript.new()
+        scorp.configure_creature("Scorpion", pos)
+        scorp.position = pos + Vector3(cos(ang) * dist, 0.2, sin(ang) * dist)
+        parent.add_child(scorp)
+
+func _create_ant_hill(parent: Node3D, pos: Vector3):
+    var hill_node = Node3D.new()
+    hill_node.position = pos
+    parent.add_child(hill_node)
+    
+    var hill_mesh = MeshInstance3D.new()
+    var hm = CylinderMesh.new()
+    hm.top_radius = 0.6
+    hm.bottom_radius = 3.8
+    hm.height = 1.8
+    var h_mat = StandardMaterial3D.new()
+    h_mat.albedo_color = Color(0.74, 0.48, 0.24)
+    h_mat.roughness = 0.95
+    hill_mesh.mesh = hm
+    hill_mesh.material_override = h_mat
+    hill_mesh.position.y = 0.9
+    hill_node.add_child(hill_mesh)
+    
+    var hole = MeshInstance3D.new()
+    var hole_c = CylinderMesh.new()
+    hole_c.top_radius = 0.35
+    hole_c.bottom_radius = 0.35
+    hole_c.height = 0.15
+    var hole_mat = StandardMaterial3D.new()
+    hole_mat.albedo_color = Color(0.12, 0.08, 0.05)
+    hole.mesh = hole_c
+    hole.material_override = hole_mat
+    hole.position.y = 1.82
+    hill_node.add_child(hole)
+    
+    for a in range(50):
+        var ang = randf() * TAU
+        var dist = randf_range(1.2, 5.5)
+        var ant = TerritorialCreatureScript.new()
+        ant.configure_creature("SwarmAnt", pos)
+        ant.position = pos + Vector3(cos(ang) * dist, 0.1, sin(ang) * dist)
+        parent.add_child(ant)
+
+# --- Solar Light Beam Hazard Management ---
+@rpc("authority", "call_local", "reliable")
+func sync_spawn_solar_beam(x: float, z: float, dur: float, beam_name: String):
+    var beam = SolarBeamHazardScript.new()
+    beam.name = beam_name
+    beam.position = Vector3(x, 0.0, z)
+    beam.setup_duration(dur)
+    beam.beam_finished.connect(_on_solar_beam_finished)
+    add_child(beam)
+    current_solar_beam = beam
+
+func _on_solar_beam_finished():
+    current_solar_beam = null
+    solar_beam_timer = randf_range(10.0, 30.0)
+
+# --- Stealth Brush Detection & Visibility ---
+static func is_unit_stealthed_from(target: Node3D, observer: Node3D) -> bool:
+    return GameState.is_unit_stealthed_from(target, observer)
+
+func _update_stealth_visibility():
+    var local_team = ""
+    if players.size() > 0:
+        local_team = players[0].team
+    var is_spectator = (GameState.current_mode == "AI_VS_AI")
+    
+    for unit in get_tree().get_nodes_in_group("Targetable"):
+        if not is_instance_valid(unit): continue
+        if "Plane" in unit.name or unit.get("flight_height") != null or unit.get("is_flying") == true:
+            unit.visible = true
+            continue
+            
+        if unit.has_meta("in_stealth_grass") and unit.get_meta("in_stealth_grass", false):
+            if is_spectator:
+                unit.visible = true
+                continue
+            if local_team != "" and unit.is_in_group(local_team):
+                unit.visible = true
+            else:
+                var revealed = false
+                if local_team != "":
+                    for ally in get_tree().get_nodes_in_group(local_team):
+                        if is_instance_valid(ally) and ally != unit:
+                            if ally.global_position.distance_to(unit.global_position) <= 4.0:
+                                revealed = true
+                                break
+                unit.visible = revealed
+        else:
+            unit.visible = true
+

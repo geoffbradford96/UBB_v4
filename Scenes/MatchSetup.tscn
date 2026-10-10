@@ -65,6 +65,20 @@ custom_minimum_size = Vector2(250, 0)
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
 
+[node name="HBoxBiome" type="HBoxContainer" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="CenterContainer/VBoxContainer/HBoxBiome"]
+custom_minimum_size = Vector2(250, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Map Biome"
+
+[node name="BiomeDropdown" type="OptionButton" parent="CenterContainer/VBoxContainer/HBoxBiome"]
+custom_minimum_size = Vector2(250, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+
 [node name="HBoxMode" type="HBoxContainer" parent="CenterContainer/VBoxContainer"]
 layout_mode = 2
 

@@ -1,4 +1,4 @@
-extends CharacterBody3D
+﻿extends CharacterBody3D
 
 @export var unit_attribute: String = "Mechanical"
 var faction: String = "Dominion"
@@ -96,6 +96,7 @@ func find_new_target():
 		if is_instance_valid(e):
 			var target_hc = e.get_node_or_null("HealthComponent")
 			if target_hc and target_hc.is_dead: continue
+			if GameState.is_unit_stealthed_from(e, self): continue
 			var d = global_position.distance_to(e.global_position)
 			var effective_range = attack_range + 0.5
 			if "Base" in e.name:

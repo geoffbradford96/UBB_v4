@@ -21,6 +21,7 @@ var peer = ENetMultiplayerPeer.new()
 var ai_difficulty = "MEDIUM"
 var game_mode = "DESTROY_BASE"
 var map_selected = "Arena.tscn"
+var map_biome = "SUNNY_PLAINS"
 var match_player_count = 2
 var sudden_death_timer = 600.0
 
@@ -99,3 +100,36 @@ func disconnect_multiplayer():
 	if peer:
 		peer.close()
 	peer = ENetMultiplayerPeer.new()
+
+func is_unit_stealthed_from(target: Node3D, observer: Node3D) -> bool:
+	if not is_instance_valid(target): return false
+	if not target.has_meta("in_stealth_grass"): return false
+	if not target.get_meta("in_stealth_grass", false): return false
+	
+	# Flying units NEVER get stealth in grass
+	if "Plane" in target.name or target.get("flight_height") != null or target.get("is_flying") == true or target.get("unit_attribute") == "Flying":
+		return false
+	if target.global_position.y > 4.5:
+		return false
+		
+	# Friendly / same team check
+	if observer != null and is_instance_valid(observer):
+		var target_team = ""
+		for g in target.get_groups():
+			if g.begins_with("Side") or g == "Beast": target_team = g
+		if target_team != "" and observer.is_in_group(target_team):
+			return false
+			
+		# Close proximity face-to-face detection
+		if target.global_position.distance_to(observer.global_position) <= 4.0:
+			return false
+			
+		# Same stealth brush zone
+		if observer.has_meta("current_brush_zone") and target.has_meta("current_brush_zone"):
+			var obs_brush = observer.get_meta("current_brush_zone")
+			var tgt_brush = target.get_meta("current_brush_zone")
+			if obs_brush != null and obs_brush == tgt_brush and target.global_position.distance_to(observer.global_position) <= 7.0:
+				return false
+				
+	return true
+

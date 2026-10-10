@@ -1,4 +1,4 @@
-extends CharacterBody3D
+﻿extends CharacterBody3D
 
 @export var unit_attribute: String = "Organic"
 
@@ -203,6 +203,7 @@ func find_new_target():
 		if node != self and is_instance_valid(node):
 			var hc = node.get_node_or_null("HealthComponent")
 			if hc and hc.is_dead: continue
+			if GameState.is_unit_stealthed_from(node, self): continue
 			if my_team != "" and not node.is_in_group(my_team):
 				enemies.append(node)
 			elif my_team == "" and not node.is_in_group("Beast"):
