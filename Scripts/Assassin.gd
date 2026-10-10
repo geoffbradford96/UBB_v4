@@ -48,8 +48,14 @@ func _physics_process(delta):
 	__target_timer -= delta
 	set_meta("target_recheck", __target_timer)
 	
-	if current_target == null or not is_instance_valid(current_target) or __target_timer <= 0.0:
-		if __target_timer <= 0.0: set_meta("target_recheck", 1.0)
+	var target_is_dead = false
+	if current_target != null:
+		var target_hc = current_target.get_node_or_null("HealthComponent")
+		if (target_hc and target_hc.is_dead) or not current_target.is_in_group("Targetable"):
+			target_is_dead = true
+			
+	if current_target == null or not is_instance_valid(current_target) or target_is_dead or __target_timer <= 0.0:
+		if __target_timer <= 0.0 or target_is_dead: set_meta("target_recheck", 1.0)
 		find_new_target()
 		
 	var is_moving = false
@@ -146,6 +152,8 @@ func find_new_target():
 	
 	for e in enemies:
 		if is_instance_valid(e):
+			var target_hc = e.get_node_or_null("HealthComponent")
+			if target_hc and target_hc.is_dead: continue
 			var d = global_position.distance_to(e.global_position)
 			# Is the enemy a high-value backline target or off-lane flanker?
 			var is_priority = "Sniper" in e.name or "Ranged" in e.name or "Hunter" in e.name or "CommandBay" in e.name or abs(e.global_position.x) > 18

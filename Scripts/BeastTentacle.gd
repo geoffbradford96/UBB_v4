@@ -109,7 +109,13 @@ func _physics_process(delta):
 		mn.rotation_degrees.x = sin(t) * 12.0
 		mn.rotation_degrees.z = cos(t * 0.8) * 8.0
 		
-	if current_target == null or not is_instance_valid(current_target):
+	var target_is_dead = false
+	if current_target != null:
+		var target_hc = current_target.get_node_or_null("HealthComponent")
+		if (target_hc and target_hc.is_dead) or not current_target.is_in_group("Targetable"):
+			target_is_dead = true
+			
+	if current_target == null or not is_instance_valid(current_target) or target_is_dead:
 		find_new_target()
 		
 	if current_target != null:
@@ -183,6 +189,8 @@ func find_new_target():
 	var closest = 99999.0
 	for e in enemies:
 		if is_instance_valid(e):
+			var hc = e.get_node_or_null("HealthComponent")
+			if hc and hc.is_dead: continue
 			var d = global_position.distance_to(e.global_position)
 			var effective_range = attack_range + 0.5
 			if "Base" in e.name: effective_range += 5.5

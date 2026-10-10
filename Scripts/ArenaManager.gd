@@ -348,7 +348,8 @@ func _unhandled_input(event):
             var prefix = "p" + str(p.p_id) + "_"
             if event.is_action_pressed(prefix + "action"):
                 acted_player = p
-                screen_pos = p.cam.get_viewport().get_visible_rect().size / 2.0
+                if p.cam and p.cam.get_viewport():
+                    screen_pos = p.cam.get_viewport().get_visible_rect().size / 2.0
                 break
                 
     if acted_player and acted_player.selected_card_ui and acted_player.selected_card_ui.card_data:
@@ -533,36 +534,40 @@ func sync_koth_points(team: String, points: int):
 
 
 func _get_team_faction(team: String) -> String:
-    for child in get_children():
-        if child.get_script() and "BotAI" in child.get_script().resource_path:
-            if child.my_team == team:
-                if child.ai_profile == "Void Charcon": return "Void"
-                if child.ai_profile == "The Great Beast Speaker": return "Rimworlders"
-                if child.ai_profile == "Dominion Planet Commander": return "Dominion"
-                if child.ai_profile == "The Scrap Pirate King": return "Pirates"
-                if child.ai_profile == "The Reach Queen": return "The Reach"
-                var options = ["Dominion", "Void", "Rimworlders", "Pirates", "The Reach"]
-                return options[randi() % options.size()]
     for p in players:
         if p.team == team:
             var deck = []
             if GameState.player_decks.has(p.profile):
                 deck = GameState.player_decks[p.profile]
-            var v = 0; var r = 0; var d = 0; var pi = 0; var reach = 0
-            for c in deck:
-                if "Void" in c: v += 1
-                elif "Rimworlder" in c or "Sky" in c or "Stone" in c or "Giant" in c or "Great" in c: r += 1
-                elif "Scrap" in c: pi += 1
-                elif "Reach" in c: reach += 1
-                else: d += 1
-            var mx = max(d, max(v, max(r, max(pi, reach))))
-            if mx == v and v > 0: return "Void"
-            if mx == r and r > 0: return "Rimworlders"
-            if mx == pi and pi > 0: return "Pirates"
-            if mx == reach and reach > 0: return "The Reach"
-            return "Dominion"
+            return _detect_faction_from_deck(deck)
+            
+    for child in get_children():
+        if child.get_script() and "BotAI" in child.get_script().resource_path:
+            if child.get("my_team") == team:
+                var deck = child.get("deck")
+                if deck != null and not deck.is_empty():
+                    return _detect_faction_from_deck(deck)
+                var p_name = child.get("profile")
+                if p_name != null and GameState.player_decks.has(p_name):
+                    return _detect_faction_from_deck(GameState.player_decks[p_name])
+                    
     var opts = ["Dominion", "Void", "Rimworlders", "Pirates", "The Reach"]
     return opts[randi() % opts.size()]
+
+func _detect_faction_from_deck(deck: Array) -> String:
+    var v = 0; var r = 0; var d = 0; var pi = 0; var reach = 0
+    for c in deck:
+        if "Void" in c: v += 1
+        elif "Rimworlder" in c or "Sky" in c or "Stone" in c or "Giant" in c or "Great" in c: r += 1
+        elif "Scrap" in c: pi += 1
+        elif "Reach" in c: reach += 1
+        else: d += 1
+    var mx = max(d, max(v, max(r, max(pi, reach))))
+    if mx == v and v > 0: return "Void"
+    if mx == r and r > 0: return "Rimworlders"
+    if mx == pi and pi > 0: return "Pirates"
+    if mx == reach and reach > 0: return "The Reach"
+    return "Dominion"
 
 func _apply_faction_visuals():
     if multiplayer.has_multiplayer_peer() and multiplayer.multiplayer_peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED:

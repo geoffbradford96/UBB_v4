@@ -121,8 +121,9 @@ func _physics_process(delta):
 	if melee_timer <= 0.0:
 		for node in get_tree().get_nodes_in_group("Targetable"):
 			if not node.is_in_group("Beast") and is_instance_valid(node) and node != self:
+				var hp = node.get_node_or_null("HealthComponent")
+				if hp and hp.is_dead: continue
 				if global_position.distance_to(node.global_position) <= melee_range:
-					var hp = node.get_node_or_null("HealthComponent")
 					if hp:
 						hp.take_damage(melee_damage)
 						melee_timer = 1.2

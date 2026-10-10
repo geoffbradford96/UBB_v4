@@ -14,4 +14,5 @@ func _on_private_games_pressed():
 	get_tree().change_scene_to_file("res://Scenes/MultiplayerMenu.tscn")
 
 func _on_settings_pressed():
+	GameState.previous_menu = "res://Scenes/MainMenu.tscn"
 	get_tree().change_scene_to_file("res://Scenes/SettingsMenu.tscn")

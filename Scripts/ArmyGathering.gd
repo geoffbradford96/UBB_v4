@@ -269,3 +269,10 @@ func _on_back_pressed():
 		get_tree().change_scene_to_file("res://Scenes/MultiplayerMenu.tscn")
 	else:
 		get_tree().change_scene_to_file("res://Scenes/ModeHub.tscn")
+
+func _on_cancel_pressed():
+	GameState.load_decks() # Discard uncommitted changes
+	if GameState.current_mode == "ONLINE_HOST" or GameState.current_mode == "ONLINE_JOIN":
+		get_tree().change_scene_to_file("res://Scenes/MultiplayerMenu.tscn")
+	else:
+		get_tree().change_scene_to_file("res://Scenes/ModeHub.tscn")

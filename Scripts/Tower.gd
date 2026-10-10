@@ -46,8 +46,19 @@ var targets_in_range: Array = []
 
 func _process(delta):
 	# Clean up dead targets from our array
-	targets_in_range = targets_in_range.filter(func(t): return is_instance_valid(t))
+	targets_in_range = targets_in_range.filter(func(t):
+		if not is_instance_valid(t): return false
+		var hc = t.get_node_or_null("HealthComponent")
+		if hc and hc.is_dead: return false
+		return t.is_in_group("Targetable")
+	)
 	
+	if current_target != null:
+		var curr_hc = current_target.get_node_or_null("HealthComponent")
+		if (curr_hc and curr_hc.is_dead) or not current_target.is_in_group("Targetable"):
+			targets_in_range.erase(current_target)
+			current_target = null
+			
 	if current_target == null or not is_instance_valid(current_target):
 		if targets_in_range.size() > 0:
 			current_target = targets_in_range[0]

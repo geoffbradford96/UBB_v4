@@ -56,8 +56,14 @@ func _physics_process(delta):
 	__target_timer -= delta
 	set_meta("target_recheck", __target_timer)
 	
-	if current_target == null or not is_instance_valid(current_target) or __target_timer <= 0.0:
-		if __target_timer <= 0.0: set_meta("target_recheck", 1.0)
+	var target_is_dead = false
+	if current_target != null:
+		var target_hc = current_target.get_node_or_null("HealthComponent")
+		if (target_hc and target_hc.is_dead) or not current_target.is_in_group("Targetable"):
+			target_is_dead = true
+			
+	if current_target == null or not is_instance_valid(current_target) or target_is_dead or __target_timer <= 0.0:
+		if __target_timer <= 0.0 or target_is_dead: set_meta("target_recheck", 1.0)
 		find_new_target()
 		
 	var is_moving = false
@@ -195,6 +201,8 @@ func find_new_target():
 	var enemies = []
 	for node in get_tree().get_nodes_in_group("Targetable"):
 		if node != self and is_instance_valid(node):
+			var hc = node.get_node_or_null("HealthComponent")
+			if hc and hc.is_dead: continue
 			if my_team != "" and not node.is_in_group(my_team):
 				enemies.append(node)
 			elif my_team == "" and not node.is_in_group("Beast"):

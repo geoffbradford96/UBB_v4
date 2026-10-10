@@ -100,6 +100,8 @@ func assess_threats() -> Dictionary:
 	var all_hostiles = []
 	for node in get_tree().get_nodes_in_group("Targetable"):
 		if node != null and is_instance_valid(node) and not node.is_in_group(my_team):
+			var hc = node.get_node_or_null("HealthComponent")
+			if hc and hc.is_dead: continue
 			all_hostiles.append(node)
 			
 	var endangered_structure: Node3D = null
@@ -220,6 +222,8 @@ func calculate_optimal_spawn(card: CardData, threat_info: Dictionary):
 		var all_targets = []
 		for u in get_tree().get_nodes_in_group("Targetable"):
 			if not u.is_in_group(my_team) and not "Base" in u.name and not "Tower" in u.name and is_instance_valid(u):
+				var hp = u.get_node_or_null("HealthComponent")
+				if hp and hp.is_dead: continue
 				all_targets.append(u)
 				
 		if all_targets.size() > 0:

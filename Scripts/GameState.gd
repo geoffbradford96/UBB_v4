@@ -2,6 +2,7 @@ extends Node
 
 var current_mode = "LOCAL"
 var player_faction = "Dominion of Sol"
+var previous_menu: String = "res://Scenes/MainMenu.tscn"
 
 # Supports up to 6 local players
 var player_decks = {

@@ -18,5 +18,5 @@ func _gui_input(event):
 			var y_percent = event.position.y / size.y
 			var map_range = 150.0 if GameState.map_selected == "Arena_6P.tscn" else (110.0 if GameState.map_selected == "Arena_4P.tscn" else 90.0)
 			var world_x = (x_percent * (map_range * 2.0)) - map_range
-			var world_z = (y_percent * (map_range * 2.0)) - map_range
+			var world_z = ((1.0 - y_percent) * (map_range * 2.0)) - map_range
 			main_camera.snap_to(Vector3(world_x, 0, world_z))

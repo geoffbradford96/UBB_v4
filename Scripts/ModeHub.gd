@@ -11,7 +11,8 @@ func _on_ai_vs_ai_pressed():
 	get_tree().change_scene_to_file("res://Scenes/MatchSetup.tscn")
 
 func _on_settings_pressed():
+	GameState.previous_menu = "res://Scenes/ModeHub.tscn"
 	get_tree().change_scene_to_file("res://Scenes/SettingsMenu.tscn")
 
 func _on_back_pressed():
-	get_tree().change_scene_to_file("res://Scenes/BootScreen.tscn")
+	get_tree().change_scene_to_file("res://Scenes/MainMenu.tscn")

@@ -59,5 +59,6 @@ func _on_volume_value_changed(value):
 	AudioServer.set_bus_mute(0, value <= 0.01)
 
 func _on_back_pressed():
-	get_tree().change_scene_to_file("res://Scenes/MainMenu.tscn")
+	var dest = GameState.previous_menu if ("previous_menu" in GameState and GameState.previous_menu != "") else "res://Scenes/MainMenu.tscn"
+	get_tree().change_scene_to_file(dest)
 

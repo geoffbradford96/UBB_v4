@@ -63,4 +63,4 @@ offset_right = 130.0
 offset_bottom = 71.0
 text = "<- Back"
 
-[connection signal="pressed" from="BackButton" to="." method="_on_back_pressed"]
+[connection signal="pressed" from="BackButton" to="." method="_on_cancel_pressed"]
