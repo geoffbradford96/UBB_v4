@@ -246,7 +246,13 @@ func refresh_ui():
 		c.connect("card_clicked", Callable(self, "_on_deck_card_clicked"))
 		right_deck_grid.add_child(c)
 		
-	count_label.text = "Units, Spells, Vehicles (" + str(deck_units.size()) + "/5)"
+	if deck_commander != null and deck_units.size() == 5:
+		count_label.text = "Army Complete: 1 Cmdr + 5 Units (Ready!)"
+		count_label.add_theme_color_override("font_color", Color(0.25, 0.95, 0.4))
+	else:
+		var cmdr_txt = "1/1 Cmdr" if deck_commander != null else "0/1 Cmdr"
+		count_label.text = "Units & Spells (" + str(deck_units.size()) + "/5) | " + cmdr_txt
+		count_label.add_theme_color_override("font_color", Color(0.9, 0.85, 0.5))
 
 func _save_current_profile_to_state():
 	var new_deck = []
@@ -259,8 +265,16 @@ func _save_current_profile_to_state():
 
 func _on_back_pressed():
 	if deck_commander == null or deck_units.size() < 5:
-		print("Cannot save! You must have exactly 1 Commander and 5 Units/Spells.")
-		count_label.text = "ERROR: Need 1 Cmdr and 5 Units!"
+		var err_msg = "Cannot save! "
+		if deck_commander == null and deck_units.size() < 5:
+			err_msg += "Need 1 Commander and " + str(5 - deck_units.size()) + " more Units."
+		elif deck_commander == null:
+			err_msg += "Need to select 1 Commander."
+		else:
+			err_msg += "Need " + str(5 - deck_units.size()) + " more Units."
+		print(err_msg)
+		count_label.text = err_msg
+		count_label.add_theme_color_override("font_color", Color(1.0, 0.35, 0.25))
 		return
 		
 	_save_current_profile_to_state()
@@ -276,3 +290,7 @@ func _on_cancel_pressed():
 		get_tree().change_scene_to_file("res://Scenes/MultiplayerMenu.tscn")
 	else:
 		get_tree().change_scene_to_file("res://Scenes/ModeHub.tscn")
+
+func _unhandled_input(event):
+	if event.is_action_pressed("ui_cancel"):
+		_on_cancel_pressed()

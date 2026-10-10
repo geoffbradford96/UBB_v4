@@ -33,6 +33,31 @@ func _ready():
 	# Set current volume
 	var db = AudioServer.get_bus_volume_db(0) # Master bus
 	volume_slider.value = db_to_linear(db)
+	
+	_load_settings()
+
+func _load_settings():
+	var cfg = ConfigFile.new()
+	if cfg.load("user://settings.cfg") == OK:
+		var vol = cfg.get_value("audio", "master_volume", 1.0)
+		volume_slider.value = vol
+		_on_volume_value_changed(vol)
+		
+		var fs = cfg.get_value("video", "fullscreen", false)
+		fullscreen_check.button_pressed = fs
+		_on_fullscreen_toggled(fs)
+		
+		var res_idx = cfg.get_value("video", "resolution_idx", resolution_option.selected)
+		if res_idx >= 0 and res_idx < resolutions.size():
+			resolution_option.select(res_idx)
+			_on_resolution_item_selected(res_idx)
+
+func _save_settings():
+	var cfg = ConfigFile.new()
+	cfg.set_value("audio", "master_volume", volume_slider.value)
+	cfg.set_value("video", "fullscreen", fullscreen_check.button_pressed)
+	cfg.set_value("video", "resolution_idx", resolution_option.selected)
+	cfg.save("user://settings.cfg")
 
 func _on_resolution_item_selected(index):
 	var target_res = resolutions[index]
@@ -42,6 +67,7 @@ func _on_resolution_item_selected(index):
 		var screen_size = DisplayServer.screen_get_size()
 		var center_pos = (screen_size - target_res) / 2
 		DisplayServer.window_set_position(center_pos)
+	_save_settings()
 
 func _on_fullscreen_toggled(toggled_on):
 	if toggled_on:
@@ -50,6 +76,7 @@ func _on_fullscreen_toggled(toggled_on):
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
 		# Trigger re-center
 		_on_resolution_item_selected(resolution_option.selected)
+	_save_settings()
 
 func _on_volume_value_changed(value):
 	# Linear to dB
@@ -57,8 +84,15 @@ func _on_volume_value_changed(value):
 	AudioServer.set_bus_volume_db(0, db)
 	# Mute if value is very low
 	AudioServer.set_bus_mute(0, value <= 0.01)
+	_save_settings()
 
 func _on_back_pressed():
+	_save_settings()
 	var dest = GameState.previous_menu if ("previous_menu" in GameState and GameState.previous_menu != "") else "res://Scenes/MainMenu.tscn"
 	get_tree().change_scene_to_file(dest)
+
+func _unhandled_input(event):
+	if event.is_action_pressed("ui_cancel"):
+		_on_back_pressed()
+
 

@@ -197,6 +197,10 @@ func setup_match():
         add_child(bot)
         print("Spawned BotAI for ", bot.my_team, " with profile ", bot.profile)
 
+    var kz = get_node_or_null("KotH_Zone")
+    if kz:
+        kz.visible = (GameState.game_mode == "KOTH")
+
     if GameState.game_mode == "KOTH":
         var timer = Timer.new()
         timer.wait_time = 1.0
@@ -364,6 +368,14 @@ func _unhandled_input(event):
         if event.keycode == KEY_F8:
             print("DEBUG: Triggering Endgame Sudden Death collapse in 2 seconds!")
             match_timer = 2.0
+
+    if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
+        var p0 = players[0] if players.size() > 0 else null
+        if p0 and p0.selected_card_ui:
+            p0.selected_card_ui.set_selected(false)
+            p0.selected_card_ui = null
+            toggle_deployment_visuals(p0, false)
+            return
 
     var is_mouse_click = (event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed)
     

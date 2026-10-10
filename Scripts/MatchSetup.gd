@@ -95,18 +95,22 @@ func _on_start_pressed():
 	if GameState.map_selected == "Arena_6P.tscn":
 		GameState.match_player_count = 6
 	else:
-		GameState.match_player_count = players_option.selected + 2 
+		GameState.match_player_count = max(2, players_option.selected + 2)
 	
 	var diff = diff_option.selected
 	if diff == 0: GameState.ai_difficulty = "EASY"
-	elif diff == 1: GameState.ai_difficulty = "MEDIUM"
-	else: GameState.ai_difficulty = "HARD"
+	elif diff == 2: GameState.ai_difficulty = "HARD"
+	else: GameState.ai_difficulty = "MEDIUM"
 	
 	var time_map = {0: 150.0, 1: 300.0, 2: 600.0, 3: 900.0, 4: 1200.0, 5: 1500.0, 6: 1800.0, 7: 2100.0, 8: 2400.0, 9: 2700.0, 10: 3000.0, 11: 3300.0, 12: 3600.0}
-	GameState.sudden_death_timer = time_map[timer_option.selected]
+	GameState.sudden_death_timer = time_map.get(timer_option.selected, 600.0)
 	
 	GameState.load_decks()
 	get_tree().change_scene_to_file("res://Scenes/" + GameState.map_selected)
 
 func _on_back_pressed():
 	get_tree().change_scene_to_file("res://Scenes/ModeHub.tscn")
+
+func _unhandled_input(event):
+	if event.is_action_pressed("ui_cancel"):
+		_on_back_pressed()

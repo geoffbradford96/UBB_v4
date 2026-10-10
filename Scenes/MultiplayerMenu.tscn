@@ -114,7 +114,9 @@ theme_override_font_sizes/font_size = 24
 text = "Back to Main Menu"
 
 [connection signal="pressed" from="VBoxContainer/HostBtn" to="." method="_on_host_pressed"]
+[connection signal="text_submitted" from="VBoxContainer/IPInput" to="." method="_on_ip_input_text_submitted"]
 [connection signal="pressed" from="VBoxContainer/JoinBtn" to="." method="_on_join_pressed"]
 [connection signal="pressed" from="VBoxContainer/Local2PBtn" to="." method="_on_local_2p_pressed"]
 [connection signal="pressed" from="VBoxContainer/Local4PBtn" to="." method="_on_local_4p_pressed"]
 [connection signal="pressed" from="VBoxContainer/BackBtn" to="." method="_on_back_pressed"]
+

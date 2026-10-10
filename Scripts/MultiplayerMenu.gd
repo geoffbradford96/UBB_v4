@@ -104,3 +104,10 @@ func _on_local_4p_pressed():
 func _on_back_pressed():
 	GameState.disconnect_multiplayer()
 	get_tree().change_scene_to_file("res://Scenes/ModeHub.tscn")
+
+func _on_ip_input_text_submitted(_new_text: String):
+	_on_join_pressed()
+
+func _unhandled_input(event):
+	if event.is_action_pressed("ui_cancel"):
+		_on_back_pressed()
