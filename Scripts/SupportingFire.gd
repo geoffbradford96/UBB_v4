@@ -141,5 +141,8 @@ func find_new_target():
 				closest_dist = d
 				current_target = e
 
+func can_wander_off_path() -> bool:
+	return false
+
 
 

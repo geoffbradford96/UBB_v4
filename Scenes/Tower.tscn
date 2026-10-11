@@ -19,10 +19,14 @@ projectile_scene = ExtResource("2_proj")
 script = ExtResource("3_health")
 max_health = 500.0
 
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_tower"]
+albedo_color = Color(0.4, 0.4, 0.45, 1)
+roughness = 0.8
+
 [node name="CSGBox3D" type="CSGBox3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4, 0)
 size = Vector3(4, 8, 4)
-material_override = null
+material = SubResource("StandardMaterial3D_tower")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4, 0)

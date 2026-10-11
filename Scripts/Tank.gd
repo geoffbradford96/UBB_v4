@@ -56,7 +56,8 @@ func _physics_process(delta):
 			
 		if dist > effective_range:
 			var next_path_pos = current_target.global_position
-			var new_velocity = global_position.direction_to(next_path_pos) * speed
+			var move_dir = (next_path_pos - global_position).normalized()
+			var new_velocity = move_dir * speed
 			new_velocity.y = velocity.y
 			velocity = new_velocity
 			# --- Separation / Collision Avoidance ---
@@ -81,7 +82,20 @@ func _physics_process(delta):
 					var dist_to_col = push.length()
 					if dist_to_col < 1.2 and dist_to_col > 0.01:
 						separation += push.normalized() * (1.2 - dist_to_col)
-			velocity += separation * speed * 2.0
+			# Apply lateral separation without reversing forward motion
+			if move_dir.length_squared() > 0.01:
+				var forward_dot = separation.dot(move_dir)
+				var lateral = separation - move_dir * forward_dot
+				velocity += lateral * speed * 1.2
+				if forward_dot > 0: # forward push is okay, never reverse
+					velocity += move_dir * forward_dot * speed * 0.5
+			else:
+				velocity += separation * speed * 1.2
+			
+			# Ground lane confinement: keep tanks on the main path
+			if GameState.map_selected != "Arena_6P.tscn":
+				if abs(global_position.x) > 11.5:
+					velocity.x += -sign(global_position.x) * speed * 0.9
 			
 			if "Reach" in self.name:
 				var synergy = min(reach_count, 5) * 0.15 # Up to +75% speed and attack speed
@@ -107,23 +121,25 @@ func _physics_process(delta):
 		velocity.x = move_toward(velocity.x, 0, speed)
 		velocity.z = move_toward(velocity.z, 0, speed)
 
-	var horiz_vel = Vector3(velocity.x, 0, velocity.z)
+	# Tank facing orientation: always face forward towards target or movement vector
 	var anim_mesh = get_node_or_null("MeshInstance3D")
 	if not anim_mesh: anim_mesh = get_node_or_null("VisualPivot")
-	if horiz_vel.length() > 0.1:
-		var look_target = global_position + horiz_vel
-		if global_position.distance_to(look_target) > 0.1:
-			look_at(look_target, Vector3.UP)
-		if anim_mesh:
+	
+	var facing_dir = Vector3.ZERO
+	if current_target != null and is_instance_valid(current_target):
+		facing_dir = (current_target.global_position - global_position)
+		facing_dir.y = 0
+	elif is_moving:
+		facing_dir = Vector3(velocity.x, 0, velocity.z)
+		
+	if facing_dir.length() > 0.1:
+		var look_target = global_position + facing_dir.normalized() * 5.0
+		look_at(look_target, Vector3.UP)
+		if anim_mesh and is_moving:
 			var t = Time.get_ticks_msec() / 1000.0 * speed * 2.0
 			anim_mesh.rotation.z = sin(t) * 0.08
 			anim_mesh.rotation.x = cos(t) * 0.08
 	else:
-		if current_target != null and is_instance_valid(current_target):
-			var look_target = current_target.global_position
-			look_target.y = global_position.y
-			if global_position.distance_to(look_target) > 0.1:
-				look_at(look_target, Vector3.UP)
 		if anim_mesh:
 			anim_mesh.rotation.z = lerp(anim_mesh.rotation.z, 0.0, 10.0 * delta)
 			anim_mesh.rotation.x = lerp(anim_mesh.rotation.x, 0.0, 10.0 * delta)
@@ -179,6 +195,8 @@ func find_new_target():
 	if my_team != "":
 		for node in get_tree().get_nodes_in_group("Targetable"):
 			if not node.is_in_group(my_team) and is_instance_valid(node) and node != self:
+				if (node.is_in_group("NeutralCreature") or node.is_in_group("NeutralStructure")) and global_position.distance_to(node.global_position) > 7.5:
+					continue
 				enemies.append(node)
 	var closest_dist = 99999.0
 	for e in enemies:
@@ -190,6 +208,9 @@ func find_new_target():
 			if d < closest_dist:
 				closest_dist = d
 				current_target = e
+
+func can_wander_off_path() -> bool:
+	return false
 
 
 

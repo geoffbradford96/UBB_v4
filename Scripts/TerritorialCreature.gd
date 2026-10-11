@@ -51,21 +51,21 @@ func configure_creature(type: String, home: Vector3):
 	creature_type = type
 	home_position = home
 	if creature_type == "Scorpion":
-		max_health = 120.0
-		speed = 4.8
-		attack_damage = 14.0
-		attack_range = 1.8
-		attack_speed = 1.2
-		nest_radius = 8.5
-		leash_radius = 12.0
-	else: # SwarmAnt - "little stats", fast swarmers
-		max_health = 32.0
-		speed = 5.6
-		attack_damage = 3.5
-		attack_range = 1.2
-		attack_speed = 1.6
-		nest_radius = 7.5
-		leash_radius = 10.5
+		max_health = 130.0
+		speed = 4.4
+		attack_damage = 15.0
+		attack_range = 2.0
+		attack_speed = 1.1
+		nest_radius = 4.8
+		leash_radius = 24.0
+	else: # SwarmAnt - smaller, less health, ranged
+		max_health = 28.0
+		speed = 5.2
+		attack_damage = 4.5
+		attack_range = 10.0
+		attack_speed = 1.4
+		nest_radius = 4.2
+		leash_radius = 24.0
 		
 	var hc = get_node_or_null("HealthComponent")
 	if hc:
@@ -277,10 +277,12 @@ func _physics_process(delta):
 				var th = current_target.get_node_or_null("HealthComponent")
 				if th and not th.is_dead:
 					set_meta("stealth_revealed_timer", 2.0)
-					th.take_damage(attack_damage)
-					# Visual attack lunge
-					if visual_mesh:
-						visual_mesh.position.z -= 0.2
+					if creature_type == "SwarmAnt":
+						_shoot_acid_spit(current_target)
+					else:
+						th.take_damage(attack_damage)
+						if visual_mesh:
+							visual_mesh.position.z -= 0.2
 	else:
 		# Return to home nest or idle wander
 		var dist_to_home = global_position.distance_to(home_position)
@@ -299,7 +301,7 @@ func _physics_process(delta):
 			if idle_patrol_timer <= 0.0:
 				idle_patrol_timer = randf_range(2.0, 5.0)
 				var angle = randf() * TAU
-				var r = randf_range(0.5, nest_radius * 0.5)
+				var r = randf_range(0.5, nest_radius * 0.8)
 				idle_patrol_offset = Vector3(cos(angle) * r, 0, sin(angle) * r)
 				
 			var patrol_target = home_position + idle_patrol_offset
@@ -339,6 +341,24 @@ func _physics_process(delta):
 			visual_mesh.position.y = lerp(visual_mesh.position.y, 0.0, 10.0 * delta)
 			visual_mesh.position.z = lerp(visual_mesh.position.z, 0.0, 10.0 * delta)
 
+func _shoot_acid_spit(target_node: Node3D):
+	var proj_scene = preload("res://Scenes/Projectile.tscn")
+	if proj_scene:
+		var proj = proj_scene.instantiate()
+		get_tree().current_scene.add_child(proj)
+		proj.global_position = global_position + Vector3(0, 0.25, 0)
+		proj.target = target_node
+		proj.set("damage", attack_damage)
+		proj.set("speed", 22.0)
+		var p_mesh = proj.get_node_or_null("MeshInstance3D")
+		if p_mesh:
+			var a_mat = StandardMaterial3D.new()
+			a_mat.albedo_color = Color(0.72, 0.88, 0.18)
+			a_mat.emission_enabled = true
+			a_mat.emission = Color(0.72, 0.88, 0.18)
+			a_mat.emission_energy_multiplier = 2.0
+			p_mesh.material_override = a_mat
+
 func _evaluate_targeting():
 	if current_target != null:
 		if not is_instance_valid(current_target):
@@ -349,13 +369,13 @@ func _evaluate_targeting():
 				current_target = null
 				
 	if current_target == null:
-		var closest_dist = nest_radius
+		var closest_dist = leash_radius
 		var best_target = null
 		
 		var my_group = "Scorpion" if creature_type == "Scorpion" else "SwarmAnt"
 		for node in get_tree().get_nodes_in_group("Targetable"):
 			if node == self or not is_instance_valid(node): continue
-			if node.is_in_group(my_group): continue # Don't fight fellow nestmates
+			if node.is_in_group(my_group) or node.is_in_group("NeutralCreature") or node.is_in_group("NeutralStructure"): continue
 			
 			var hc = node.get_node_or_null("HealthComponent")
 			if hc and hc.is_dead: continue
@@ -365,7 +385,7 @@ func _evaluate_targeting():
 				continue
 				
 			var dist_from_nest = home_position.distance_to(node.global_position)
-			if dist_from_nest <= nest_radius and dist_from_nest < closest_dist:
+			if dist_from_nest <= leash_radius and dist_from_nest < closest_dist:
 				closest_dist = dist_from_nest
 				best_target = node
 				

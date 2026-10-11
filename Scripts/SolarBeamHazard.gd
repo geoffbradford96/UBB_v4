@@ -125,7 +125,7 @@ func _physics_process(delta):
 		
 	if is_fading:
 		fade_progress += delta * 1.5
-		var alpha_factor = max(0.0, 1.0 - fade_progress)
+		var alpha_factor = max(0.001, 1.0 - fade_progress)
 		scale = Vector3(alpha_factor, 1.0, alpha_factor)
 		if fade_progress >= 1.0:
 			beam_finished.emit()

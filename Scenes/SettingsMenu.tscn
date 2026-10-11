@@ -87,6 +87,36 @@ max_value = 1.0
 step = 0.05
 value = 1.0
 
+[node name="HBoxCorpseLimit" type="HBoxContainer" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+alignment = 1
+
+[node name="Label" type="Label" parent="CenterContainer/VBoxContainer/HBoxCorpseLimit"]
+custom_minimum_size = Vector2(250, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Max Corpses"
+
+[node name="CorpseLimitDropdown" type="OptionButton" parent="CenterContainer/VBoxContainer/HBoxCorpseLimit"]
+custom_minimum_size = Vector2(250, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+
+[node name="HBoxCorpseDuration" type="HBoxContainer" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+alignment = 1
+
+[node name="Label" type="Label" parent="CenterContainer/VBoxContainer/HBoxCorpseDuration"]
+custom_minimum_size = Vector2(250, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Corpse Lifetime"
+
+[node name="CorpseDurationDropdown" type="OptionButton" parent="CenterContainer/VBoxContainer/HBoxCorpseDuration"]
+custom_minimum_size = Vector2(250, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+
 [node name="HSeparator2" type="HSeparator" parent="CenterContainer/VBoxContainer"]
 layout_mode = 2
 
@@ -102,4 +132,6 @@ text = "<- Back"
 [connection signal="item_selected" from="CenterContainer/VBoxContainer/HBoxRes/ResolutionDropdown" to="." method="_on_resolution_item_selected"]
 [connection signal="toggled" from="CenterContainer/VBoxContainer/HBoxFull/FullscreenCheck" to="." method="_on_fullscreen_toggled"]
 [connection signal="value_changed" from="CenterContainer/VBoxContainer/HBoxVol/VolumeSlider" to="." method="_on_volume_value_changed"]
+[connection signal="item_selected" from="CenterContainer/VBoxContainer/HBoxCorpseLimit/CorpseLimitDropdown" to="." method="_on_corpse_limit_selected"]
+[connection signal="item_selected" from="CenterContainer/VBoxContainer/HBoxCorpseDuration/CorpseDurationDropdown" to="." method="_on_corpse_duration_selected"]
 [connection signal="pressed" from="BackBtn" to="." method="_on_back_pressed"]

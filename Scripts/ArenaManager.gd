@@ -301,6 +301,8 @@ func _process(delta):
                 
             var initial = initial_towers_per_team.get(p.team, 2)
             var dynamic_rate = requisition_rate + ((initial - player_towers) * (1.0 / max(1.0, float(initial))))
+            if sudden_death_active:
+                dynamic_rate *= 0.5
             if p.req < max_requisition:
                 p.req += dynamic_rate * delta
                 if p.req > max_requisition: p.req = max_requisition
@@ -1198,33 +1200,46 @@ func _get_clear_hazard_pos(map_size: float) -> Vector3:
     return Vector3(randf_range(-map_size * 0.6, map_size * 0.6), 0.0, randf_range(-map_size * 0.6, map_size * 0.6))
 
 func _is_pos_clear(pos: Vector3, min_path_dist: float, min_struct_dist: float, self_radius: float = 3.0) -> bool:
-    if abs(pos.x) > 78.0 or abs(pos.z) > 78.0: return false
+    var max_extent = 115.0 if GameState.map_selected == "Arena_6P.tscn" else 78.0
+    if abs(pos.x) > max_extent or abs(pos.z) > max_extent: return false
     
-    for node in get_tree().get_nodes_in_group("Targetable"):
-        if not is_instance_valid(node): continue
-        if "Base" in node.name or "Tower" in node.name or "CommandBay" in node.name:
-            if pos.distance_to(node.global_position) < min_struct_dist + self_radius:
-                return false
+    var tree = get_tree()
+    if tree:
+        for node in tree.get_nodes_in_group("Targetable"):
+            if not is_instance_valid(node): continue
+            if "Base" in node.name or "Tower" in node.name or "CommandBay" in node.name or "Structure" in node.name or "Nest" in node.name or "Hill" in node.name:
+                if pos.distance_to(node.global_position) < min_struct_dist + self_radius + 4.0:
+                    return false
                 
     if GameState.game_mode == "KOTH" or get_node_or_null("KotH_Zone") != null:
-        if pos.distance_to(Vector3.ZERO) < 18.0 + self_radius:
+        if pos.distance_to(Vector3.ZERO) < 22.0 + self_radius:
             return false
-            
-    if GameState.map_selected == "Arena.tscn":
-        if abs(pos.x) < (13.0 + min_path_dist + self_radius) and abs(pos.z) < 85.0:
-            return false
-    elif GameState.map_selected == "Arena_4P.tscn":
-        if abs(pos.x) < (13.0 + min_path_dist + self_radius) or abs(pos.z) < (13.0 + min_path_dist + self_radius):
-            return false
-    elif GameState.map_selected == "Arena_6P.tscn":
-        if pos.length() < (20.0 + self_radius): return false
+
+    # Check all explicit Path mesh nodes in Ground
+    var ground_node = get_node_or_null("Ground")
+    if ground_node:
+        for child in ground_node.get_children():
+            if child is MeshInstance3D and "Path" in child.name:
+                var p_trans = child.global_transform
+                var local_p = p_trans.affine_inverse() * pos
+                var safe_w = 14.0 + min_path_dist + self_radius
+                var safe_l = 85.0 + min_path_dist + self_radius
+                if abs(local_p.x) < safe_w and abs(local_p.z) < safe_l:
+                    return false
+
+    if GameState.map_selected == "Arena_6P.tscn":
+        if pos.length() < (22.0 + self_radius): return false
         var angle = atan2(pos.z, pos.x)
-        for rad_deg in [0, 60, 120, 180, 240, 300]:
+        # 6-player map lanes run radially from center to bases at 30, 90, 150, 210, 270, 330 deg
+        for rad_deg in [30, 90, 150, 210, 270, 330]:
             var target_rad = deg_to_rad(rad_deg)
             var diff = abs(angle_difference(angle, target_rad))
             var dist_to_lane = pos.length() * sin(diff)
-            if diff < PI / 5.0 and dist_to_lane < (13.0 + min_path_dist + self_radius):
+            if diff < PI / 4.0 and dist_to_lane < (14.0 + min_path_dist + self_radius):
                 return false
+    elif GameState.map_selected == "Arena_4P.tscn" or GameState.map_selected == "Arena.tscn":
+        if abs(pos.x) < (14.0 + min_path_dist + self_radius) and abs(pos.z) < 88.0:
+            return false
 
     for feat in placed_feature_records:
         var min_sep = feat.get("radius", 3.0) + self_radius
@@ -1419,14 +1434,31 @@ func _create_sand_dune_blocker(parent: Node3D, pos: Vector3):
     parent.add_child(dune)
 
 func _create_scorpion_pit(parent: Node3D, pos: Vector3):
-    var pit_node = Node3D.new()
-    pit_node.position = pos
-    parent.add_child(pit_node)
+    var pit_body = StaticBody3D.new()
+    pit_body.name = "ScorpionNest_" + str(Time.get_ticks_usec())
+    pit_body.position = pos
+    pit_body.add_to_group("Targetable")
+    pit_body.add_to_group("NeutralStructure")
+    pit_body.add_to_group("Structure")
+    parent.add_child(pit_body)
+    
+    var col = CollisionShape3D.new()
+    var col_cyl = CylinderShape3D.new()
+    col_cyl.radius = 4.5
+    col_cyl.height = 1.6
+    col.shape = col_cyl
+    col.position.y = 0.8
+    pit_body.add_child(col)
+    
+    var hc = HealthComponent.new()
+    hc.name = "HealthComponent"
+    pit_body.add_child(hc)
+    hc.set_max_health(650.0)
     
     var pit_floor = MeshInstance3D.new()
     var pf_cyl = CylinderMesh.new()
-    pf_cyl.top_radius = 6.8
-    pf_cyl.bottom_radius = 7.2
+    pf_cyl.top_radius = 6.2
+    pf_cyl.bottom_radius = 6.8
     pf_cyl.height = 0.12
     var pf_mat = StandardMaterial3D.new()
     pf_mat.albedo_color = Color(0.64, 0.42, 0.26)
@@ -1434,7 +1466,7 @@ func _create_scorpion_pit(parent: Node3D, pos: Vector3):
     pit_floor.mesh = pf_cyl
     pit_floor.material_override = pf_mat
     pit_floor.position.y = 0.06
-    pit_node.add_child(pit_floor)
+    pit_body.add_child(pit_floor)
     
     var rock_mat = StandardMaterial3D.new()
     rock_mat.albedo_color = Color(0.72, 0.55, 0.40)
@@ -1447,22 +1479,65 @@ func _create_scorpion_pit(parent: Node3D, pos: Vector3):
         r_box.size = Vector3(r_sz, randf_range(0.6, 1.2), r_sz)
         rock.mesh = r_box
         rock.material_override = rock_mat
-        rock.position = Vector3(cos(ang) * 6.5, 0.4, sin(ang) * 6.5)
+        rock.position = Vector3(cos(ang) * 5.8, 0.4, sin(ang) * 5.8)
         rock.rotation = Vector3(randf() * 0.4, randf() * TAU, randf() * 0.4)
-        pit_node.add_child(rock)
+        pit_body.add_child(rock)
         
-    for s in range(15):
+    # Initial scorpions (5 scorpions)
+    for s in range(5):
         var ang = randf() * TAU
-        var dist = randf_range(0.8, 4.8)
+        var dist = randf_range(0.8, 3.8)
         var scorp = TerritorialCreatureScript.new()
         scorp.configure_creature("Scorpion", pos)
         scorp.position = pos + Vector3(cos(ang) * dist, 0.2, sin(ang) * dist)
         parent.add_child(scorp)
+        
+    # Slow spawn timer (adds 1 every 7.5s up to 8 max, stops when nest destroyed)
+    var spawn_timer = Timer.new()
+    spawn_timer.wait_time = 7.5
+    spawn_timer.autostart = true
+    spawn_timer.timeout.connect(func():
+        if not is_instance_valid(pit_body) or hc.is_dead:
+            spawn_timer.stop()
+            spawn_timer.queue_free()
+            return
+        var living_scorpions = 0
+        for sc in parent.get_children():
+            if sc is CharacterBody3D and sc.get("creature_type") == "Scorpion":
+                var shc = sc.get_node_or_null("HealthComponent")
+                if shc and not shc.is_dead and sc.get("home_position") != null and sc.home_position.distance_to(pos) < 12.0:
+                    living_scorpions += 1
+        if living_scorpions < 8:
+            var ang = randf() * TAU
+            var dist = randf_range(0.8, 3.2)
+            var new_scorp = TerritorialCreatureScript.new()
+            new_scorp.configure_creature("Scorpion", pos)
+            new_scorp.position = pos + Vector3(cos(ang) * dist, 0.2, sin(ang) * dist)
+            parent.add_child(new_scorp)
+    )
+    pit_body.add_child(spawn_timer)
 
 func _create_ant_hill(parent: Node3D, pos: Vector3):
-    var hill_node = Node3D.new()
-    hill_node.position = pos
-    parent.add_child(hill_node)
+    var hill_body = StaticBody3D.new()
+    hill_body.name = "AntHill_" + str(Time.get_ticks_usec())
+    hill_body.position = pos
+    hill_body.add_to_group("Targetable")
+    hill_body.add_to_group("NeutralStructure")
+    hill_body.add_to_group("Structure")
+    parent.add_child(hill_body)
+    
+    var col = CollisionShape3D.new()
+    var col_cyl = CylinderShape3D.new()
+    col_cyl.radius = 3.6
+    col_cyl.height = 2.0
+    col.shape = col_cyl
+    col.position.y = 1.0
+    hill_body.add_child(col)
+    
+    var hc = HealthComponent.new()
+    hc.name = "HealthComponent"
+    hill_body.add_child(hc)
+    hc.set_max_health(450.0)
     
     var hill_mesh = MeshInstance3D.new()
     var hm = CylinderMesh.new()
@@ -1475,7 +1550,7 @@ func _create_ant_hill(parent: Node3D, pos: Vector3):
     hill_mesh.mesh = hm
     hill_mesh.material_override = h_mat
     hill_mesh.position.y = 0.9
-    hill_node.add_child(hill_mesh)
+    hill_body.add_child(hill_mesh)
     
     var hole = MeshInstance3D.new()
     var hole_c = CylinderMesh.new()
@@ -1487,15 +1562,41 @@ func _create_ant_hill(parent: Node3D, pos: Vector3):
     hole.mesh = hole_c
     hole.material_override = hole_mat
     hole.position.y = 1.82
-    hill_node.add_child(hole)
+    hill_body.add_child(hole)
     
-    for a in range(50):
+    # Initial swarm ants (8 ants)
+    for a in range(8):
         var ang = randf() * TAU
-        var dist = randf_range(1.2, 5.5)
+        var dist = randf_range(1.2, 4.0)
         var ant = TerritorialCreatureScript.new()
         ant.configure_creature("SwarmAnt", pos)
         ant.position = pos + Vector3(cos(ang) * dist, 0.1, sin(ang) * dist)
         parent.add_child(ant)
+        
+    # Slow spawn timer (adds 1 every 5.5s up to 14 max, stops when hill destroyed)
+    var spawn_timer = Timer.new()
+    spawn_timer.wait_time = 5.5
+    spawn_timer.autostart = true
+    spawn_timer.timeout.connect(func():
+        if not is_instance_valid(hill_body) or hc.is_dead:
+            spawn_timer.stop()
+            spawn_timer.queue_free()
+            return
+        var living_ants = 0
+        for an in parent.get_children():
+            if an is CharacterBody3D and an.get("creature_type") == "SwarmAnt":
+                var ahc = an.get_node_or_null("HealthComponent")
+                if ahc and not ahc.is_dead and an.get("home_position") != null and an.home_position.distance_to(pos) < 12.0:
+                    living_ants += 1
+        if living_ants < 14:
+            var ang = randf() * TAU
+            var dist = randf_range(1.0, 3.5)
+            var new_ant = TerritorialCreatureScript.new()
+            new_ant.configure_creature("SwarmAnt", pos)
+            new_ant.position = pos + Vector3(cos(ang) * dist, 0.1, sin(ang) * dist)
+            parent.add_child(new_ant)
+    )
+    hill_body.add_child(spawn_timer)
 
 # --- Solar Light Beam Hazard Management ---
 @rpc("authority", "call_local", "reliable")

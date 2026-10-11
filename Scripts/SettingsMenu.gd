@@ -3,6 +3,8 @@ extends Control
 @onready var resolution_option = $CenterContainer/VBoxContainer/HBoxRes/ResolutionDropdown
 @onready var fullscreen_check = $CenterContainer/VBoxContainer/HBoxFull/FullscreenCheck
 @onready var volume_slider = $CenterContainer/VBoxContainer/HBoxVol/VolumeSlider
+@onready var corpse_limit_dropdown = $CenterContainer/VBoxContainer/HBoxCorpseLimit/CorpseLimitDropdown
+@onready var corpse_duration_dropdown = $CenterContainer/VBoxContainer/HBoxCorpseDuration/CorpseDurationDropdown
 
 var resolutions = [
 	Vector2i(1920, 1080),
@@ -10,6 +12,12 @@ var resolutions = [
 	Vector2i(1366, 768),
 	Vector2i(1280, 720)
 ]
+
+var corpse_limits = [10, 30, 60, 120]
+var corpse_limit_labels = ["Low (10 max)", "Medium (30 max)", "High (60 max)", "Ultra (120 max)"]
+
+var corpse_durations = [5.0, 15.0, 30.0, 60.0, -1.0]
+var corpse_duration_labels = ["Short (5s)", "Standard (15s)", "Long (30s)", "Extended (60s)", "Permanent"]
 
 func _ready():
 	# Populate Resolution Dropdown
@@ -34,6 +42,18 @@ func _ready():
 	var db = AudioServer.get_bus_volume_db(0) # Master bus
 	volume_slider.value = db_to_linear(db)
 	
+	# Populate Corpse Dropdowns
+	for lbl in corpse_limit_labels:
+		corpse_limit_dropdown.add_item(lbl)
+	for lbl in corpse_duration_labels:
+		corpse_duration_dropdown.add_item(lbl)
+		
+	var lim_idx = corpse_limits.find(GameState.corpse_max_count)
+	corpse_limit_dropdown.select(lim_idx if lim_idx != -1 else 1)
+	
+	var dur_idx = corpse_durations.find(GameState.corpse_duration)
+	corpse_duration_dropdown.select(dur_idx if dur_idx != -1 else 1)
+	
 	_load_settings()
 
 func _load_settings():
@@ -51,12 +71,24 @@ func _load_settings():
 		if res_idx >= 0 and res_idx < resolutions.size():
 			resolution_option.select(res_idx)
 			_on_resolution_item_selected(res_idx)
+			
+		var c_lim = cfg.get_value("gameplay", "corpse_max_count", GameState.corpse_max_count)
+		GameState.corpse_max_count = c_lim
+		var lim_idx = corpse_limits.find(c_lim)
+		if lim_idx != -1: corpse_limit_dropdown.select(lim_idx)
+		
+		var c_dur = cfg.get_value("gameplay", "corpse_duration", GameState.corpse_duration)
+		GameState.corpse_duration = c_dur
+		var dur_idx = corpse_durations.find(c_dur)
+		if dur_idx != -1: corpse_duration_dropdown.select(dur_idx)
 
 func _save_settings():
 	var cfg = ConfigFile.new()
 	cfg.set_value("audio", "master_volume", volume_slider.value)
 	cfg.set_value("video", "fullscreen", fullscreen_check.button_pressed)
 	cfg.set_value("video", "resolution_idx", resolution_option.selected)
+	cfg.set_value("gameplay", "corpse_max_count", GameState.corpse_max_count)
+	cfg.set_value("gameplay", "corpse_duration", GameState.corpse_duration)
 	cfg.save("user://settings.cfg")
 
 func _on_resolution_item_selected(index):
@@ -84,6 +116,16 @@ func _on_volume_value_changed(value):
 	AudioServer.set_bus_volume_db(0, db)
 	# Mute if value is very low
 	AudioServer.set_bus_mute(0, value <= 0.01)
+	_save_settings()
+
+func _on_corpse_limit_selected(index):
+	if index >= 0 and index < corpse_limits.size():
+		GameState.corpse_max_count = corpse_limits[index]
+	_save_settings()
+
+func _on_corpse_duration_selected(index):
+	if index >= 0 and index < corpse_durations.size():
+		GameState.corpse_duration = corpse_durations[index]
 	_save_settings()
 
 func _on_back_pressed():

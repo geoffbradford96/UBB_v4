@@ -111,9 +111,20 @@ func _physics_process(delta):
 					var push = global_position - col.global_position
 					push.y = 0
 					var dist_to_col = push.length()
-					if dist_to_col < 1.2 and dist_to_col > 0.01:
-						separation += push.normalized() * (1.2 - dist_to_col)
-			velocity += separation * speed * 2.0
+			# Lateral separation to prevent clumping
+			if global_position.direction_to(next_path_pos).length_squared() > 0.01:
+				var fwd = global_position.direction_to(next_path_pos)
+				var f_dot = separation.dot(fwd)
+				var lat = separation - fwd * f_dot
+				velocity += lat * speed * 1.2
+				if f_dot > 0: velocity += fwd * f_dot * speed * 0.5
+			else:
+				velocity += separation * speed * 1.2
+			
+			# Ground lane confinement: keep non-flanker units on the path
+			if not can_wander_off_path() and GameState.map_selected != "Arena_6P.tscn":
+				if abs(global_position.x) > 11.5:
+					velocity.x += -sign(global_position.x) * speed * 0.9
 			
 			if "Reach" in self.name:
 				var synergy = min(reach_count, 5) * 0.15 # Up to +75% speed and attack speed
@@ -199,6 +210,13 @@ func _animate_mesh(delta: float, moving: bool):
 		mesh.position.y = lerp(mesh.position.y, base_mesh_pos.y, 10.0 * delta)
 		mesh.rotation.z = lerp(mesh.rotation.z, 0.0, 10.0 * delta)
 
+func can_wander_off_path() -> bool:
+	if is_in_group("Flyer") or "Plane" in name or "Beetle" in name or "Jellyfish" in name:
+		return true
+	if "Assassin" in name or "Hunter" in name or "Stalker" in name:
+		return true
+	return false
+
 func find_new_target():
 	current_target = null
 	var my_team = ""
@@ -210,6 +228,9 @@ func find_new_target():
 			var hc = node.get_node_or_null("HealthComponent")
 			if hc and hc.is_dead: continue
 			if GameState.is_unit_stealthed_from(node, self): continue
+			if not can_wander_off_path() and (node.is_in_group("NeutralCreature") or node.is_in_group("NeutralStructure")):
+				if global_position.distance_to(node.global_position) > 7.5:
+					continue
 			if my_team != "" and not node.is_in_group(my_team):
 				enemies.append(node)
 			elif my_team == "" and not node.is_in_group("Beast"):

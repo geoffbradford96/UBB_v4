@@ -56,6 +56,8 @@ func _process(delta):
 		initial = am.initial_towers_per_team.get(my_team, 2)
 		
 	var dynamic_rate = requisition_rate + ((initial - bot_towers) * (1.0 / max(1.0, float(initial))))
+	if am and am.get("sudden_death_active"):
+		dynamic_rate *= 0.5
 	if current_requisition < max_requisition:
 		current_requisition += dynamic_rate * delta
 		if current_requisition > max_requisition:

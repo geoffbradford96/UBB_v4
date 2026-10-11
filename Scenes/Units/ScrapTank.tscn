@@ -92,6 +92,6 @@ material_override = SubResource("StandardMaterial3D_f4a0j")
 mesh = SubResource("SphereMesh_eti1i")
 
 [node name="@MeshInstance3D@18" type="MeshInstance3D" parent="VisualPivot"]
-transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 1.5, 1.5)
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 1.5, -1.5)
 material_override = SubResource("StandardMaterial3D_x61rw")
 mesh = SubResource("CylinderMesh_tvglh")

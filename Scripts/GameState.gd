@@ -25,9 +25,44 @@ var map_biome = "SUNNY_PLAINS"
 var match_player_count = 2
 var sudden_death_timer = 600.0
 
+# Corpse & Battlefield Debris Settings
+var corpse_max_count: int = 30 # Options: 10, 30, 60, 120
+var corpse_duration: float = 15.0 # Options: 5.0, 15.0, 30.0, 60.0, -1.0 (Permanent)
+var active_corpses: Array = []
+
 func _ready():
 	print("Global GameState is active!")
 	load_decks()
+	load_settings()
+
+func load_settings():
+	var cfg = ConfigFile.new()
+	if cfg.load("user://settings.cfg") == OK:
+		corpse_max_count = cfg.get_value("gameplay", "corpse_max_count", 30)
+		corpse_duration = cfg.get_value("gameplay", "corpse_duration", 15.0)
+
+func register_corpse(corpse_node: Node3D):
+	if not is_instance_valid(corpse_node): return
+	active_corpses.append(corpse_node)
+	while active_corpses.size() > corpse_max_count:
+		var oldest = active_corpses.pop_front()
+		if is_instance_valid(oldest):
+			_fade_and_free_corpse(oldest)
+	if corpse_duration > 0.0:
+		var tw = corpse_node.create_tween()
+		tw.tween_interval(corpse_duration)
+		tw.tween_callback(Callable(self, "_on_corpse_expired").bind(corpse_node))
+
+func _on_corpse_expired(corpse_node: Node3D):
+	active_corpses.erase(corpse_node)
+	if is_instance_valid(corpse_node):
+		_fade_and_free_corpse(corpse_node)
+
+func _fade_and_free_corpse(node: Node3D):
+	if not is_instance_valid(node): return
+	var tw = node.create_tween()
+	tw.tween_property(node, "scale", node.scale * 0.001, 1.2)
+	tw.tween_callback(node.queue_free)
 	
 func save_decks():
 	var save_path = "user://local_decks.json"

@@ -199,3 +199,6 @@ func _apply_reach_synergy():
 	var r_mesh = get_node_or_null("MeshInstance3D")
 	if not r_mesh: r_mesh = get_node_or_null("VisualPivot")
 	if r_mesh: r_mesh.scale = r_mesh.scale.lerp(Vector3.ONE * (1.0 + synergy * 0.6), 0.1)
+
+func can_wander_off_path() -> bool:
+	return true
