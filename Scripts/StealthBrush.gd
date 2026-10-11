@@ -83,7 +83,7 @@ func is_flying_unit(body: Node) -> bool:
 	if body.get("flight_height") != null: return true
 	if body.get("is_flying") == true: return true
 	if body.get("unit_attribute") == "Flying": return true
-	if body is Node3D and body.global_position.y > 4.5: return true
+	if body is Node3D and body.is_inside_tree() and body.global_position.y > 4.5: return true
 	return false
 
 func _on_body_entered(body: Node):

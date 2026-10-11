@@ -1,4 +1,4 @@
-﻿extends StaticBody3D
+extends StaticBody3D
 
 var faction: String = "Dominion"
 
@@ -54,11 +54,13 @@ func _process(delta):
 		return t.is_in_group("Targetable")
 	)
 	
-	if current_target != null:
+	if is_instance_valid(current_target):
 		var curr_hc = current_target.get_node_or_null("HealthComponent")
 		if (curr_hc and curr_hc.is_dead) or not current_target.is_in_group("Targetable"):
 			targets_in_range.erase(current_target)
 			current_target = null
+	else:
+		current_target = null
 			
 	if current_target == null or not is_instance_valid(current_target):
 		if targets_in_range.size() > 0:
@@ -66,7 +68,7 @@ func _process(delta):
 		else:
 			current_target = null
 			
-	if current_target != null:
+	if is_instance_valid(current_target):
 		var f_mesh = get_meta("faction_mesh") if has_meta("faction_mesh") else null
 		if f_mesh and is_instance_valid(f_mesh):
 			if f_mesh.has_meta("dominion_turret"):
@@ -82,13 +84,16 @@ func _process(delta):
 			shoot_at_target()
 
 func shoot_at_target():
+	if not is_instance_valid(current_target): return
 	if projectile_scene:
 		var proj = projectile_scene.instantiate()
-		get_tree().current_scene.add_child(proj)
-		proj.global_position = global_position + Vector3(0, 6, 0) 
-		proj.target = current_target
-		proj.set("damage", 25.0)
-		proj.set("speed", 25.0)
+		var scene_root = get_tree().current_scene if (get_tree() and get_tree().current_scene) else get_parent()
+		if scene_root:
+			scene_root.add_child(proj)
+			proj.global_position = global_position + Vector3(0, 6, 0) 
+			proj.target = current_target
+			proj.set("damage", 25.0)
+			proj.set("speed", 25.0)
 		
 		# Turret firing recoil kick
 		var f_mesh = get_meta("faction_mesh") if has_meta("faction_mesh") else null

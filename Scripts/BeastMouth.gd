@@ -155,9 +155,11 @@ func sync_spawn_cell(cell_type: int = 0):
 	var scn = digestive_cell_scene if cell_type == 1 else cell_scene
 	if scn:
 		var c = scn.instantiate()
-		get_tree().current_scene.add_child(c)
-		c.global_position = global_position + Vector3(0, 0.8, 0)
-		c.add_to_group("Beast")
+		var scene_root = get_tree().current_scene if (get_tree() and get_tree().current_scene) else get_parent()
+		if scene_root:
+			scene_root.add_child(c)
+			c.global_position = global_position + Vector3(0, 0.8, 0)
+			c.add_to_group("Beast")
 		
 		# Regurgitation convulsive gulp animation
 		var mn = get_meta("mesh_node") if has_meta("mesh_node") else null

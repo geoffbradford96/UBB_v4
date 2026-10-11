@@ -54,17 +54,19 @@ func _physics_process(delta):
 	set_meta("target_recheck", __target_timer)
 	
 	var target_is_dead = false
-	if current_target != null:
+	if is_instance_valid(current_target):
 		var target_hc = current_target.get_node_or_null("HealthComponent")
 		if (target_hc and target_hc.is_dead) or not current_target.is_in_group("Targetable"):
 			target_is_dead = true
+	else:
+		current_target = null
 			
-	if current_target == null or not is_instance_valid(current_target) or target_is_dead or __target_timer <= 0.0:
+	if current_target == null or target_is_dead or __target_timer <= 0.0:
 		if __target_timer <= 0.0 or target_is_dead: set_meta("target_recheck", 1.0)
 		find_new_target()
 		
 	var is_moving = false
-	if current_target != null:
+	if is_instance_valid(current_target):
 		var dist = global_position.distance_to(current_target.global_position)
 		var effective_range = attack_range
 		if "Base" in current_target.name:

@@ -342,31 +342,33 @@ func _physics_process(delta):
 			visual_mesh.position.z = lerp(visual_mesh.position.z, 0.0, 10.0 * delta)
 
 func _shoot_acid_spit(target_node: Node3D):
+	if not is_instance_valid(target_node): return
 	var proj_scene = preload("res://Scenes/Projectile.tscn")
 	if proj_scene:
 		var proj = proj_scene.instantiate()
-		get_tree().current_scene.add_child(proj)
-		proj.global_position = global_position + Vector3(0, 0.25, 0)
-		proj.target = target_node
-		proj.set("damage", attack_damage)
-		proj.set("speed", 22.0)
-		var p_mesh = proj.get_node_or_null("MeshInstance3D")
-		if p_mesh:
-			var a_mat = StandardMaterial3D.new()
-			a_mat.albedo_color = Color(0.72, 0.88, 0.18)
-			a_mat.emission_enabled = true
-			a_mat.emission = Color(0.72, 0.88, 0.18)
-			a_mat.emission_energy_multiplier = 2.0
-			p_mesh.material_override = a_mat
+		var scene_root = get_tree().current_scene if (get_tree() and get_tree().current_scene) else get_parent()
+		if scene_root:
+			scene_root.add_child(proj)
+			proj.global_position = global_position + Vector3(0, 0.25, 0)
+			proj.target = target_node
+			proj.set("damage", attack_damage)
+			proj.set("speed", 22.0)
+			var p_mesh = proj.get_node_or_null("MeshInstance3D")
+			if p_mesh:
+				var a_mat = StandardMaterial3D.new()
+				a_mat.albedo_color = Color(0.72, 0.88, 0.18)
+				a_mat.emission_enabled = true
+				a_mat.emission = Color(0.72, 0.88, 0.18)
+				a_mat.emission_energy_multiplier = 2.0
+				p_mesh.material_override = a_mat
 
 func _evaluate_targeting():
-	if current_target != null:
-		if not is_instance_valid(current_target):
+	if not is_instance_valid(current_target):
+		current_target = null
+	else:
+		var hc = current_target.get_node_or_null("HealthComponent")
+		if hc and hc.is_dead:
 			current_target = null
-		else:
-			var hc = current_target.get_node_or_null("HealthComponent")
-			if hc and hc.is_dead:
-				current_target = null
 				
 	if current_target == null:
 		var closest_dist = leash_radius

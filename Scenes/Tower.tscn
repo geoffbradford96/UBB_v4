@@ -11,17 +11,17 @@ size = Vector3(4, 8, 4)
 radius = 15.0
 height = 20.0
 
-[node name="Tower" type="StaticBody3D" ]
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_tower"]
+albedo_color = Color(0.4, 0.4, 0.45, 1)
+roughness = 0.8
+
+[node name="Tower" type="StaticBody3D"]
 script = ExtResource("1_script")
 projectile_scene = ExtResource("2_proj")
 
 [node name="HealthComponent" type="Node" parent="."]
 script = ExtResource("3_health")
 max_health = 500.0
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_tower"]
-albedo_color = Color(0.4, 0.4, 0.45, 1)
-roughness = 0.8
 
 [node name="CSGBox3D" type="CSGBox3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4, 0)
@@ -40,4 +40,3 @@ shape = SubResource("CylinderShape3D_detect")
 
 [connection signal="body_entered" from="DetectionArea" to="." method="_on_detection_area_body_entered"]
 [connection signal="body_exited" from="DetectionArea" to="." method="_on_detection_area_body_exited"]
-

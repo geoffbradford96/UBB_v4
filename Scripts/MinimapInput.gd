@@ -4,14 +4,16 @@ var main_camera: Camera3D
 
 func _ready():
 	await get_tree().process_frame
+	if not is_inside_tree() or not get_tree() or not get_tree().current_scene: return
 	main_camera = get_tree().current_scene.get_node_or_null("ArenaCamera")
 	if not main_camera:
 		main_camera = get_tree().current_scene.get_node_or_null("Camera3D")
 
 func _gui_input(event):
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
-		if not main_camera or not is_instance_valid(main_camera):
-			main_camera = get_tree().current_scene.get_node_or_null("ArenaCamera")
+		if not is_instance_valid(main_camera):
+			if get_tree() and get_tree().current_scene:
+				main_camera = get_tree().current_scene.get_node_or_null("ArenaCamera")
 		if main_camera and main_camera.has_method("snap_to"):
 			if size.x <= 0 or size.y <= 0: return
 			var x_percent = event.position.x / size.x

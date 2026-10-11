@@ -392,8 +392,9 @@ func _unhandled_input(event):
             var vp = acted_player.cam.get_viewport()
             var win_size = get_viewport().get_visible_rect().size
             var vp_size = vp.get_visible_rect().size
-            screen_pos.x = (screen_pos.x / win_size.x) * vp_size.x
-            screen_pos.y = (screen_pos.y / win_size.y) * vp_size.y
+            if win_size.x > 0.0 and win_size.y > 0.0:
+                screen_pos.x = (screen_pos.x / win_size.x) * vp_size.x
+                screen_pos.y = (screen_pos.y / win_size.y) * vp_size.y
 
     elif event is InputEventJoypadButton and event.pressed:
         # We need to map standard UI accept or custom action to deployment
@@ -1014,7 +1015,7 @@ func _end_match(message: String, winning_team: String = ""):
 
 @rpc("authority", "call_local", "reliable")
 func sync_end_match(message: String, winning_team: String = ""):
-    if get_tree().paused: return
+    if not is_inside_tree() or not get_tree() or get_tree().paused: return
     get_tree().paused = true
     
     var my_team = "SideA"
@@ -1032,7 +1033,7 @@ func sync_end_match(message: String, winning_team: String = ""):
     var ui = get_node_or_null("InGameUI")
     if not ui and players.size() > 0: ui = players[0].ui
     
-    if ui:
+    if ui and is_instance_valid(ui):
         var lbl = Label.new()
         lbl.text = final_message
         lbl.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -1045,6 +1046,7 @@ func sync_end_match(message: String, winning_team: String = ""):
         ui.add_child(lbl)
         
     await get_tree().create_timer(4.0, true, false, true).timeout
+    if not is_inside_tree() or not get_tree(): return
     get_tree().paused = false
     GameState.disconnect_multiplayer()
     get_tree().change_scene_to_file("res://Scenes/ModeHub.tscn")

@@ -29,11 +29,12 @@ func _physics_process(delta):
 		look_at(global_position + direction, up)
 
 func _hit_target(body):
-	var health_node = body.get_node_or_null("HealthComponent")
-	if health_node != null:
-		health_node.take_damage(damage)
-		if is_poisonous:
-			health_node.apply_poison(4, damage * 0.5)
+	if is_instance_valid(body):
+		var health_node = body.get_node_or_null("HealthComponent")
+		if health_node != null:
+			health_node.take_damage(damage)
+			if is_poisonous:
+				health_node.apply_poison(4, damage * 0.5)
 			
 	# Impact visual spark
 	var spark = MeshInstance3D.new()
@@ -51,11 +52,13 @@ func _hit_target(body):
 	mat.emission = spark_color
 	mat.emission_energy_multiplier = 3.0
 	spark.material_override = mat
-	get_tree().current_scene.add_child(spark)
-	spark.global_position = global_position
-	var tw = spark.create_tween()
-	tw.tween_property(spark, "scale", Vector3(0.05, 0.05, 0.05), 0.15)
-	tw.tween_callback(spark.queue_free)
+	var scene_root = get_tree().current_scene if (get_tree() and get_tree().current_scene) else get_parent()
+	if scene_root:
+		scene_root.add_child(spark)
+		spark.global_position = global_position
+		var tw = spark.create_tween()
+		tw.tween_property(spark, "scale", Vector3(0.05, 0.05, 0.05), 0.15)
+		tw.tween_callback(spark.queue_free)
 	
 	queue_free()
 

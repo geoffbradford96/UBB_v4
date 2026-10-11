@@ -23,7 +23,9 @@ func _physics_process(delta):
 					if g.begins_with("Side"): friendly_group = g
 				if friendly_group != "":
 					mine.add_to_group(friendly_group)
-				get_tree().current_scene.add_child(mine)
+				var scene_root = get_tree().current_scene if (get_tree() and get_tree().current_scene) else get_parent()
+				if scene_root:
+					scene_root.add_child(mine)
 				mine.global_position = global_position
 		move_and_slide()
 		return

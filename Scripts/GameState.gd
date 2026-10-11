@@ -44,7 +44,7 @@ func load_settings():
 func register_corpse(corpse_node: Node3D):
 	if not is_instance_valid(corpse_node): return
 	active_corpses.append(corpse_node)
-	while active_corpses.size() > corpse_max_count:
+	while active_corpses.size() > max(1, corpse_max_count):
 		var oldest = active_corpses.pop_front()
 		if is_instance_valid(oldest):
 			_fade_and_free_corpse(oldest)
@@ -137,7 +137,7 @@ func disconnect_multiplayer():
 	peer = ENetMultiplayerPeer.new()
 
 func is_unit_stealthed_from(target: Node3D, observer: Node3D) -> bool:
-	if not is_instance_valid(target): return false
+	if not is_instance_valid(target) or not target.is_inside_tree(): return false
 	if not target.has_meta("in_stealth_grass"): return false
 	if not target.get_meta("in_stealth_grass", false): return false
 	
@@ -153,7 +153,7 @@ func is_unit_stealthed_from(target: Node3D, observer: Node3D) -> bool:
 			return false
 		
 	# Friendly / same team check
-	if observer != null and is_instance_valid(observer):
+	if observer != null and is_instance_valid(observer) and observer.is_inside_tree():
 		var target_team = ""
 		for g in target.get_groups():
 			if g.begins_with("Side") or g == "Beast": target_team = g

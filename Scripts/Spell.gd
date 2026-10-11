@@ -21,7 +21,7 @@ func _ready():
 		if g.begins_with("Side"): my_team = g
 		
 	var enemies = []
-	if my_team != "":
+	if my_team != "" and get_tree():
 		for node in get_tree().get_nodes_in_group("Targetable"):
 			if not node.is_in_group(my_team) and is_instance_valid(node):
 				enemies.append(node)
@@ -44,6 +44,7 @@ func _ready():
 		fade_tw.tween_property(mesh, "scale", Vector3(0.01, 0.01, 0.01), remaining_time).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 		await fade_tw.finished
 	else:
-		await get_tree().create_timer(remaining_time).timeout
+		if get_tree():
+			await get_tree().create_timer(remaining_time).timeout
 	if is_inside_tree():
 		queue_free()

@@ -104,6 +104,7 @@ func heal(amount: float):
 
 @rpc("authority", "call_local", "reliable")
 func sync_heal(amount: float):
+	if is_dead: return
 	current_health += amount
 	if current_health > max_health:
 		current_health = max_health
@@ -117,7 +118,7 @@ func die():
 	if is_dead: return
 	is_dead = true
 	# SCRAP TANK EXPLOSION
-	if "ScrapTank" in get_parent().name:
+	if "ScrapTank" in get_parent().name and get_tree():
 		for e in get_tree().get_nodes_in_group("Targetable"):
 			if e != get_parent() and is_instance_valid(e) and get_parent().global_position.distance_to(e.global_position) < 4.0:
 				# Don't explode on own team!
@@ -132,7 +133,7 @@ func die():
 	var my_t = ""
 	for g in get_parent().get_groups():
 		if g.begins_with("Side"): my_t = g
-	if my_t != "":
+	if my_t != "" and get_tree():
 		for a in get_tree().get_nodes_in_group(my_t):
 			if a != get_parent() and is_instance_valid(a) and "Scrap" in a.name and get_parent().global_position.distance_to(a.global_position) < 5.0:
 				var hp = a.get_node_or_null("HealthComponent")
@@ -501,12 +502,13 @@ func _spawn_unit_corpse(parent: Node3D):
 		weapon.rotation.y = deg_to_rad(28.0)
 		corpse.add_child(weapon)
 
-	get_tree().current_scene.add_child(corpse)
-	GameState.register_corpse(corpse)
-
-
+	var scene_root = get_tree().current_scene if (get_tree() and get_tree().current_scene) else get_parent().get_parent()
+	if scene_root:
+		scene_root.add_child(corpse)
+		GameState.register_corpse(corpse)
 
 func _process(delta):
+	if is_dead: return
 	if poison_ticks > 0:
 		poison_timer -= delta
 		if poison_timer <= 0:

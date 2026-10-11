@@ -1,4 +1,4 @@
-﻿extends CharacterBody3D
+extends CharacterBody3D
 
 @export var damage: float = 45.0
 @export var attack_range: float = 14.0
@@ -110,15 +110,17 @@ func _physics_process(delta):
 		mn.rotation_degrees.z = cos(t * 0.8) * 8.0
 		
 	var target_is_dead = false
-	if current_target != null:
+	if is_instance_valid(current_target):
 		var target_hc = current_target.get_node_or_null("HealthComponent")
 		if (target_hc and target_hc.is_dead) or not current_target.is_in_group("Targetable"):
 			target_is_dead = true
+	else:
+		current_target = null
 			
-	if current_target == null or not is_instance_valid(current_target) or target_is_dead:
+	if current_target == null or target_is_dead:
 		find_new_target()
 		
-	if current_target != null:
+	if is_instance_valid(current_target):
 		# Swivel towards current target on Y axis so slap tracks enemies accurately
 		var to_target = current_target.global_position - global_position
 		to_target.y = 0
@@ -172,12 +174,14 @@ func execute_tentacle_slam():
 	s_mat.emission = Color(0.6, 0.1, 0.7)
 	s_mat.emission_energy_multiplier = 2.0
 	shock.material_override = s_mat
-	get_tree().current_scene.add_child(shock)
-	shock.global_position = target_ref.global_position + Vector3(0, 0.1, 0)
-	var stw = shock.create_tween()
-	stw.tween_property(shock, "scale", Vector3(2.5, 1.0, 2.5), 0.3)
-	stw.parallel().tween_property(s_mat, "albedo_color:a", 0.0, 0.3)
-	stw.tween_callback(shock.queue_free)
+	var scene_root = get_tree().current_scene if (get_tree() and get_tree().current_scene) else get_parent()
+	if scene_root:
+		scene_root.add_child(shock)
+		shock.global_position = target_ref.global_position + Vector3(0, 0.1, 0)
+		var stw = shock.create_tween()
+		stw.tween_property(shock, "scale", Vector3(2.5, 1.0, 2.5), 0.3)
+		stw.parallel().tween_property(s_mat, "albedo_color:a", 0.0, 0.3)
+		stw.tween_callback(shock.queue_free)
 
 func find_new_target():
 	current_target = null

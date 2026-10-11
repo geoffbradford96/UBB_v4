@@ -243,8 +243,8 @@ func calculate_optimal_spawn(card: CardData, threat_info: Dictionary):
 	if card.is_spell:
 		# If under attack, drop spell on the cluster attacking the endangered structure!
 		if threat_info.threat_score > 10.0 and threat_info.hostiles_near_endangered.size() > 0:
-			var best_spell_target = threat_info.hostiles_near_endangered[0]
-			var max_cluster = 0
+			var best_spell_target = null
+			var max_cluster = -1
 			for h in threat_info.hostiles_near_endangered:
 				if not is_instance_valid(h): continue
 				var count = 0
@@ -254,7 +254,8 @@ func calculate_optimal_spawn(card: CardData, threat_info: Dictionary):
 				if count > max_cluster:
 					max_cluster = count
 					best_spell_target = h
-			return best_spell_target.global_position
+			if best_spell_target and is_instance_valid(best_spell_target):
+				return best_spell_target.global_position
 			
 		# Otherwise, find densest enemy cluster anywhere on the field
 		var all_targets = []
@@ -276,10 +277,14 @@ func calculate_optimal_spawn(card: CardData, threat_info: Dictionary):
 				if c > max_c:
 					max_c = c
 					best_t = u
-			return best_t.global_position
+			if best_t and is_instance_valid(best_t):
+				return best_t.global_position
 		return null
 		
-	var my_structures = threat_info.structures
+	var my_structures = []
+	for s in threat_info.structures:
+		if is_instance_valid(s):
+			my_structures.append(s)
 	if my_structures.is_empty():
 		return null
 		
@@ -288,7 +293,7 @@ func calculate_optimal_spawn(card: CardData, threat_info: Dictionary):
 	var target_pos: Vector3 = Vector3.ZERO
 		
 	# 2. Defensive Interception Deployment when under threat
-	if threat_info.threat_score > 12.0 and threat_info.endangered_structure != null:
+	if threat_info.threat_score > 12.0 and threat_info.endangered_structure != null and is_instance_valid(threat_info.endangered_structure):
 		anchor = threat_info.endangered_structure
 		target_pos = anchor.global_position
 		
