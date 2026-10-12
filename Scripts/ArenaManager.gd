@@ -118,12 +118,20 @@ func _ready():
         pstate.profile = "Player1"
         var is_srv = multiplayer.is_server() if multiplayer.has_multiplayer_peer() else true
         pstate.team = "SideA" if is_srv else "SideB"
+        if GameState.current_mode == "AI_VS_AI":
+            pstate.team = "Spectator"
+            pstate.profile = "Spectator"
         pstate.ui = original_ui
         pstate.cam = original_cam
         if not pstate.cam:
             pstate.cam = get_viewport().get_camera_3d()
             if not pstate.cam:
                 pstate.cam = find_child("Camera3D", true, false)
+        if pstate.cam and GameState.current_mode == "AI_VS_AI":
+            pstate.cam.is_spectator = true
+            pstate.cam.assigned_team = "Spectator"
+            if pstate.cam.has_method("snap_to_overview"):
+                pstate.cam.snap_to_overview()
         if pstate.ui: pstate.ui.connect("ui_card_selected", Callable(self, "_on_ui_card_selected"))
         players.append(pstate)
         
@@ -269,6 +277,15 @@ func _process(delta):
     var b_root = get_node_or_null("BeastOfNothingness")
     if b_root and is_instance_valid(b_root):
         b_root.rotation.y += delta * 0.04
+        var t_anim = Time.get_ticks_msec() / 1000.0
+        for child in b_root.get_children():
+            if child.has_meta("seg_phase"):
+                var phase = child.get_meta("seg_phase")
+                var base_y = child.get_meta("base_y")
+                child.position.y = base_y + sin(t_anim * 1.6 + phase) * 6.0
+            elif child.has_meta("is_head"):
+                var base_hy = child.get_meta("base_y")
+                child.position.y = base_hy + sin(t_anim * 0.9) * 3.5
                 
     _update_timer_ui()
     _animate_faction_structures(delta)
@@ -298,12 +315,17 @@ func _process(delta):
             if b is BotAI:
                 if b.my_team == "SideA" and bot_a == null: bot_a = b
                 elif b.my_team != "SideA" and bot_b == null: bot_b = b
-        if bot_a:
-            players[0].ui.update_requisition(bot_a.current_requisition, bot_a.max_requisition)
-        if bot_b:
-            players[0].ui.update_enemy_requisition(bot_b.current_requisition, bot_b.max_requisition, bot_b.my_team)
+        var max_e = bot_a.max_requisition if bot_a else 100.0
+        var a_e = bot_a.current_requisition if bot_a else 0.0
+        var b_e = bot_b.current_requisition if bot_b else 0.0
+        if players[0].ui.has_method("update_spectator_energy"):
+            players[0].ui.update_spectator_energy(a_e, b_e, max_e)
+        else:
+            if bot_a: players[0].ui.update_requisition(bot_a.current_requisition, bot_a.max_requisition)
+            if bot_b: players[0].ui.update_enemy_requisition(bot_b.current_requisition, bot_b.max_requisition, bot_b.my_team)
     else:
         for p in players:
+            if p.team == "Spectator": continue
             var player_towers = 0
             for z in get_tree().get_nodes_in_group(p.team):
                 if "Tower" in z.name: player_towers += 1
@@ -464,8 +486,8 @@ func toggle_deployment_visuals(p: LocalPlayerState, should_show: bool, is_spell:
         if "Base" in s.name or "Tower" in s.name or "CommandBay" in s.name:
             var ring = MeshInstance3D.new()
             var torus = TorusMesh.new()
-            torus.outer_radius = 28.0
-            torus.inner_radius = 27.4
+            torus.outer_radius = 32.0
+            torus.inner_radius = 31.4
             ring.mesh = torus
             var mat = StandardMaterial3D.new()
             mat.albedo_color = Color(0.2, 0.8, 1.0, 0.5)
@@ -482,11 +504,14 @@ func can_deploy_at(team: String, target_pos: Vector3, is_spell: bool) -> bool:
     if is_spell: return true
     for z in get_tree().get_nodes_in_group(team):
         if "Base" in z.name or "Tower" in z.name or "CommandBay" in z.name:
-            if target_pos.distance_to(z.global_position) <= 28.0:
+            var d = Vector2(target_pos.x, target_pos.z).distance_to(Vector2(z.global_position.x, z.global_position.z))
+            if d <= 32.0:
                 return true
     return false
 
 func attempt_to_play_card(p: LocalPlayerState, data: Resource, target_position: Vector3) -> bool:
+    if p.team == "Spectator":
+        return false
     if p.req < data.cost:
         print(p.team, " Not enough Requisition! Need ", data.cost, " but have ", snapped(p.req, 0.1))
         if p.ui and p.ui.has_method("show_placement_warning"):
@@ -936,74 +961,203 @@ func _update_timer_ui():
             label.scale = Vector2(1.2 + sin(Time.get_ticks_msec()*0.01)*0.1, 1.2 + sin(Time.get_ticks_msec()*0.01)*0.1)
 
 func _start_beast_of_nothingness():
-    print("THE BEAST OF NOTHINGNESS AWAKENS!")
+    print("THE BEAST OF NOTHINGNESS AWAKENS! A colossal world-eater encircles the battlefield!")
     var beast_root = Node3D.new()
     beast_root.name = "BeastOfNothingness"
     add_child(beast_root)
     
+    var arena_rad = 90.0
+    if GameState.map_selected == "Arena_4P.tscn": arena_rad = 115.0
+    elif GameState.map_selected == "Arena_6P.tscn": arena_rad = 155.0
+
+    # 1. World-Encircling Segmented Leviathan Body
+    # Encircles the entire map perimeter with massive undulating body segments, void spines, and tentacles
+    var body_mat = StandardMaterial3D.new()
+    body_mat.albedo_color = Color(0.10, 0.04, 0.16)
+    body_mat.roughness = 0.35
+    body_mat.metallic = 0.75
+    body_mat.emission_enabled = true
+    body_mat.emission = Color(0.68, 0.14, 0.95) # Pulsing purple void luminescence
+    body_mat.emission_energy_multiplier = 2.4
+    
+    var spine_mat = StandardMaterial3D.new()
+    spine_mat.albedo_color = Color(0.18, 0.08, 0.28)
+    spine_mat.emission_enabled = true
+    spine_mat.emission = Color(0.85, 0.20, 0.95)
+    spine_mat.emission_energy_multiplier = 1.8
+    
+    var total_segments = 64
+    for i in range(total_segments):
+        var angle = (float(i) / float(total_segments)) * TAU
+        var seg_root = Node3D.new()
+        seg_root.name = "BodySeg_" + str(i)
+        
+        # Serpentine sinusoidal radius and height variation creating majestic rising arches
+        var r_wavy = arena_rad + sin(angle * 3.0) * 12.0
+        var base_y = -4.0 + sin(angle * 2.0) * 16.0
+        seg_root.position = Vector3(cos(angle) * r_wavy, base_y, sin(angle) * r_wavy)
+        seg_root.set_meta("base_y", base_y)
+        seg_root.set_meta("seg_phase", angle * 4.0)
+        
+        # Segment body mass
+        var seg_mesh = MeshInstance3D.new()
+        var sphere = SphereMesh.new()
+        sphere.radius = 8.5
+        sphere.height = 16.0
+        seg_mesh.mesh = sphere
+        seg_mesh.material_override = body_mat
+        seg_mesh.scale = Vector3(1.2, 0.85, 1.2)
+        seg_mesh.rotation.y = angle + PI * 0.5
+        seg_root.add_child(seg_mesh)
+        
+        # Giant Dorsal Void Spikes
+        for s in range(2):
+            var spine = MeshInstance3D.new()
+            var cyl = CylinderMesh.new()
+            cyl.top_radius = 0.0
+            cyl.bottom_radius = 1.5
+            cyl.height = randf_range(12.0, 18.0)
+            spine.mesh = cyl
+            spine.material_override = spine_mat
+            var s_offset = -3.0 if s == 0 else 3.0
+            spine.position = Vector3(cos(angle) * s_offset, 6.0, sin(angle) * s_offset)
+            spine.rotation.x = randf_range(-0.3, 0.3)
+            spine.rotation.z = randf_range(-0.4, 0.4)
+            seg_root.add_child(spine)
+            
+        # Massive Arched Tentacles every few segments
+        if i % 5 == 0:
+            var tentacle = MeshInstance3D.new()
+            var cyl_t = CylinderMesh.new()
+            cyl_t.top_radius = 0.4
+            cyl_t.bottom_radius = 3.2
+            cyl_t.height = 32.0
+            tentacle.mesh = cyl_t
+            tentacle.material_override = body_mat
+            tentacle.position = Vector3(0, 14.0, 0)
+            tentacle.rotation.x = sin(angle) * 0.5
+            tentacle.rotation.z = cos(angle) * 0.5
+            seg_root.add_child(tentacle)
+            
+        beast_root.add_child(seg_root)
+
+    # 2. The Colossal Leviathan Head Looming Over the Arena
+    # Towering high at the edge of the arena looking hungrily inward across the entire battlefield
+    var head_root = Node3D.new()
+    head_root.name = "BeastColossalHead"
+    var head_ang = PI * 0.75
+    var head_dist = arena_rad - 6.0
+    var base_hy = 20.0
+    head_root.position = Vector3(cos(head_ang) * head_dist, base_hy, sin(head_ang) * head_dist)
+    head_root.set_meta("is_head", true)
+    head_root.set_meta("base_y", base_hy)
+    beast_root.add_child(head_root)
+    head_root.look_at(Vector3(0, 0, 0), Vector3.UP)
+    
+    # Giant Horned Skull
+    var skull = MeshInstance3D.new()
+    var box = BoxMesh.new()
+    box.size = Vector3(22.0, 16.0, 36.0)
+    skull.mesh = box
+    skull.material_override = body_mat
+    skull.position.y = 4.0
+    head_root.add_child(skull)
+    
+    # Upper Snout & Horn Mandibles
+    var snout = MeshInstance3D.new()
+    var prism = PrismMesh.new()
+    prism.size = Vector3(18.0, 12.0, 26.0)
+    snout.mesh = prism
+    snout.material_override = body_mat
+    snout.position = Vector3(0, 2.0, -22.0)
+    snout.rotation.x = -PI * 0.5
+    head_root.add_child(snout)
+    
+    # Giant Curved Void Horns
+    for side in [-1.0, 1.0]:
+        var horn = MeshInstance3D.new()
+        var h_cyl = CylinderMesh.new()
+        h_cyl.top_radius = 0.2
+        h_cyl.bottom_radius = 3.0
+        h_cyl.height = 34.0
+        horn.mesh = h_cyl
+        horn.material_override = spine_mat
+        horn.position = Vector3(side * 14.0, 16.0, 8.0)
+        horn.rotation.x = 0.6
+        horn.rotation.z = side * 0.45
+        head_root.add_child(horn)
+        
+    # Lower Gaping Jaw
+    var jaw = MeshInstance3D.new()
+    var jaw_box = BoxMesh.new()
+    jaw_box.size = Vector3(18.0, 5.0, 32.0)
+    jaw.mesh = jaw_box
+    jaw.material_override = body_mat
+    jaw.position = Vector3(0, -6.0, -18.0)
+    jaw.rotation.x = 0.35 # Open gaping mouth
+    head_root.add_child(jaw)
+    
+    # Razor Fangs on Jaws
+    var fang_mat = StandardMaterial3D.new()
+    fang_mat.albedo_color = Color(0.85, 0.85, 0.9)
+    fang_mat.roughness = 0.2
+    for fi in range(16):
+        var fang = MeshInstance3D.new()
+        var f_cyl = CylinderMesh.new()
+        f_cyl.top_radius = 0.0
+        f_cyl.bottom_radius = 1.2
+        f_cyl.height = 6.5
+        fang.mesh = f_cyl
+        fang.material_override = fang_mat
+        var f_x = -7.0 + (fi % 8) * 2.0
+        var f_z = -10.0 - (fi / 8) * 12.0
+        fang.position = Vector3(f_x, 0.0, f_z)
+        jaw.add_child(fang)
+        
+    # Cluster of 12 Glowing Eldritch Eyes
+    for ei in range(12):
+        var eye = MeshInstance3D.new()
+        var eye_sphere = SphereMesh.new()
+        eye_sphere.radius = 1.8
+        eye_sphere.height = 3.6
+        eye.mesh = eye_sphere
+        var emat = StandardMaterial3D.new()
+        emat.albedo_color = Color(1.0, 0.1, 0.2)
+        emat.emission_enabled = true
+        emat.emission = Color(1.0, 0.1, 0.4) if ei % 2 == 0 else Color(0.75, 0.1, 1.0)
+        emat.emission_energy_multiplier = 3.5
+        eye.material_override = emat
+        var side_eye = -1.0 if (ei % 2 == 0) else 1.0
+        var eye_row = float(ei / 2)
+        eye.position = Vector3(side_eye * (6.0 + eye_row * 1.4), 8.0 + eye_row * 1.0, -8.0 - eye_row * 4.0)
+        head_root.add_child(eye)
+
+    # 3. Subterranean Abyssal Maw (Under-arena Maw Connection)
     var torus = MeshInstance3D.new()
     torus.mesh = TorusMesh.new()
-    torus.mesh.outer_radius = 80.0
-    torus.mesh.inner_radius = 50.0
-    
-    var mat = StandardMaterial3D.new()
-    mat.albedo_color = Color(0.2, 0.1, 0.3)
-    mat.emission_enabled = true
-    mat.emission = Color(0.5, 0.0, 0.8)
-    mat.emission_energy_multiplier = 0.5
-    torus.material_override = mat
-    torus.position = Vector3(0, -50, 0)
+    torus.mesh.outer_radius = arena_rad * 0.75
+    torus.mesh.inner_radius = arena_rad * 0.45
+    torus.material_override = body_mat
+    torus.position = Vector3(0, -40.0, 0)
     beast_root.add_child(torus)
     
-    var teeth_mat = StandardMaterial3D.new()
-    teeth_mat.albedo_color = Color(0.7, 0.7, 0.7)
-    for i in range(45):
-        var angle = i * 8 * (PI / 180.0)
+    # Inner fangs framing the subterranean pit
+    for i in range(36):
+        var a = i * 10.0 * (PI / 180.0)
         var tooth = MeshInstance3D.new()
-        tooth.mesh = CylinderMesh.new()
-        tooth.mesh.top_radius = 0.0
-        tooth.mesh.bottom_radius = 3.0
-        tooth.mesh.height = 15.0
-        tooth.material_override = teeth_mat
-        tooth.position = Vector3(cos(angle) * 55, -45, sin(angle) * 55)
-        tooth.rotation_degrees.x = -15
-        tooth.rotation_degrees.y = -angle * (180.0/PI)
+        var t_cyl = CylinderMesh.new()
+        t_cyl.top_radius = 0.0
+        t_cyl.bottom_radius = 2.4
+        t_cyl.height = 14.0
+        tooth.mesh = t_cyl
+        tooth.material_override = fang_mat
+        tooth.position = Vector3(cos(a) * (arena_rad * 0.5), -35.0, sin(a) * (arena_rad * 0.5))
+        tooth.rotation_degrees.x = -18
+        tooth.rotation_degrees.y = -a * (180.0 / PI)
         beast_root.add_child(tooth)
         
-    # Inner ring of razor fangs
-    for i in range(30):
-        var angle = (i * 12 + 6) * (PI / 180.0)
-        var inner_tooth = MeshInstance3D.new()
-        inner_tooth.mesh = CylinderMesh.new()
-        inner_tooth.mesh.top_radius = 0.0
-        inner_tooth.mesh.bottom_radius = 2.0
-        inner_tooth.mesh.height = 10.0
-        inner_tooth.material_override = teeth_mat
-        inner_tooth.position = Vector3(cos(angle) * 48, -46, sin(angle) * 48)
-        inner_tooth.rotation_degrees.x = -25
-        inner_tooth.rotation_degrees.y = -angle * (180.0/PI)
-        beast_root.add_child(inner_tooth)
-        
-    for i in range(40):
-        var eye = MeshInstance3D.new()
-        eye.mesh = SphereMesh.new()
-        eye.mesh.radius = 2.5
-        var eye_mat = StandardMaterial3D.new()
-        eye_mat.albedo_color = Color(1.0, 0.0, 0.0)
-        eye_mat.emission_enabled = true
-        eye_mat.emission = Color(1.0, 0.0, 0.0)
-        eye.material_override = eye_mat
-        var angle = (i * 9 + 4) * (3.14159/180.0)
-        eye.position = Vector3(cos(angle) * 62, -48, sin(angle) * 62)
-        beast_root.add_child(eye)
-        
-    var scale_factor = 1.0
-    if GameState.map_selected == "Arena_4P.tscn": scale_factor = 1.5
-    elif GameState.map_selected == "Arena_6P.tscn": scale_factor = 2.2
-    beast_root.scale = Vector3(scale_factor, 1.0, scale_factor)
-
     var tw = create_tween()
-    tw.tween_property(beast_root, "position:y", 20.0, 30.0) # slowly rise (to y=20 so mouth frames the arena)
+    tw.tween_property(beast_root, "position:y", 8.0, 25.0)
 
 @rpc("authority", "call_local", "reliable")
 func sync_spawn_hazard(rx: float, rz: float, is_mouth: bool, unique_name: String):

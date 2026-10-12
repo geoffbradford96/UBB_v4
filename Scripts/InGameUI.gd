@@ -20,6 +20,17 @@ signal ui_card_selected(card_ui, ui_instance)
 func _ready():
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	
+	if GameState.current_mode == "AI_VS_AI":
+		var bp = get_node_or_null("BottomPanel")
+		if bp: bp.visible = false
+		_build_spectator_hud()
+		_build_pause_menu()
+		var exit_btn = get_node_or_null("ExitButton")
+		if exit_btn:
+			exit_btn.text = "Exit Match"
+			exit_btn.connect("pressed", Callable(self, "_on_exit_button_pressed"))
+		return
+	
 	if GameState.player_decks.has(player_profile) and GameState.player_decks[player_profile].size() > 0:
 		deck = GameState.player_decks[player_profile].duplicate()
 	else:
@@ -50,6 +61,11 @@ func _ready():
 func _input(event):
 	if event.is_action_pressed("ui_cancel"):
 		toggle_pause_menu()
+		return
+		
+	if GameState.current_mode == "AI_VS_AI":
+		if event is InputEventKey and event.keycode == KEY_V and event.pressed and not event.echo:
+			call_deferred("_update_vision_btn_text")
 		return
 		
 	if device_id != -1 and event.device != device_id:
@@ -306,4 +322,207 @@ func show_placement_warning(msg: String):
 	warning_tween.tween_interval(1.2)
 	warning_tween.tween_property(warning_label, "modulate:a", 0.0, 0.4)
 	warning_tween.tween_callback(Callable(warning_label, "hide"))
+
+var spectator_panel: Control = null
+var spectator_a_bar: ProgressBar = null
+var spectator_b_bar: ProgressBar = null
+var spectator_a_label: Label = null
+var spectator_b_label: Label = null
+var spectator_vision_btn: Button = null
+
+func _build_spectator_hud():
+	spectator_panel = Control.new()
+	spectator_panel.name = "SpectatorHUD"
+	spectator_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
+	spectator_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(spectator_panel)
+	
+	# 1. Top Panel: Dual Team Energy Bars (Side A Blue vs Side B Red)
+	var top_panel = PanelContainer.new()
+	top_panel.name = "SpectatorTopPanel"
+	top_panel.offset_left = 130.0
+	top_panel.offset_top = 14.0
+	top_panel.offset_right = 620.0
+	top_panel.offset_bottom = 68.0
+	top_panel.mouse_filter = Control.MOUSE_FILTER_PASS
+	spectator_panel.add_child(top_panel)
+	
+	var top_vbox = VBoxContainer.new()
+	top_vbox.add_theme_constant_override("separation", 4)
+	top_panel.add_child(top_vbox)
+	
+	var mode_title = Label.new()
+	mode_title.text = "SPECTATOR MODE - OBSERVING MATCH"
+	mode_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	mode_title.add_theme_font_size_override("font_size", 12)
+	mode_title.add_theme_color_override("font_color", Color(0.75, 0.85, 1.0))
+	top_vbox.add_child(mode_title)
+	
+	var dual_hbox = HBoxContainer.new()
+	dual_hbox.add_theme_constant_override("separation", 16)
+	top_vbox.add_child(dual_hbox)
+	
+	# Side A Box
+	var a_vbox = VBoxContainer.new()
+	a_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	dual_hbox.add_child(a_vbox)
+	
+	spectator_a_label = Label.new()
+	spectator_a_label.text = "Side A Energy: 0 / 100"
+	spectator_a_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	spectator_a_label.add_theme_font_size_override("font_size", 11)
+	spectator_a_label.add_theme_color_override("font_color", Color(0.35, 0.75, 1.0))
+	a_vbox.add_child(spectator_a_label)
+	
+	spectator_a_bar = ProgressBar.new()
+	spectator_a_bar.custom_minimum_size = Vector2(0, 14)
+	spectator_a_bar.show_percentage = false
+	spectator_a_bar.max_value = 100.0
+	spectator_a_bar.value = 0.0
+	var a_bg = StyleBoxFlat.new()
+	a_bg.bg_color = Color(0.08, 0.12, 0.18, 0.9)
+	a_bg.corner_radius_top_left = 3; a_bg.corner_radius_top_right = 3
+	a_bg.corner_radius_bottom_left = 3; a_bg.corner_radius_bottom_right = 3
+	var a_fg = StyleBoxFlat.new()
+	a_fg.bg_color = Color(0.2, 0.65, 1.0)
+	a_fg.corner_radius_top_left = 3; a_fg.corner_radius_top_right = 3
+	a_fg.corner_radius_bottom_left = 3; a_fg.corner_radius_bottom_right = 3
+	spectator_a_bar.add_theme_stylebox_override("background", a_bg)
+	spectator_a_bar.add_theme_stylebox_override("fill", a_fg)
+	a_vbox.add_child(spectator_a_bar)
+	
+	# Side B Box
+	var b_vbox = VBoxContainer.new()
+	b_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	dual_hbox.add_child(b_vbox)
+	
+	spectator_b_label = Label.new()
+	spectator_b_label.text = "Side B Energy: 0 / 100"
+	spectator_b_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	spectator_b_label.add_theme_font_size_override("font_size", 11)
+	spectator_b_label.add_theme_color_override("font_color", Color(1.0, 0.45, 0.45))
+	b_vbox.add_child(spectator_b_label)
+	
+	spectator_b_bar = ProgressBar.new()
+	spectator_b_bar.custom_minimum_size = Vector2(0, 14)
+	spectator_b_bar.show_percentage = false
+	spectator_b_bar.max_value = 100.0
+	spectator_b_bar.value = 0.0
+	var b_bg = StyleBoxFlat.new()
+	b_bg.bg_color = Color(0.18, 0.08, 0.08, 0.9)
+	b_bg.corner_radius_top_left = 3; b_bg.corner_radius_top_right = 3
+	b_bg.corner_radius_bottom_left = 3; b_bg.corner_radius_bottom_right = 3
+	var b_fg = StyleBoxFlat.new()
+	b_fg.bg_color = Color(0.95, 0.25, 0.25)
+	b_fg.corner_radius_top_left = 3; b_fg.corner_radius_top_right = 3
+	b_fg.corner_radius_bottom_left = 3; b_fg.corner_radius_bottom_right = 3
+	spectator_b_bar.add_theme_stylebox_override("background", b_bg)
+	spectator_b_bar.add_theme_stylebox_override("fill", b_fg)
+	b_vbox.add_child(spectator_b_bar)
+	
+	# 2. Bottom Toolbar: Perspective Toggles & Player Vision
+	var bottom_container = CenterContainer.new()
+	bottom_container.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	bottom_container.offset_top = -90.0
+	bottom_container.offset_bottom = -16.0
+	bottom_container.mouse_filter = Control.MOUSE_FILTER_PASS
+	spectator_panel.add_child(bottom_container)
+	
+	var bot_vbox = VBoxContainer.new()
+	bot_vbox.add_theme_constant_override("separation", 6)
+	bottom_container.add_child(bot_vbox)
+	
+	var hints = Label.new()
+	hints.text = "[WASD / Arrows]: Pan Camera  |  [Wheel]: Zoom In/Out  |  [1-3 / Tab / V]: Shortcuts"
+	hints.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hints.add_theme_font_size_override("font_size", 12)
+	hints.add_theme_color_override("font_color", Color(0.8, 0.8, 0.85, 0.85))
+	bot_vbox.add_child(hints)
+	
+	var btns_hbox = HBoxContainer.new()
+	btns_hbox.add_theme_constant_override("separation", 10)
+	bot_vbox.add_child(btns_hbox)
+	
+	var btn_side_a = Button.new()
+	btn_side_a.text = "Side A View (1)"
+	btn_side_a.add_theme_font_size_override("font_size", 13)
+	btn_side_a.connect("pressed", Callable(self, "_on_spec_snap_a"))
+	btns_hbox.add_child(btn_side_a)
+	
+	var btn_side_b = Button.new()
+	btn_side_b.text = "Side B View (2)"
+	btn_side_b.add_theme_font_size_override("font_size", 13)
+	btn_side_b.connect("pressed", Callable(self, "_on_spec_snap_b"))
+	btns_hbox.add_child(btn_side_b)
+	
+	var btn_overview = Button.new()
+	btn_overview.text = "Overview (3)"
+	btn_overview.add_theme_font_size_override("font_size", 13)
+	btn_overview.connect("pressed", Callable(self, "_on_spec_snap_overview"))
+	btns_hbox.add_child(btn_overview)
+	
+	var btn_cycle = Button.new()
+	btn_cycle.text = "Cycle Unit (Tab)"
+	btn_cycle.add_theme_font_size_override("font_size", 13)
+	btn_cycle.connect("pressed", Callable(self, "_on_spec_cycle_unit"))
+	btns_hbox.add_child(btn_cycle)
+	
+	spectator_vision_btn = Button.new()
+	_update_vision_btn_text()
+	spectator_vision_btn.add_theme_font_size_override("font_size", 13)
+	spectator_vision_btn.connect("pressed", Callable(self, "_on_spec_toggle_vision"))
+	btns_hbox.add_child(spectator_vision_btn)
+
+func _update_vision_btn_text():
+	if spectator_vision_btn:
+		var v_state = "ON (V)" if GameState.player_vision_enabled else "OFF (V)"
+		spectator_vision_btn.text = "Player Vision: " + v_state
+
+func _get_active_cam():
+	var cam = get_viewport().get_camera_3d()
+	if not cam:
+		cam = get_tree().current_scene.find_child("Camera3D", true, false)
+	return cam
+
+func _on_spec_snap_a():
+	var cam = _get_active_cam()
+	if cam and cam.has_method("snap_to_side_a"):
+		cam.snap_to_side_a()
+
+func _on_spec_snap_b():
+	var cam = _get_active_cam()
+	if cam and cam.has_method("snap_to_side_b"):
+		cam.snap_to_side_b()
+
+func _on_spec_snap_overview():
+	var cam = _get_active_cam()
+	if cam and cam.has_method("snap_to_overview"):
+		cam.snap_to_overview()
+
+func _on_spec_cycle_unit():
+	var cam = _get_active_cam()
+	if cam and cam.has_method("cycle_follow_target"):
+		cam.cycle_follow_target()
+
+func _on_spec_toggle_vision():
+	var cam = _get_active_cam()
+	if cam and cam.has_method("toggle_player_vision"):
+		cam.toggle_player_vision()
+	else:
+		GameState.player_vision_enabled = not GameState.player_vision_enabled
+		for u in get_tree().get_nodes_in_group("Targetable"):
+			var hc = u.get_node_or_null("HealthComponent")
+			if hc and hc.has_method("update_ground_marker_color"):
+				hc.update_ground_marker_color()
+	_update_vision_btn_text()
+
+func update_spectator_energy(a_cur: float, b_cur: float, max_e: float):
+	if spectator_a_bar and spectator_a_label:
+		spectator_a_bar.max_value = max_e
+		spectator_a_bar.value = a_cur
+		spectator_a_label.text = "Side A Energy: " + str(floor(a_cur)) + " / " + str(floor(max_e))
+	if spectator_b_bar and spectator_b_label:
+		spectator_b_bar.max_value = max_e
+		spectator_b_bar.value = b_cur
+		spectator_b_label.text = "Side B Energy: " + str(floor(b_cur)) + " / " + str(floor(max_e))
 

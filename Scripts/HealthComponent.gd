@@ -25,6 +25,7 @@ var is_dead: bool = false
 var hp_bar: ProgressBar
 var hp_viewport: SubViewport = null
 var hp_sprite: Sprite3D = null
+var ground_marker: MeshInstance3D = null
 
 func _ready():
 	get_parent().add_to_group("Targetable")
@@ -67,6 +68,78 @@ func _ready():
 	get_parent().call_deferred("add_child", hp_viewport)
 	get_parent().call_deferred("add_child", hp_sprite)
 	call_deferred("update_health_bar_colors")
+	call_deferred("_setup_ground_marker")
+
+func _setup_ground_marker():
+	var parent = get_parent()
+	if not parent or not is_instance_valid(parent): return
+	if ground_marker != null and is_instance_valid(ground_marker): return
+	
+	ground_marker = MeshInstance3D.new()
+	ground_marker.name = "UnitGroundMarker"
+	
+	var torus = TorusMesh.new()
+	var r_outer = 1.15
+	var r_inner = 0.92
+	
+	if "Base" in parent.name:
+		r_outer = 6.2; r_inner = 5.4
+	elif "Tower" in parent.name or "CommandBay" in parent.name or "Nest" in parent.name or "Hill" in parent.name:
+		r_outer = 3.6; r_inner = 3.0
+	elif "Tank" in parent.name or "Commander" in parent.name or "Overlord" in parent.name or "GreatBeastSpeaker" in parent.name:
+		r_outer = 1.95; r_inner = 1.6
+	elif "SwarmAnt" in parent.name or "Voidling" in parent.name:
+		r_outer = 0.55; r_inner = 0.38
+	elif "Beast" in parent.name:
+		r_outer = 2.4; r_inner = 1.85
+		
+	torus.outer_radius = r_outer
+	torus.inner_radius = r_inner
+	ground_marker.mesh = torus
+	ground_marker.position = Vector3(0, 0.04, 0)
+	
+	var mat = StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	ground_marker.material_override = mat
+	
+	parent.add_child(ground_marker)
+	update_ground_marker_color()
+
+func update_ground_marker_color():
+	if not ground_marker or not is_instance_valid(ground_marker): return
+	var parent = get_parent()
+	if not parent or not is_instance_valid(parent): return
+	
+	var c = Color(0.65, 0.65, 0.65) # Neutral gray by default
+	if parent.is_in_group("Beast") or parent.is_in_group("BeastHazard") or "Beast" in parent.name:
+		c = Color(0.72, 0.18, 0.95) # End Game Purple!
+	elif parent.is_in_group("NeutralCreature") or parent.is_in_group("NeutralStructure") or "Scorpion" in parent.name or "Ant" in parent.name:
+		c = Color(0.65, 0.65, 0.65) # Neutral Gray!
+	elif parent.is_in_group("SideA"):
+		c = Color(0.2, 0.65, 1.0) # Player 1 / Side A Blue
+	elif parent.is_in_group("SideB"):
+		c = Color(0.95, 0.22, 0.22) # Player 2 / Side B Red
+	elif parent.is_in_group("SideC"):
+		c = Color(0.2, 0.85, 0.4) # Side C Green
+	elif parent.is_in_group("SideD"):
+		c = Color(1.0, 0.55, 0.1) # Side D Orange
+	elif parent.is_in_group("SideE"):
+		c = Color(0.85, 0.2, 0.85) # Side E Magenta
+	elif parent.is_in_group("SideF"):
+		c = Color(0.95, 0.9, 0.2) # Side F Yellow
+		
+	c.a = 0.85
+	var mat = ground_marker.material_override as StandardMaterial3D
+	if mat:
+		mat.albedo_color = c
+	var vision_on = GameState.player_vision_enabled if "player_vision_enabled" in GameState else true
+	ground_marker.visible = vision_on and not is_dead
+
+func set_ground_marker_visible(v: bool):
+	if ground_marker and is_instance_valid(ground_marker):
+		ground_marker.visible = v and not is_dead
 
 func update_health_bar_colors():
 	if not hp_bar: return
@@ -94,6 +167,15 @@ func update_health_bar_colors():
 	var style_fg = StyleBoxFlat.new()
 	if is_neutral:
 		style_fg.bg_color = Color(0.95, 0.68, 0.15) # Neutral gold/amber
+	elif local_team == "Spectator":
+		if my_team == "SideA":
+			style_fg.bg_color = Color(0.2, 0.65, 1.0) # Side A Blue
+		elif my_team == "SideB":
+			style_fg.bg_color = Color(0.95, 0.22, 0.22) # Side B Red
+		elif my_team == "Beast":
+			style_fg.bg_color = Color(0.72, 0.18, 0.95) # End Game Purple
+		else:
+			style_fg.bg_color = Color(0.2, 0.85, 0.4)
 	elif is_ally:
 		style_fg.bg_color = Color(0.18, 0.85, 0.22) # Ally green
 	else:
@@ -105,6 +187,7 @@ func update_health_bar_colors():
 	hp_bar.add_theme_stylebox_override("fill", style_fg)
 	if hp_viewport:
 		hp_viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
+	update_ground_marker_color()
 
 func _refresh_hp_visuals():
 	if hp_bar:
@@ -157,6 +240,8 @@ func sync_heal(amount: float):
 func die():
 	if is_dead: return
 	is_dead = true
+	if ground_marker and is_instance_valid(ground_marker):
+		ground_marker.visible = false
 	# SCRAP TANK EXPLOSION
 	if "ScrapTank" in get_parent().name and get_tree():
 		for e in get_tree().get_nodes_in_group("Targetable"):

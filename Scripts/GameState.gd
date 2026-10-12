@@ -3,6 +3,7 @@ extends Node
 var current_mode = "LOCAL"
 var player_faction = "Dominion of Sol"
 var local_player_team: String = "SideA"
+var player_vision_enabled: bool = true
 var previous_menu: String = "res://Scenes/MainMenu.tscn"
 
 # Supports up to 6 local players
