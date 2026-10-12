@@ -1403,25 +1403,13 @@ func _is_pos_clear(pos: Vector3, min_path_dist: float, min_struct_dist: float, s
         if pos.distance_to(Vector3.ZERO) < 22.0 + self_radius:
             return false
 
-    if GameState.map_selected == "Arena_6P.tscn":
-        if pos.length() < (22.0 + self_radius): return false
-        var angle = atan2(pos.z, pos.x)
-        # 6-player map lanes run radially from center to bases at 30, 90, 150, 210, 270, 330 deg
-        for rad_deg in [30, 90, 150, 210, 270, 330]:
-            var target_rad = deg_to_rad(rad_deg)
-            var diff = abs(angle_difference(angle, target_rad))
-            var dist_to_lane = pos.length() * sin(diff)
-            if diff < PI / 3.0 and dist_to_lane < (13.0 + min_path_dist + self_radius):
-                return false
-    elif GameState.map_selected == "Arena_4P.tscn":
-        if pos.length() < (18.0 + self_radius): return false
-        if abs(pos.x) < (13.0 + min_path_dist + self_radius) and abs(pos.z) < 85.0:
-            return false
-        if abs(pos.z) < (13.0 + min_path_dist + self_radius) and abs(pos.x) < 85.0:
-            return false
-    else: # 1v1 Arena
-        if abs(pos.x) < (13.0 + min_path_dist + self_radius) and abs(pos.z) < 85.0:
-            return false
+    var min_center_clearance = 24.0 if GameState.map_selected == "Arena_6P.tscn" else (20.0 if GameState.map_selected == "Arena_4P.tscn" else 18.0)
+    if pos.length() < (min_center_clearance + self_radius):
+        return false
+
+    var dist_to_lane = GameState.get_distance_to_nearest_lane(pos)
+    if dist_to_lane < (14.0 + min_path_dist + self_radius):
+        return false
 
     for feat in placed_feature_records:
         var min_sep = feat.get("radius", 3.0) + self_radius + 2.0

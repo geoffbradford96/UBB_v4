@@ -128,8 +128,15 @@ func _physics_process(delta):
 				var dist_to_lane = GameState.get_distance_to_nearest_lane(global_position)
 				if dist_to_lane > 10.5:
 					var lane_pull = GameState.get_vector_towards_nearest_lane(global_position)
-					var pull_strength = clamp((dist_to_lane - 10.5) * 1.5, 0.6, 2.8)
-					velocity += lane_pull * speed * pull_strength
+					var pull_strength = clamp((dist_to_lane - 10.5) * 1.5, 0.6, 2.5)
+					if move_dir.length_squared() > 0.01:
+						var lane_dot = lane_pull.dot(move_dir)
+						var lat_lane = lane_pull - move_dir * lane_dot
+						velocity += lat_lane * speed * pull_strength
+						if lane_dot > 0:
+							velocity += move_dir * (lane_dot * speed * 0.4)
+					else:
+						velocity += lane_pull * speed * pull_strength
 			
 			if "Reach" in self.name:
 				var synergy = min(reach_count, 5) * 0.15 # Up to +75% speed and attack speed
@@ -138,6 +145,7 @@ func _physics_process(delta):
 					self.set("attack_speed", base_attack_speed * (1.0 + synergy))
 				var r_mesh = get_node_or_null("MeshInstance3D")
 				if not r_mesh: r_mesh = get_node_or_null("VisualPivot")
+				if not r_mesh: r_mesh = get_node_or_null("Body")
 				if r_mesh:
 					var target_scale = 1.0 + (synergy * 0.6)
 					r_mesh.scale = r_mesh.scale.lerp(Vector3(target_scale, target_scale, target_scale), 0.1)
@@ -156,8 +164,9 @@ func _physics_process(delta):
 		velocity.z = move_toward(velocity.z, 0, speed)
 
 	# Tank facing orientation: always face forward towards target or movement vector
-	var anim_mesh = get_node_or_null("MeshInstance3D")
-	if not anim_mesh: anim_mesh = get_node_or_null("VisualPivot")
+	var anim_mesh = get_node_or_null("VisualPivot")
+	if not anim_mesh: anim_mesh = get_node_or_null("MeshInstance3D")
+	if not anim_mesh: anim_mesh = get_node_or_null("Body")
 	
 	var facing_dir = Vector3.ZERO
 	if current_target != null and is_instance_valid(current_target):
@@ -227,8 +236,9 @@ func shoot():
 			proj.set("speed", 25.0)
 		
 		# Cannon recoil kick
-		var anim_mesh = get_node_or_null("MeshInstance3D")
-		if not anim_mesh: anim_mesh = get_node_or_null("VisualPivot")
+		var anim_mesh = get_node_or_null("VisualPivot")
+		if not anim_mesh: anim_mesh = get_node_or_null("MeshInstance3D")
+		if not anim_mesh: anim_mesh = get_node_or_null("Body")
 		if anim_mesh:
 			anim_mesh.position.z += 0.35
 

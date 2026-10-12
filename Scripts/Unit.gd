@@ -160,8 +160,15 @@ func _physics_process(delta):
 				var dist_to_lane = GameState.get_distance_to_nearest_lane(global_position)
 				if dist_to_lane > 10.5:
 					var lane_pull = GameState.get_vector_towards_nearest_lane(global_position)
-					var pull_strength = clamp((dist_to_lane - 10.5) * 1.5, 0.6, 2.8)
-					velocity += lane_pull * speed * pull_strength
+					var pull_strength = clamp((dist_to_lane - 10.5) * 1.5, 0.6, 2.5)
+					if desired_dir.length_squared() > 0.01:
+						var lane_dot = lane_pull.dot(desired_dir)
+						var lat_lane = lane_pull - desired_dir * lane_dot
+						velocity += lat_lane * speed * pull_strength
+						if lane_dot > 0:
+							velocity += desired_dir * lane_dot * speed * 0.4
+					else:
+						velocity += lane_pull * speed * pull_strength
 			
 			if "Reach" in self.name:
 				var synergy = min(reach_count, 5) * 0.15 # Up to +75% speed and attack speed

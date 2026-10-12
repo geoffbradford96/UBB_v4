@@ -19,7 +19,7 @@ func _ready():
 	biome_option.add_item("Sunny Plains")
 	biome_option.add_item("Scorching Sand Dunes")
 	biome_option.add_item("Random Biome")
-	biome_option.select(0)
+	biome_option.select(2) # Default to Random Biome
 	
 	mode_option.add_item("Destroy Base")
 	mode_option.add_item("King of the Hill")

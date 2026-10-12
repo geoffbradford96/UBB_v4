@@ -23,7 +23,7 @@ var peer = ENetMultiplayerPeer.new()
 var ai_difficulty = "MEDIUM"
 var game_mode = "DESTROY_BASE"
 var map_selected = "Arena.tscn"
-var map_biome = "SUNNY_PLAINS"
+var map_biome = "RANDOM"
 var match_player_count = 2
 var sudden_death_timer = 600.0
 
