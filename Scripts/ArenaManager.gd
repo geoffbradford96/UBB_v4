@@ -45,6 +45,8 @@ func _ready():
     
     var original_ui = get_node_or_null("InGameUI")
     var original_cam = get_node_or_null("ArenaCamera")
+    if not original_cam:
+        original_cam = get_node_or_null("Camera3D")
     
     if GameState.current_mode == "LOCAL_SPLIT_2P" or GameState.current_mode == "LOCAL_SPLIT_4P":
         var h_box = HBoxContainer.new()
@@ -118,8 +120,15 @@ func _ready():
         pstate.team = "SideA" if is_srv else "SideB"
         pstate.ui = original_ui
         pstate.cam = original_cam
+        if not pstate.cam:
+            pstate.cam = get_viewport().get_camera_3d()
+            if not pstate.cam:
+                pstate.cam = find_child("Camera3D", true, false)
         if pstate.ui: pstate.ui.connect("ui_card_selected", Callable(self, "_on_ui_card_selected"))
         players.append(pstate)
+        
+    if players.size() > 0:
+        GameState.local_player_team = players[0].team
         
     setup_match()
     
@@ -408,6 +417,10 @@ func _unhandled_input(event):
                 
     if acted_player and acted_player.selected_card_ui and acted_player.selected_card_ui.card_data:
         var camera = acted_player.cam
+        if not camera:
+            camera = get_viewport().get_camera_3d()
+            if not camera:
+                camera = find_child("Camera3D", true, false)
         if not camera: return
         var from = camera.project_ray_origin(screen_pos)
         var to = from + camera.project_ray_normal(screen_pos) * 1000.0
@@ -416,8 +429,19 @@ func _unhandled_input(event):
         var query = PhysicsRayQueryParameters3D.create(from, to)
         var result = space_state.intersect_ray(query)
         
+        var hit_pos = Vector3.ZERO
+        var hit_found = false
         if result:
-            var hit_pos = result.position
+            hit_pos = result.position
+            hit_found = true
+        else:
+            var ground_plane = Plane(Vector3.UP, 0.0)
+            var plane_hit = ground_plane.intersects_ray(from, camera.project_ray_normal(screen_pos))
+            if plane_hit != null:
+                hit_pos = plane_hit
+                hit_found = true
+        
+        if hit_found:
             if attempt_to_play_card(acted_player, acted_player.selected_card_ui.card_data, hit_pos):
                 var played_ui = acted_player.selected_card_ui
                 played_ui.set_selected(false)
@@ -425,7 +449,8 @@ func _unhandled_input(event):
                 toggle_deployment_visuals(acted_player, false)
                 
                 if acted_player.ui:
-                    acted_player.ui.discard.append(played_ui.card_data.card_name.replace(" ", "") + "Card")
+                    var raw_card = played_ui.card_data.resource_path.get_file().trim_suffix(".tres").trim_suffix(".remap")
+                    acted_player.ui.discard.append(raw_card)
                     acted_player.ui.draw_card(played_ui)
 
 func toggle_deployment_visuals(p: LocalPlayerState, should_show: bool, is_spell: bool = false):
@@ -439,8 +464,8 @@ func toggle_deployment_visuals(p: LocalPlayerState, should_show: bool, is_spell:
         if "Base" in s.name or "Tower" in s.name or "CommandBay" in s.name:
             var ring = MeshInstance3D.new()
             var torus = TorusMesh.new()
-            torus.outer_radius = 25.0
-            torus.inner_radius = 24.5
+            torus.outer_radius = 28.0
+            torus.inner_radius = 27.4
             ring.mesh = torus
             var mat = StandardMaterial3D.new()
             mat.albedo_color = Color(0.2, 0.8, 1.0, 0.5)
@@ -453,9 +478,19 @@ func toggle_deployment_visuals(p: LocalPlayerState, should_show: bool, is_spell:
             ring.global_position = s.global_position + Vector3(0, 0.1, 0)
             p.visuals.append(ring)
 
+func can_deploy_at(team: String, target_pos: Vector3, is_spell: bool) -> bool:
+    if is_spell: return true
+    for z in get_tree().get_nodes_in_group(team):
+        if "Base" in z.name or "Tower" in z.name or "CommandBay" in z.name:
+            if target_pos.distance_to(z.global_position) <= 28.0:
+                return true
+    return false
+
 func attempt_to_play_card(p: LocalPlayerState, data: Resource, target_position: Vector3) -> bool:
     if p.req < data.cost:
         print(p.team, " Not enough Requisition! Need ", data.cost, " but have ", snapped(p.req, 0.1))
+        if p.ui and p.ui.has_method("show_placement_warning"):
+            p.ui.show_placement_warning("Need " + str(data.cost) + " Requisition (Have " + str(floor(p.req)) + ")")
         return false
         
     if data.card_type == "Commander":
@@ -465,18 +500,15 @@ func attempt_to_play_card(p: LocalPlayerState, data: Resource, target_position: 
                 has_commander = true
         if has_commander:
             print(p.team, " Cannot deploy! You already have an active Commander.")
+            if p.ui and p.ui.has_method("show_placement_warning"):
+                p.ui.show_placement_warning("Commander already active!")
             return false
                 
-    if not data.is_spell:
-        var valid = false
-        for z in get_tree().get_nodes_in_group(p.team):
-            if "Base" in z.name or "Tower" in z.name or "CommandBay" in z.name:
-                if target_position.distance_to(z.global_position) <= 25.0:
-                    valid = true
-                    break
-        if not valid:
-            print(p.team, " Cannot deploy! Must place units near a Tower or Command Bay.")
-            return false
+    if not can_deploy_at(p.team, target_position, data.is_spell):
+        print(p.team, " Cannot deploy! Must place units near a Tower or Command Bay.")
+        if p.ui and p.ui.has_method("show_placement_warning"):
+            p.ui.show_placement_warning("Must deploy within friendly tower or base zone!")
+        return false
             
     p.req -= data.cost
     
@@ -1357,12 +1389,13 @@ func _create_procedural_tree(parent: Node3D, pos: Vector3):
 # --- Scorching Sand Dunes Generation ---
 func _generate_scorching_dunes(parent: Node3D):
     placed_feature_records.clear()
+    var attempts = 0
     
     # 1. Scorpion Pits (2 territorial pits, each with 15 scorpions) - GUARANTEED PLACEMENT
     var pit_angles = [deg_to_rad(0.0), deg_to_rad(180.0)] if GameState.map_selected == "Arena_6P.tscn" else ([deg_to_rad(45.0), deg_to_rad(225.0)] if GameState.map_selected == "Arena_4P.tscn" else [0.0, PI])
     for i in range(2):
         var placed = false
-        var attempts = 0
+        attempts = 0
         while not placed and attempts < 120:
             attempts += 1
             var candidate = Vector3.ZERO
@@ -1401,7 +1434,7 @@ func _generate_scorching_dunes(parent: Node3D):
     var hill_angles = [deg_to_rad(120.0), deg_to_rad(300.0)] if GameState.map_selected == "Arena_6P.tscn" else ([deg_to_rad(135.0), deg_to_rad(315.0)] if GameState.map_selected == "Arena_4P.tscn" else [0.0, PI])
     for i in range(2):
         var placed = false
-        var attempts = 0
+        attempts = 0
         while not placed and attempts < 120:
             attempts += 1
             var candidate = Vector3.ZERO
@@ -1438,7 +1471,7 @@ func _generate_scorching_dunes(parent: Node3D):
 
     # 3. Higher Sand Dunes (14 to 18 obstacle dunes in open desert)
     var dune_count = randi_range(14, 18)
-    var attempts = 0
+    attempts = 0
     var placed_dunes = 0
     var max_extent = 110.0 if GameState.map_selected == "Arena_6P.tscn" else 75.0
     while placed_dunes < dune_count and attempts < 400:

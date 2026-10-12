@@ -44,9 +44,9 @@ func _ready():
 	hp_bar.show_percentage = false
 	
 	var style_bg = StyleBoxFlat.new()
-	style_bg.bg_color = Color(1, 0, 0)
+	style_bg.bg_color = Color(0.08, 0.08, 0.08, 0.95)
 	var style_fg = StyleBoxFlat.new()
-	style_fg.bg_color = Color(0, 1, 0)
+	style_fg.bg_color = Color(0.18, 0.85, 0.22)
 	hp_bar.add_theme_stylebox_override("background", style_bg)
 	hp_bar.add_theme_stylebox_override("fill", style_fg)
 	
@@ -66,11 +66,51 @@ func _ready():
 		
 	get_parent().call_deferred("add_child", hp_viewport)
 	get_parent().call_deferred("add_child", hp_sprite)
+	call_deferred("update_health_bar_colors")
+
+func update_health_bar_colors():
+	if not hp_bar: return
+	var parent = get_parent()
+	if not parent or not is_instance_valid(parent): return
+	
+	var my_team = ""
+	for g in parent.get_groups():
+		if g.begins_with("Side") or g == "Beast":
+			my_team = g
+			break
+			
+	var local_team = GameState.local_player_team if ("local_player_team" in GameState and GameState.local_player_team != "") else "SideA"
+	
+	var is_neutral = parent.is_in_group("NeutralCreature") or parent.is_in_group("NeutralStructure")
+	var is_ally = (my_team != "" and my_team == local_team)
+	
+	var style_bg = StyleBoxFlat.new()
+	style_bg.bg_color = Color(0.08, 0.08, 0.08, 0.95) # Black background
+	style_bg.set_border_width_all(1)
+	style_bg.border_color = Color(0.16, 0.16, 0.16, 0.8)
+	style_bg.corner_radius_top_left = 2; style_bg.corner_radius_top_right = 2
+	style_bg.corner_radius_bottom_left = 2; style_bg.corner_radius_bottom_right = 2
+	
+	var style_fg = StyleBoxFlat.new()
+	if is_neutral:
+		style_fg.bg_color = Color(0.95, 0.68, 0.15) # Neutral gold/amber
+	elif is_ally:
+		style_fg.bg_color = Color(0.18, 0.85, 0.22) # Ally green
+	else:
+		style_fg.bg_color = Color(0.92, 0.18, 0.18) # Enemy red
+	style_fg.corner_radius_top_left = 2; style_fg.corner_radius_top_right = 2
+	style_fg.corner_radius_bottom_left = 2; style_fg.corner_radius_bottom_right = 2
+		
+	hp_bar.add_theme_stylebox_override("background", style_bg)
+	hp_bar.add_theme_stylebox_override("fill", style_fg)
+	if hp_viewport:
+		hp_viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
 
 func _refresh_hp_visuals():
 	if hp_bar:
 		hp_bar.max_value = max_health
 		hp_bar.value = current_health
+		update_health_bar_colors()
 	if hp_viewport:
 		hp_viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
 
@@ -549,4 +589,5 @@ func set_max_health(new_max: float):
 	if hp_bar:
 		hp_bar.max_value = max_health
 		hp_bar.value = current_health
-		if hp_viewport: hp_viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
+		update_health_bar_colors()
+	if hp_viewport: hp_viewport.render_target_update_mode = SubViewport.UPDATE_ONCE

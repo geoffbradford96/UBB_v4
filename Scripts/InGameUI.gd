@@ -277,3 +277,33 @@ func update_enemy_requisition(current: float, max_req: float, label_prefix: Stri
 		enemy_req_bar.max_value = max_req
 		enemy_req_bar.value = current
 		enemy_req_label.text = label_prefix + " Energy: " + str(floor(current)) + " / " + str(max_req)
+
+var warning_label: Label = null
+var warning_tween: Tween = null
+
+func show_placement_warning(msg: String):
+	if not warning_label:
+		warning_label = Label.new()
+		warning_label.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+		warning_label.offset_top = -290
+		warning_label.offset_bottom = -260
+		warning_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		warning_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		warning_label.add_theme_font_size_override("font_size", 16)
+		warning_label.add_theme_color_override("font_color", Color(1.0, 0.35, 0.35))
+		warning_label.add_theme_color_override("font_outline_color", Color(0, 0, 0))
+		warning_label.add_theme_constant_override("outline_size", 4)
+		warning_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(warning_label)
+		
+	warning_label.text = msg
+	warning_label.modulate.a = 1.0
+	warning_label.visible = true
+	
+	if warning_tween and warning_tween.is_valid():
+		warning_tween.kill()
+	warning_tween = create_tween()
+	warning_tween.tween_interval(1.2)
+	warning_tween.tween_property(warning_label, "modulate:a", 0.0, 0.4)
+	warning_tween.tween_callback(Callable(warning_label, "hide"))
+

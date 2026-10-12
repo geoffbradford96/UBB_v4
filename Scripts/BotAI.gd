@@ -383,13 +383,19 @@ func calculate_optimal_spawn(card: CardData, threat_info: Dictionary):
 					if shift_dir.length() < 0.1: shift_dir = Vector3(0, 0, 1)
 					target_pos = d_pos + (shift_dir * (d_rad + 2.0))
 
-	# 6. Clamp to valid deployment range (max 24.0m from anchor)
-	if anchor and target_pos.distance_to(anchor.global_position) > 24.0:
-		target_pos = anchor.global_position + (target_pos - anchor.global_position).normalized() * 24.0
+	# 6. Clamp to valid deployment range (max 28.0m from anchor, identical to player)
+	if anchor and target_pos.distance_to(anchor.global_position) > 28.0:
+		target_pos = anchor.global_position + (target_pos - anchor.global_position).normalized() * 28.0
 		
 	return target_pos
 
 func play_card(card: CardData, target_position: Vector3):
+	var am = get_tree().current_scene
+	if am and am.has_method("can_deploy_at"):
+		if not am.can_deploy_at(my_team, target_position, card.is_spell):
+			print(my_team, " AI cannot deploy outside friendly deployment zone at: ", target_position)
+			return
+
 	current_requisition -= card.cost
 	
 	hand.erase(card)
@@ -398,7 +404,6 @@ func play_card(card: CardData, target_position: Vector3):
 	
 	print(my_team, " AI spent ", card.cost, " energy on ", card.card_name, " | Energy remaining: ", snapped(current_requisition, 0.1))
 	
-	var am = get_tree().current_scene
 	if am and am.has_method("sync_spawn_card"):
 		if multiplayer.has_multiplayer_peer() and multiplayer.multiplayer_peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED:
 			am.rpc("sync_spawn_card", card.resource_path, target_position, my_team, str(randi()))
