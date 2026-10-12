@@ -20,6 +20,25 @@ var base_mesh_pos: Vector3
 
 var base_speed: float
 var base_attack_speed: float
+var humanoid_rig = null
+
+func _get_game_state():
+	if Engine.has_singleton("GameState"):
+		return Engine.get_singleton("GameState")
+	var loop = Engine.get_main_loop()
+	if loop and loop is SceneTree:
+		var r = (loop as SceneTree).root
+		if r and r.has_node("GameState"):
+			return r.get_node("GameState")
+	return null
+
+func is_humanoid() -> bool:
+	if unit_attribute == "Mechanical" or unit_attribute == "Beast" or unit_attribute == "Ethereal":
+		return false
+	var n = name
+	for k in ["Tank", "Mech", "Plane", "Walker", "Spider", "Tower", "Base", "CommandBay", "Squid", "Beetle", "Jellyfish", "Octopus", "Spiker", "Crawler", "Spitter", "Corruptor", "Overlord", "Stalker", "Meteor", "Hazard"]:
+		if k in n: return false
+	return true
 
 func _ready():
 	mesh = get_node_or_null("MeshInstance3D")
@@ -27,9 +46,13 @@ func _ready():
 	if not mesh: mesh = get_node_or_null("Visuals")
 	if not mesh: mesh = self # fallback
 	base_speed = speed
-	if "attack_speed" in self:
-		base_attack_speed = self.get("attack_speed")
+	if self.get("attack_speed") != null:
+		base_attack_speed = float(self.get("attack_speed"))
+	else:
+		base_attack_speed = 1.0
+
 	add_to_group("Targetable")
+
 		# Dynamically assign attribute based on name if not set manually
 	if "Tank" in name or "Walker" in name or "Plane" in name or "Tower" in name or "Base" in name or "CommandBay" in name or "Mech" in name or "Leviathan" in name or "Spiker" in name:
 		unit_attribute = "Mechanical"
@@ -44,6 +67,18 @@ func _ready():
 			health.current_health = max_health
 		else:
 			max_health = health.max_health
+			health.current_health = health.max_health
+
+
+	if is_humanoid():
+		var rig_script = load("res://Scripts/HumanoidRig.gd")
+		if rig_script:
+			humanoid_rig = rig_script.new()
+			humanoid_rig.name = "HumanoidRig"
+			add_child(humanoid_rig)
+			humanoid_rig.setup(self)
+
+
 
 func _physics_process(delta):
 	# Apply gravity
@@ -156,10 +191,11 @@ func _physics_process(delta):
 				velocity += separation * speed * 1.2
 			
 			# Ground lane confinement: keep non-flanker units on the path across all maps
-			if not can_wander_off_path():
-				var dist_to_lane = GameState.get_distance_to_nearest_lane(global_position)
+			var gs = _get_game_state()
+			if gs and not can_wander_off_path():
+				var dist_to_lane = gs.get_distance_to_nearest_lane(global_position)
 				if dist_to_lane > 10.5:
-					var lane_pull = GameState.get_vector_towards_nearest_lane(global_position)
+					var lane_pull = gs.get_vector_towards_nearest_lane(global_position)
 					var pull_strength = clamp((dist_to_lane - 10.5) * 1.5, 0.6, 2.5)
 					if desired_dir.length_squared() > 0.01:
 						var lane_dot = lane_pull.dot(desired_dir)
@@ -169,6 +205,7 @@ func _physics_process(delta):
 							velocity += desired_dir * lane_dot * speed * 0.4
 					else:
 						velocity += lane_pull * speed * pull_strength
+
 			
 			if "Reach" in self.name:
 				var synergy = min(reach_count, 5) * 0.15 # Up to +75% speed and attack speed
@@ -242,18 +279,26 @@ func _physics_process(delta):
 	
 	move_and_slide()
 	
-	var ap = get_node_or_null("AnimationPlayer")
-	if ap:
-		if ap.current_animation == "attack" and ap.is_playing():
-			pass # Let attack finish
-		elif is_moving:
-			if ap.has_animation("walk") and ap.current_animation != "walk":
-				ap.play("walk", 0.2, speed * 0.5)
-		else:
-			if ap.has_animation("idle") and ap.current_animation != "idle":
-				ap.play("idle", 0.2)
-	elif mesh:
-		_animate_mesh(delta, is_moving)
+	if humanoid_rig:
+		var wounded = false
+		var hc = get_node_or_null("HealthComponent")
+		if hc and hc.has_method("is_critically_wounded"):
+			wounded = hc.is_critically_wounded()
+		humanoid_rig.animate(delta, is_moving, wounded, speed)
+	else:
+		var ap = get_node_or_null("AnimationPlayer")
+		if ap:
+			if ap.current_animation == "attack" and ap.is_playing():
+				pass # Let attack finish
+			elif is_moving:
+				if ap.has_animation("walk") and ap.current_animation != "walk":
+					ap.play("walk", 0.2, speed * 0.5)
+			else:
+				if ap.has_animation("idle") and ap.current_animation != "idle":
+					ap.play("idle", 0.2)
+		elif mesh:
+			_animate_mesh(delta, is_moving)
+
 
 func _animate_mesh(delta: float, moving: bool):
 	if moving:
@@ -281,13 +326,15 @@ func find_new_target():
 		if node != self and is_instance_valid(node):
 			var hc = node.get_node_or_null("HealthComponent")
 			if hc and hc.is_dead: continue
-			if GameState.is_unit_stealthed_from(node, self): continue
+			var gs = _get_game_state()
+			if gs and gs.is_unit_stealthed_from(node, self): continue
 			if not can_wander_off_path() and (node.is_in_group("NeutralCreature") or node.is_in_group("NeutralStructure")):
 				if global_position.distance_to(node.global_position) > 7.5:
 					continue
-			if not can_wander_off_path() and GameState.get_distance_to_nearest_lane(node.global_position) > 14.5:
+			if gs and not can_wander_off_path() and gs.get_distance_to_nearest_lane(node.global_position) > 14.5:
 				if global_position.distance_to(node.global_position) > 7.5:
 					continue
+
 			if my_team != "" and not node.is_in_group(my_team):
 				enemies.append(node)
 			elif my_team == "" and not node.is_in_group("Beast"):

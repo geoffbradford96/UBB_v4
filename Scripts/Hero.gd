@@ -18,6 +18,18 @@ var mesh: Node3D
 var walk_time: float = 0.0
 var base_mesh_pos: Vector3 = Vector3.ZERO
 
+var humanoid_rig = null
+
+func _get_game_state():
+	if Engine.has_singleton("GameState"):
+		return Engine.get_singleton("GameState")
+	var loop = Engine.get_main_loop()
+	if loop and loop is SceneTree:
+		var root = (loop as SceneTree).root
+		if root and root.has_node("GameState"):
+			return root.get_node("GameState")
+	return null
+
 func _ready():
 	mesh = get_node_or_null("MeshInstance3D")
 	if not mesh: mesh = get_node_or_null("VisualPivot")
@@ -32,6 +44,15 @@ func _ready():
 
 	if mesh:
 		base_mesh_pos = mesh.position
+
+	var rig_script = load("res://Scripts/HumanoidRig.gd")
+	if rig_script:
+		humanoid_rig = rig_script.new()
+		humanoid_rig.name = "HumanoidRig"
+		add_child(humanoid_rig)
+		humanoid_rig.setup(self)
+
+
 
 func _physics_process(delta):
 	_apply_reach_synergy()
@@ -101,11 +122,13 @@ func _physics_process(delta):
 				
 				# Ground lane confinement
 				if not can_wander_off_path():
-					var dist_to_lane = GameState.get_distance_to_nearest_lane(global_position)
-					if dist_to_lane > 10.5:
-						var lane_pull = GameState.get_vector_towards_nearest_lane(global_position)
-						var pull_strength = clamp((dist_to_lane - 10.5) * 1.5, 0.6, 2.8)
-						velocity += lane_pull * speed * pull_strength
+					var gs = _get_game_state()
+					if gs:
+						var dist_to_lane = gs.get_distance_to_nearest_lane(global_position)
+						if dist_to_lane > 10.5:
+							var lane_pull = gs.get_vector_towards_nearest_lane(global_position)
+							var pull_strength = clamp((dist_to_lane - 10.5) * 1.5, 0.6, 2.8)
+							velocity += lane_pull * speed * pull_strength
 				is_moving = true
 				
 				# Rotate to face direction
@@ -156,8 +179,13 @@ func _physics_process(delta):
 			if ap.has_animation("idle") and ap.current_animation != "idle":
 				ap.play("idle", 0.2)
 	
-	# Procedural Walk Animation (Bobbing)
-	if mesh:
+	if humanoid_rig:
+		var wounded = false
+		var hc = get_node_or_null("HealthComponent")
+		if hc and hc.has_method("is_critically_wounded"):
+			wounded = hc.is_critically_wounded()
+		humanoid_rig.animate(delta, is_moving, wounded, speed)
+	elif mesh:
 		if is_moving:
 			walk_time += delta * speed * 2.0
 			mesh.position.y = base_mesh_pos.y + abs(sin(walk_time)) * 0.3
@@ -169,6 +197,7 @@ func _physics_process(delta):
 			
 		# Recover from attack lunge
 		mesh.position.z = lerp(mesh.position.z, base_mesh_pos.z, 15.0 * delta)
+
 	
 	# Auto-Attack (AI Controlled)
 	if not "target_recheck_timer" in self:
@@ -223,7 +252,8 @@ func find_new_target():
 			if not node.is_in_group(my_team) and is_instance_valid(node) and node != self:
 				if (node.is_in_group("NeutralCreature") or node.is_in_group("NeutralStructure")) and global_position.distance_to(node.global_position) > 7.5:
 					continue
-				if not can_wander_off_path() and GameState.get_distance_to_nearest_lane(node.global_position) > 14.5 and global_position.distance_to(node.global_position) > 7.5:
+				var gs = _get_game_state()
+				if not can_wander_off_path() and gs and gs.get_distance_to_nearest_lane(node.global_position) > 14.5 and global_position.distance_to(node.global_position) > 7.5:
 					continue
 				enemies.append(node)
 	
@@ -232,7 +262,8 @@ func find_new_target():
 		if is_instance_valid(e):
 			var target_hc = e.get_node_or_null("HealthComponent")
 			if target_hc and target_hc.is_dead: continue
-			if GameState.is_unit_stealthed_from(e, self): continue
+			var gs = _get_game_state()
+			if gs and gs.is_unit_stealthed_from(e, self): continue
 			var dist = global_position.distance_to(e.global_position)
 			if dist < closest_dist:
 				closest_dist = dist

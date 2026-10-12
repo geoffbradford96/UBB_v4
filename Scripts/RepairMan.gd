@@ -8,7 +8,30 @@ extends CharacterBody3D
 var current_target: Node3D = null
 var action_timer: float = 0.0
 
+var humanoid_rig = null
+
+func _get_game_state():
+	if Engine.has_singleton("GameState"):
+		return Engine.get_singleton("GameState")
+	var loop = Engine.get_main_loop()
+	if loop and loop is SceneTree:
+		var root = (loop as SceneTree).root
+		if root and root.has_node("GameState"):
+			return root.get_node("GameState")
+	return null
+
+func _ready():
+	add_to_group("Targetable")
+	var rig_script = load("res://Scripts/HumanoidRig.gd")
+	if rig_script:
+		humanoid_rig = rig_script.new()
+		humanoid_rig.name = "HumanoidRig"
+		add_child(humanoid_rig)
+		humanoid_rig.setup(self)
+
+
 func _physics_process(delta):
+
 	_apply_reach_synergy()
 
 	if not is_on_floor():
@@ -72,11 +95,13 @@ func _physics_process(delta):
 			
 			# Ground lane confinement
 			if not can_wander_off_path():
-				var dist_to_lane = GameState.get_distance_to_nearest_lane(global_position)
-				if dist_to_lane > 10.5:
-					var lane_pull = GameState.get_vector_towards_nearest_lane(global_position)
-					var pull_strength = clamp((dist_to_lane - 10.5) * 1.5, 0.6, 2.8)
-					velocity += lane_pull * speed * pull_strength
+				var gs = _get_game_state()
+				if gs:
+					var dist_to_lane = gs.get_distance_to_nearest_lane(global_position)
+					if dist_to_lane > 10.5:
+						var lane_pull = gs.get_vector_towards_nearest_lane(global_position)
+						var pull_strength = clamp((dist_to_lane - 10.5) * 1.5, 0.6, 2.8)
+						velocity += lane_pull * speed * pull_strength
 			is_moving = true
 		else:
 			velocity.x = move_toward(velocity.x, 0, speed)
@@ -152,16 +177,24 @@ func _physics_process(delta):
 	
 	move_and_slide()
 	
-	var ap = get_node_or_null("AnimationPlayer")
-	if ap:
-		if ap.current_animation == "repair" and ap.is_playing():
-			pass
-		elif is_moving:
-			if ap.has_animation("walk") and ap.current_animation != "walk":
-				ap.play("walk", 0.2, speed * 0.5)
-		else:
-			if ap.has_animation("idle") and ap.current_animation != "idle":
-				ap.play("idle", 0.2)
+	if humanoid_rig:
+		var wounded = false
+		var hc = get_node_or_null("HealthComponent")
+		if hc and hc.has_method("is_critically_wounded"):
+			wounded = hc.is_critically_wounded()
+		humanoid_rig.animate(delta, is_moving, wounded, speed)
+	else:
+		var ap = get_node_or_null("AnimationPlayer")
+		if ap:
+			if ap.current_animation == "repair" and ap.is_playing():
+				pass
+			elif is_moving:
+				if ap.has_animation("walk") and ap.current_animation != "walk":
+					ap.play("walk", 0.2, speed * 0.5)
+			else:
+				if ap.has_animation("idle") and ap.current_animation != "idle":
+					ap.play("idle", 0.2)
+
 
 func find_new_target():
 	current_target = null

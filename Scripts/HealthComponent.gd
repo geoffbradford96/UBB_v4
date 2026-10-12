@@ -18,14 +18,51 @@ func apply_poison(ticks: int, dps: float):
 signal died
 signal health_changed(new_health, max_health)
 
-@export var max_health: float = 100.0
-var current_health: float
+@export var max_health: float = 100.0:
+	set(v):
+		max_health = v
+		if current_health == 100.0 or current_health <= 0.0:
+			current_health = v
+var current_health: float = 100.0
 var is_dead: bool = false
+
+
 
 var hp_bar: ProgressBar
 var hp_viewport: SubViewport = null
 var hp_sprite: Sprite3D = null
 var ground_marker: MeshInstance3D = null
+
+# Vehicle / Mechanical Damage Smoke & Spark Emitters
+var vehicle_smoke_emitter: Node3D = null
+var vehicle_smoke_particles: CPUParticles3D = null
+var vehicle_spark_particles: CPUParticles3D = null
+
+func is_critically_wounded() -> bool:
+	return (current_health / max(0.001, max_health)) <= 0.35
+
+func is_vehicle_damaged() -> bool:
+	return (current_health / max(0.001, max_health)) <= 0.40
+
+func is_mechanical_entity(p: Node) -> bool:
+	if not p: return false
+	if p.get("unit_attribute") == "Mechanical": return true
+	var p_name = p.name
+	for keyword in ["Tank", "Mech", "Plane", "Walker", "Tower", "Base", "CommandBay", "Spiker"]:
+		if keyword in p_name: return true
+	return false
+
+func _get_game_state():
+	if Engine.has_singleton("GameState"):
+		return Engine.get_singleton("GameState")
+	var loop = Engine.get_main_loop()
+	if loop and loop is SceneTree:
+		var root = (loop as SceneTree).root
+		if root and root.has_node("GameState"):
+			return root.get_node("GameState")
+	return null
+
+
 
 func _ready():
 	get_parent().add_to_group("Targetable")
@@ -134,7 +171,8 @@ func update_ground_marker_color():
 	var mat = ground_marker.material_override as StandardMaterial3D
 	if mat:
 		mat.albedo_color = c
-	var vision_on = GameState.player_vision_enabled if "player_vision_enabled" in GameState else true
+	var gs = _get_game_state()
+	var vision_on = gs.player_vision_enabled if (gs and "player_vision_enabled" in gs) else true
 	ground_marker.visible = vision_on and not is_dead
 
 func set_ground_marker_visible(v: bool):
@@ -152,7 +190,9 @@ func update_health_bar_colors():
 			my_team = g
 			break
 			
-	var local_team = GameState.local_player_team if ("local_player_team" in GameState and GameState.local_player_team != "") else "SideA"
+	var gs = _get_game_state()
+	var local_team = gs.local_player_team if (gs and "local_player_team" in gs and gs.local_player_team != "") else "SideA"
+
 	
 	var is_neutral = parent.is_in_group("NeutralCreature") or parent.is_in_group("NeutralStructure")
 	var is_ally = (my_team != "" and my_team == local_team)
@@ -198,7 +238,7 @@ func _refresh_hp_visuals():
 		hp_viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
 
 func take_damage(amount: float):
-	if multiplayer.has_multiplayer_peer() and multiplayer.multiplayer_peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED:
+	if multiplayer and multiplayer.has_multiplayer_peer() and multiplayer.multiplayer_peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED:
 		if not multiplayer.is_server():
 			return # Only Server handles damage logic
 		rpc("sync_take_damage", amount)
@@ -218,12 +258,13 @@ func sync_take_damage(amount: float):
 		die()
 
 func heal(amount: float):
-	if multiplayer.has_multiplayer_peer() and multiplayer.multiplayer_peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED:
+	if multiplayer and multiplayer.has_multiplayer_peer() and multiplayer.multiplayer_peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED:
 		if not multiplayer.is_server():
 			return
 		rpc("sync_heal", amount)
 	else:
 		sync_heal(amount)
+
 
 @rpc("authority", "call_local", "reliable")
 func sync_heal(amount: float):
@@ -242,6 +283,11 @@ func die():
 	is_dead = true
 	if ground_marker and is_instance_valid(ground_marker):
 		ground_marker.visible = false
+	if vehicle_smoke_emitter and is_instance_valid(vehicle_smoke_emitter):
+		if vehicle_smoke_particles: vehicle_smoke_particles.emitting = false
+		if vehicle_spark_particles: vehicle_spark_particles.emitting = false
+		vehicle_smoke_emitter.visible = false
+
 	# SCRAP TANK EXPLOSION
 	if "ScrapTank" in get_parent().name and get_tree():
 		for e in get_tree().get_nodes_in_group("Targetable"):
@@ -274,7 +320,8 @@ func die():
 			var my_team = "SideA"
 			if am.get("players") and am.players.size() > 0:
 				my_team = am.players[0].team
-			elif not multiplayer.is_server() and GameState.current_mode.begins_with("ONLINE"):
+			var gs = _get_game_state()
+			if not multiplayer.is_server() and gs and gs.current_mode.begins_with("ONLINE"):
 				my_team = "SideB"
 			
 			# Collect all remaining teams that have at least one Base alive
@@ -285,15 +332,16 @@ func die():
 						if g.begins_with("Side") and not teams_alive.has(g):
 							teams_alive.append(g)
 
-			if GameState.game_mode == "DESTROY_BASE" or am.get("sudden_death_active"):
+			if gs and (gs.game_mode == "DESTROY_BASE" or am.get("sudden_death_active")):
 				if teams_alive.size() == 0:
 					am._end_match("DRAW! All bases were destroyed!")
 					return
 				elif teams_alive.size() == 1:
 					var winner = teams_alive[0]
-					if GameState.current_mode == "AI_VS_AI":
+					if gs.current_mode == "AI_VS_AI":
 						am._end_match("MATCH OVER! " + winner + " IS VICTORIOUS!", winner)
 					elif winner == my_team:
+
 						am._end_match("VICTORY! All opposing bases destroyed.", winner)
 					else:
 						am._end_match("DEFEAT! " + winner + " destroyed all opposing bases.", winner)
@@ -302,25 +350,31 @@ func die():
 
 	# Destruction burst effect
 	var parent_node = get_parent()
-	var parent_pos = parent_node.global_position
-	var puff = MeshInstance3D.new()
-	var sm = SphereMesh.new()
-	sm.radius = 1.0 if not "Base" in parent_node.name else 3.0
-	sm.height = sm.radius * 2.0
-	puff.mesh = sm
-	var p_mat = StandardMaterial3D.new()
-	p_mat.albedo_color = Color(0.9, 0.45, 0.1, 0.8)
-	p_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	p_mat.emission_enabled = true
-	p_mat.emission = Color(1.0, 0.5, 0.1)
-	p_mat.emission_energy_multiplier = 2.5
-	puff.material_override = p_mat
-	get_tree().current_scene.add_child(puff)
-	puff.global_position = parent_pos + Vector3(0, 1.0, 0)
-	var tw = puff.create_tween()
-	tw.tween_property(puff, "scale", Vector3(1.5, 1.5, 1.5), 0.25)
-	tw.parallel().tween_property(p_mat, "albedo_color:a", 0.0, 0.25)
-	tw.tween_callback(puff.queue_free)
+	var parent_pos = parent_node.global_position if parent_node.is_inside_tree() else parent_node.position
+	var scene_root = get_tree().current_scene if (get_tree() and get_tree().current_scene) else (parent_node.get_parent() if parent_node.get_parent() else null)
+	if scene_root:
+		var puff = MeshInstance3D.new()
+		var sm = SphereMesh.new()
+		sm.radius = 1.0 if not "Base" in parent_node.name else 3.0
+		sm.height = sm.radius * 2.0
+		puff.mesh = sm
+		var p_mat = StandardMaterial3D.new()
+		p_mat.albedo_color = Color(0.9, 0.45, 0.1, 0.8)
+		p_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		p_mat.emission_enabled = true
+		p_mat.emission = Color(1.0, 0.5, 0.1)
+		p_mat.emission_energy_multiplier = 2.5
+		puff.material_override = p_mat
+		scene_root.add_child(puff)
+		puff.global_position = parent_pos + Vector3(0, 1.0, 0)
+		var tw = puff.create_tween()
+		if tw:
+			tw.tween_property(puff, "scale", Vector3(1.5, 1.5, 1.5), 0.25)
+			tw.parallel().tween_property(p_mat, "albedo_color:a", 0.0, 0.25)
+			tw.tween_callback(puff.queue_free)
+		else:
+			puff.queue_free()
+
 
 	var is_building = "Base" in parent_node.name or "Tower" in parent_node.name or "CommandBay" in parent_node.name or "ScorpionNest" in parent_node.name or "AntHill" in parent_node.name or parent_node.is_in_group("Structure")
 	if is_building:
@@ -628,14 +682,19 @@ func _spawn_unit_corpse(parent: Node3D):
 		weapon.rotation.y = deg_to_rad(28.0)
 		corpse.add_child(weapon)
 
-	var scene_root = get_tree().current_scene if (get_tree() and get_tree().current_scene) else (parent.get_parent() if parent.get_parent() else null)
+	var tree = get_tree() if is_inside_tree() else null
+	var scene_root = tree.current_scene if (tree and tree.current_scene) else (parent.get_parent() if parent and parent.get_parent() else null)
 	if scene_root:
 		scene_root.add_child(corpse)
 		corpse.global_position = p_pos
 		corpse.global_rotation = p_rot
-		GameState.register_corpse(corpse)
+
+		var gs = _get_game_state()
+		if gs and gs.has_method("register_corpse"):
+			gs.register_corpse(corpse)
 
 func _process(delta):
+
 	if is_dead: return
 	if poison_ticks > 0:
 		poison_timer -= delta
@@ -662,6 +721,110 @@ func _process(delta):
 				hp_bar.value = current_health
 				if hp_viewport: hp_viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
 			emit_signal("health_changed", current_health, max_health)
+
+	_update_vehicle_smoke(delta)
+
+func _setup_vehicle_smoke():
+	var parent = get_parent()
+	if not parent or not is_instance_valid(parent): return
+	if vehicle_smoke_emitter != null and is_instance_valid(vehicle_smoke_emitter): return
+	
+	vehicle_smoke_emitter = Node3D.new()
+	vehicle_smoke_emitter.name = "VehicleDamageSmoke"
+	
+	var p_name = parent.name
+	var offset = Vector3(0, 1.4, -0.8)
+	if "Tank" in p_name:
+		offset = Vector3(0, 1.35, -1.0)
+	elif "Mech" in p_name:
+		offset = Vector3(0, 2.5, -0.5)
+	elif "Plane" in p_name:
+		offset = Vector3(0, 1.1, -1.6)
+	elif "Walker" in p_name or "Spider" in p_name:
+		offset = Vector3(0, 1.8, 0)
+	elif "Base" in p_name:
+		offset = Vector3(0, 4.2, 0)
+	elif "Tower" in p_name or "CommandBay" in p_name:
+		offset = Vector3(0, 3.8, 0)
+	vehicle_smoke_emitter.position = offset
+	
+	# 1. Dark billowing smoke particles
+	vehicle_smoke_particles = CPUParticles3D.new()
+	vehicle_smoke_particles.name = "SmokePlume"
+	vehicle_smoke_particles.amount = 20
+	vehicle_smoke_particles.lifetime = 1.3
+	vehicle_smoke_particles.explosiveness = 0.05
+	vehicle_smoke_particles.randomness = 0.3
+	vehicle_smoke_particles.direction = Vector3(0, 1, 0)
+	vehicle_smoke_particles.spread = 28.0
+	vehicle_smoke_particles.gravity = Vector3(0, 2.0, 0)
+	vehicle_smoke_particles.initial_velocity_min = 1.2
+	vehicle_smoke_particles.initial_velocity_max = 2.8
+	vehicle_smoke_particles.scale_amount_min = 0.8
+	vehicle_smoke_particles.scale_amount_max = 2.4
+	
+	var s_mesh = SphereMesh.new()
+	s_mesh.radius = 0.22
+	s_mesh.height = 0.44
+	var s_mat = StandardMaterial3D.new()
+	s_mat.albedo_color = Color(0.12, 0.12, 0.12, 0.75)
+	s_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	s_mat.roughness = 1.0
+	vehicle_smoke_particles.mesh = s_mesh
+	vehicle_smoke_particles.material_override = s_mat
+	vehicle_smoke_particles.emitting = false
+	vehicle_smoke_emitter.add_child(vehicle_smoke_particles)
+	
+	# 2. Sputtering fiery sparks / flame bursts
+	vehicle_spark_particles = CPUParticles3D.new()
+	vehicle_spark_particles.name = "SparksFire"
+	vehicle_spark_particles.amount = 8
+	vehicle_spark_particles.lifetime = 0.55
+	vehicle_spark_particles.randomness = 0.5
+	vehicle_spark_particles.direction = Vector3(0, 1, 0)
+	vehicle_spark_particles.spread = 45.0
+	vehicle_spark_particles.gravity = Vector3(0, -3.2, 0)
+	vehicle_spark_particles.initial_velocity_min = 2.2
+	vehicle_spark_particles.initial_velocity_max = 4.6
+	
+	var sp_mesh = BoxMesh.new()
+	sp_mesh.size = Vector3(0.06, 0.06, 0.06)
+	var sp_mat = StandardMaterial3D.new()
+	sp_mat.albedo_color = Color(1.0, 0.45, 0.05)
+	sp_mat.emission_enabled = true
+	sp_mat.emission = Color(1.0, 0.4, 0.0)
+	sp_mat.emission_energy_multiplier = 4.0
+	vehicle_spark_particles.mesh = sp_mesh
+	vehicle_spark_particles.material_override = sp_mat
+	vehicle_spark_particles.emitting = false
+	vehicle_smoke_emitter.add_child(vehicle_spark_particles)
+	
+	parent.add_child(vehicle_smoke_emitter)
+
+func _update_vehicle_smoke(delta: float):
+	var parent = get_parent()
+	if not parent or not is_instance_valid(parent): return
+	if not is_mechanical_entity(parent): return
+
+	
+	var is_smoking = not is_dead and is_vehicle_damaged()
+	if is_smoking:
+		if vehicle_smoke_emitter == null or not is_instance_valid(vehicle_smoke_emitter):
+			_setup_vehicle_smoke()
+		if vehicle_smoke_emitter:
+			vehicle_smoke_emitter.visible = true
+			if vehicle_smoke_particles and not vehicle_smoke_particles.emitting:
+				vehicle_smoke_particles.emitting = true
+			if vehicle_spark_particles and not vehicle_spark_particles.emitting:
+				vehicle_spark_particles.emitting = true
+	else:
+		if vehicle_smoke_emitter and is_instance_valid(vehicle_smoke_emitter):
+			if vehicle_smoke_particles and vehicle_smoke_particles.emitting:
+				vehicle_smoke_particles.emitting = false
+			if vehicle_spark_particles and vehicle_spark_particles.emitting:
+				vehicle_spark_particles.emitting = false
+			vehicle_smoke_emitter.visible = false
+
 
 
 func trigger_scrap_heal():

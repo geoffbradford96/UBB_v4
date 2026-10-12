@@ -12,7 +12,30 @@ var attack_timer: float = 0.0
 
 var projectile_scene = preload("res://Scenes/Projectile.tscn")
 
+var humanoid_rig = null
+
+func _get_game_state():
+	if Engine.has_singleton("GameState"):
+		return Engine.get_singleton("GameState")
+	var loop = Engine.get_main_loop()
+	if loop and loop is SceneTree:
+		var root = (loop as SceneTree).root
+		if root and root.has_node("GameState"):
+			return root.get_node("GameState")
+	return null
+
+func _ready():
+	add_to_group("Targetable")
+	var rig_script = load("res://Scripts/HumanoidRig.gd")
+	if rig_script:
+		humanoid_rig = rig_script.new()
+		humanoid_rig.name = "HumanoidRig"
+		add_child(humanoid_rig)
+		humanoid_rig.setup(self)
+
+
 func _physics_process(delta):
+
 	_apply_reach_synergy()
 
 	if not is_on_floor():
@@ -103,16 +126,24 @@ func _physics_process(delta):
 	
 	move_and_slide()
 	
-	var ap = get_node_or_null("AnimationPlayer")
-	if ap:
-		if ap.current_animation == "attack" and ap.is_playing():
-			pass
-		elif is_moving:
-			if ap.has_animation("walk") and ap.current_animation != "walk":
-				ap.play("walk", 0.2, speed * 0.5)
-		else:
-			if ap.has_animation("idle") and ap.current_animation != "idle":
-				ap.play("idle", 0.2)
+	if humanoid_rig:
+		var wounded = false
+		var hc = get_node_or_null("HealthComponent")
+		if hc and hc.has_method("is_critically_wounded"):
+			wounded = hc.is_critically_wounded()
+		humanoid_rig.animate(delta, is_moving, wounded, speed)
+	else:
+		var ap = get_node_or_null("AnimationPlayer")
+		if ap:
+			if ap.current_animation == "attack" and ap.is_playing():
+				pass
+			elif is_moving:
+				if ap.has_animation("walk") and ap.current_animation != "walk":
+					ap.play("walk", 0.2, speed * 0.5)
+			else:
+				if ap.has_animation("idle") and ap.current_animation != "idle":
+					ap.play("idle", 0.2)
+
 
 func shoot():
 	set_meta("stealth_revealed_timer", 2.0)
@@ -160,7 +191,8 @@ func find_new_target():
 		if is_instance_valid(e):
 			var target_hc = e.get_node_or_null("HealthComponent")
 			if target_hc and target_hc.is_dead: continue
-			if GameState.is_unit_stealthed_from(e, self): continue
+			var gs = _get_game_state()
+			if gs and gs.is_unit_stealthed_from(e, self): continue
 			
 			# Tunnel vision on alive enemy Commander!
 			if e.is_in_group("CommanderUnit") or "Commander" in e.name or "Overlord" in e.name or "GreatBeastSpeaker" in e.name:

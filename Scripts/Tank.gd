@@ -19,8 +19,24 @@ func _ready():
 	base_speed = speed
 	if "attack_speed" in self:
 		base_attack_speed = self.get("attack_speed")
+	var health = get_node_or_null("HealthComponent")
+	if health:
+		if health.current_health <= 0.0 or health.current_health == 100.0:
+			health.current_health = health.max_health
+
+
+func _get_game_state():
+	if Engine.has_singleton("GameState"):
+		return Engine.get_singleton("GameState")
+	var loop = Engine.get_main_loop()
+	if loop and loop is SceneTree:
+		var r = (loop as SceneTree).root
+		if r and r.has_node("GameState"):
+			return r.get_node("GameState")
+	return null
 
 func _physics_process(delta):
+
 	if not is_on_floor():
 		velocity.y -= 9.8 * delta
 		
@@ -123,11 +139,11 @@ func _physics_process(delta):
 			else:
 				velocity += separation * speed * 1.2
 			
-			# Ground lane confinement: keep tanks on the main path across all maps
-			if not can_wander_off_path():
-				var dist_to_lane = GameState.get_distance_to_nearest_lane(global_position)
+			var gs = _get_game_state()
+			if gs and not can_wander_off_path():
+				var dist_to_lane = gs.get_distance_to_nearest_lane(global_position)
 				if dist_to_lane > 10.5:
-					var lane_pull = GameState.get_vector_towards_nearest_lane(global_position)
+					var lane_pull = gs.get_vector_towards_nearest_lane(global_position)
 					var pull_strength = clamp((dist_to_lane - 10.5) * 1.5, 0.6, 2.5)
 					if move_dir.length_squared() > 0.01:
 						var lane_dot = lane_pull.dot(move_dir)
@@ -137,6 +153,7 @@ func _physics_process(delta):
 							velocity += move_dir * (lane_dot * speed * 0.4)
 					else:
 						velocity += lane_pull * speed * pull_strength
+
 			
 			if "Reach" in self.name:
 				var synergy = min(reach_count, 5) * 0.15 # Up to +75% speed and attack speed
@@ -189,6 +206,14 @@ func _physics_process(delta):
 			
 	if anim_mesh:
 		anim_mesh.position.z = lerp(anim_mesh.position.z, 0.0, 10.0 * delta)
+		var hc = get_node_or_null("HealthComponent")
+		if hc and hc.has_method("is_vehicle_damaged") and hc.is_vehicle_damaged():
+			anim_mesh.position.x = (randf() - 0.5) * 0.035
+			anim_mesh.position.y = (randf() - 0.5) * 0.025
+		else:
+			anim_mesh.position.x = lerp(anim_mesh.position.x, 0.0, 10.0 * delta)
+			anim_mesh.position.y = lerp(anim_mesh.position.y, 0.0, 10.0 * delta)
+
 	# Anti-stuck wall sliding around obstacles (dunes, trees, rocks, structures)
 	if is_on_wall():
 		var wall_normal = get_wall_normal()
@@ -253,7 +278,8 @@ func find_new_target():
 			if not node.is_in_group(my_team) and is_instance_valid(node) and node != self:
 				if (node.is_in_group("NeutralCreature") or node.is_in_group("NeutralStructure")) and global_position.distance_to(node.global_position) > 7.5:
 					continue
-				if not can_wander_off_path() and GameState.get_distance_to_nearest_lane(node.global_position) > 14.5 and global_position.distance_to(node.global_position) > 7.5:
+				var gs = _get_game_state()
+				if gs and not can_wander_off_path() and gs.get_distance_to_nearest_lane(node.global_position) > 14.5 and global_position.distance_to(node.global_position) > 7.5:
 					continue
 				enemies.append(node)
 	var closest_dist = 99999.0
@@ -261,7 +287,9 @@ func find_new_target():
 		if is_instance_valid(e):
 			var target_hc = e.get_node_or_null("HealthComponent")
 			if target_hc and target_hc.is_dead: continue
-			if GameState.is_unit_stealthed_from(e, self): continue
+			var gs = _get_game_state()
+			if gs and gs.is_unit_stealthed_from(e, self): continue
+
 			var d = global_position.distance_to(e.global_position)
 			if d < closest_dist:
 				closest_dist = d
