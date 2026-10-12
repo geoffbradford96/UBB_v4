@@ -173,3 +173,43 @@ func is_unit_stealthed_from(target: Node3D, observer: Node3D) -> bool:
 				
 	return true
 
+func get_distance_to_nearest_lane(pos: Vector3) -> float:
+	if map_selected == "Arena_6P.tscn":
+		var r = Vector2(pos.x, pos.z).length()
+		if r < 18.0: return 0.0 # Central hub junction
+		var ang = atan2(pos.z, pos.x)
+		var lane_ang = round((ang - PI / 6.0) / (PI / 3.0)) * (PI / 3.0) + (PI / 6.0)
+		var dir = Vector3(cos(lane_ang), 0, sin(lane_ang))
+		var proj = Vector3(pos.x, 0, pos.z).dot(dir)
+		var closest = dir * max(0.0, proj)
+		return Vector3(pos.x, 0, pos.z).distance_to(closest)
+	elif map_selected == "Arena_4P.tscn":
+		var r = Vector2(pos.x, pos.z).length()
+		if r < 15.0: return 0.0 # Center
+		return min(abs(pos.x), abs(pos.z))
+	else: # Default 1v1 Arena
+		return abs(pos.x)
+
+func get_vector_towards_nearest_lane(pos: Vector3) -> Vector3:
+	if map_selected == "Arena_6P.tscn":
+		var r = Vector2(pos.x, pos.z).length()
+		if r < 18.0: return Vector3.ZERO
+		var ang = atan2(pos.z, pos.x)
+		var lane_ang = round((ang - PI / 6.0) / (PI / 3.0)) * (PI / 3.0) + (PI / 6.0)
+		var dir = Vector3(cos(lane_ang), 0, sin(lane_ang))
+		var proj = Vector3(pos.x, 0, pos.z).dot(dir)
+		var closest = dir * max(0.0, proj)
+		var to_lane = closest - Vector3(pos.x, 0, pos.z)
+		if to_lane.length_squared() > 0.01:
+			return to_lane.normalized()
+		return Vector3.ZERO
+	elif map_selected == "Arena_4P.tscn":
+		var r = Vector2(pos.x, pos.z).length()
+		if r < 15.0: return Vector3.ZERO
+		if abs(pos.x) < abs(pos.z):
+			return Vector3(-sign(pos.x), 0, 0)
+		else:
+			return Vector3(0, 0, -sign(pos.z))
+	else:
+		return Vector3(-sign(pos.x), 0, 0)
+

@@ -381,10 +381,11 @@ func _apply_destroyed_building(parent: Node3D):
 		ruined_root.add_child(crater)
 
 func _spawn_unit_corpse(parent: Node3D):
+	var p_pos = parent.global_position if parent.is_inside_tree() else parent.position
+	var p_rot = parent.global_rotation if parent.is_inside_tree() else parent.rotation
+	
 	var corpse = Node3D.new()
 	corpse.name = "Corpse_" + str(parent.name)
-	corpse.global_position = parent.global_position
-	corpse.global_rotation = parent.global_rotation
 	
 	var is_mech = parent.get("unit_attribute") == "Mechanical" or "Tank" in parent.name or "Mech" in parent.name or "Plane" in parent.name or "Walker" in parent.name or "Spiker" in parent.name
 	var is_beast = parent.get("unit_attribute") == "Beast" or "Scorpion" in parent.name or "Ant" in parent.name or "Squid" in parent.name or "Octopus" in parent.name or "Jellyfish" in parent.name or "Beetle" in parent.name
@@ -502,9 +503,11 @@ func _spawn_unit_corpse(parent: Node3D):
 		weapon.rotation.y = deg_to_rad(28.0)
 		corpse.add_child(weapon)
 
-	var scene_root = get_tree().current_scene if (get_tree() and get_tree().current_scene) else get_parent().get_parent()
+	var scene_root = get_tree().current_scene if (get_tree() and get_tree().current_scene) else (parent.get_parent() if parent.get_parent() else null)
 	if scene_root:
 		scene_root.add_child(corpse)
+		corpse.global_position = p_pos
+		corpse.global_rotation = p_rot
 		GameState.register_corpse(corpse)
 
 func _process(delta):

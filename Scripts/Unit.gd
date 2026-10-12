@@ -87,14 +87,44 @@ func _physics_process(delta):
 		if dist > effective_range:
 			# Move towards target
 			var next_path_pos = current_target.global_position
-			var new_velocity = global_position.direction_to(next_path_pos) * speed
+			var desired_dir = (next_path_pos - global_position)
+			desired_dir.y = 0
+			if desired_dir.length_squared() > 0.001:
+				desired_dir = desired_dir.normalized()
+			
+			# Obstacle whisker avoidance (detect dunes, trees, rocks, structures ahead)
+			var space_state = get_world_3d().direct_space_state
+			if space_state and desired_dir.length_squared() > 0.1:
+				var r_start = global_position + Vector3(0, 0.5, 0)
+				var r_end = r_start + desired_dir * 3.6
+				var fwd_query = PhysicsRayQueryParameters3D.create(r_start, r_end, 1)
+				fwd_query.exclude = [get_rid()]
+				var fwd_hit = space_state.intersect_ray(fwd_query)
+				if not fwd_hit.is_empty() and fwd_hit.collider is StaticBody3D:
+					var l_dir = desired_dir.rotated(Vector3.UP, deg_to_rad(45.0))
+					var r_dir = desired_dir.rotated(Vector3.UP, deg_to_rad(-45.0))
+					var l_hit = space_state.intersect_ray(PhysicsRayQueryParameters3D.create(r_start, r_start + l_dir * 3.4, 1, [get_rid()]))
+					var r_hit = space_state.intersect_ray(PhysicsRayQueryParameters3D.create(r_start, r_start + r_dir * 3.4, 1, [get_rid()]))
+					if r_hit.is_empty() and not l_hit.is_empty():
+						desired_dir = desired_dir.rotated(Vector3.UP, deg_to_rad(-55.0))
+					elif l_hit.is_empty() and not r_hit.is_empty():
+						desired_dir = desired_dir.rotated(Vector3.UP, deg_to_rad(55.0))
+					else:
+						var norm = fwd_hit.normal
+						norm.y = 0
+						if norm.length_squared() > 0.01:
+							var tangent = desired_dir.slide(norm.normalized()).normalized()
+							if tangent.length_squared() > 0.1:
+								desired_dir = tangent
+
+			var new_velocity = desired_dir * speed
 			new_velocity.y = velocity.y # Preserve gravity
 			velocity = new_velocity
-			# --- Separation / Collision Avoidance ---
+			
+			# --- Separation / Friendly Unit Avoidance ---
 			var my_team = ""
 			for g in get_groups():
 				if g.begins_with("Side") or g == "Beast": my_team = g
-			var space_state = get_world_3d().direct_space_state
 			var query = PhysicsShapeQueryParameters3D.new()
 			var shape = SphereShape3D.new()
 			shape.radius = 1.2
@@ -114,20 +144,24 @@ func _physics_process(delta):
 					var push = global_position - col.global_position
 					push.y = 0
 					var dist_to_col = push.length()
+					if dist_to_col < 1.2 and dist_to_col > 0.01:
+						separation += push.normalized() * (1.2 - dist_to_col)
 			# Lateral separation to prevent clumping
-			if global_position.direction_to(next_path_pos).length_squared() > 0.01:
-				var fwd = global_position.direction_to(next_path_pos)
-				var f_dot = separation.dot(fwd)
-				var lat = separation - fwd * f_dot
+			if desired_dir.length_squared() > 0.01:
+				var f_dot = separation.dot(desired_dir)
+				var lat = separation - desired_dir * f_dot
 				velocity += lat * speed * 1.2
-				if f_dot > 0: velocity += fwd * f_dot * speed * 0.5
+				if f_dot > 0: velocity += desired_dir * f_dot * speed * 0.5
 			else:
 				velocity += separation * speed * 1.2
 			
-			# Ground lane confinement: keep non-flanker units on the path
-			if not can_wander_off_path() and GameState.map_selected != "Arena_6P.tscn":
-				if abs(global_position.x) > 11.5:
-					velocity.x += -sign(global_position.x) * speed * 0.9
+			# Ground lane confinement: keep non-flanker units on the path across all maps
+			if not can_wander_off_path():
+				var dist_to_lane = GameState.get_distance_to_nearest_lane(global_position)
+				if dist_to_lane > 10.5:
+					var lane_pull = GameState.get_vector_towards_nearest_lane(global_position)
+					var pull_strength = clamp((dist_to_lane - 10.5) * 1.5, 0.6, 2.8)
+					velocity += lane_pull * speed * pull_strength
 			
 			if "Reach" in self.name:
 				var synergy = min(reach_count, 5) * 0.15 # Up to +75% speed and attack speed
@@ -181,14 +215,23 @@ func _physics_process(delta):
 		velocity.x = move_toward(velocity.x, 0, speed)
 		velocity.z = move_toward(velocity.z, 0, speed)
 
-	# Anti-stuck wall sliding
+	# Anti-stuck wall sliding around obstacles (dunes, trees, rocks, structures)
 	if is_on_wall():
 		var wall_normal = get_wall_normal()
 		if wall_normal.length() < 0.1: wall_normal = Vector3.UP
-		var slide_vel = velocity.slide(wall_normal)
-		if slide_vel.length() < speed * 0.5:
-			var perp = Vector3(wall_normal.z, 0, -wall_normal.x)
-			velocity += perp * speed * 1.5
+		wall_normal.y = 0
+		if wall_normal.length_squared() > 0.01:
+			wall_normal = wall_normal.normalized()
+			var desired_fwd = velocity
+			desired_fwd.y = 0
+			if desired_fwd.length_squared() < 0.1 and is_instance_valid(current_target):
+				desired_fwd = current_target.global_position - global_position
+				desired_fwd.y = 0
+			var slide_t = desired_fwd.slide(wall_normal).normalized()
+			if slide_t.length_squared() < 0.1:
+				slide_t = Vector3(-wall_normal.z, 0, wall_normal.x)
+			velocity.x = slide_t.x * speed * 1.2
+			velocity.z = slide_t.z * speed * 1.2
 	
 	move_and_slide()
 	
@@ -217,7 +260,7 @@ func _animate_mesh(delta: float, moving: bool):
 func can_wander_off_path() -> bool:
 	if is_in_group("Flyer") or "Plane" in name or "Beetle" in name or "Jellyfish" in name:
 		return true
-	if "Assassin" in name or "Hunter" in name or "Stalker" in name:
+	if "Assassin" in name or "Hunter" in name or "Stalker" in name or "Sniper" in name:
 		return true
 	return false
 
@@ -233,6 +276,9 @@ func find_new_target():
 			if hc and hc.is_dead: continue
 			if GameState.is_unit_stealthed_from(node, self): continue
 			if not can_wander_off_path() and (node.is_in_group("NeutralCreature") or node.is_in_group("NeutralStructure")):
+				if global_position.distance_to(node.global_position) > 7.5:
+					continue
+			if not can_wander_off_path() and GameState.get_distance_to_nearest_lane(node.global_position) > 14.5:
 				if global_position.distance_to(node.global_position) > 7.5:
 					continue
 			if my_team != "" and not node.is_in_group(my_team):

@@ -48,9 +48,38 @@ func _physics_process(delta):
 		if dist > effective_range:
 			# Move towards hurt ally
 			var next_path_pos = current_target.global_position
-			var new_velocity = global_position.direction_to(next_path_pos) * speed
+			var desired_dir = (next_path_pos - global_position)
+			desired_dir.y = 0
+			if desired_dir.length_squared() > 0.001: desired_dir = desired_dir.normalized()
+			
+			# Obstacle whisker avoidance
+			var space_state = get_world_3d().direct_space_state
+			if space_state and desired_dir.length_squared() > 0.1:
+				var r_start = global_position + Vector3(0, 0.5, 0)
+				var r_end = r_start + desired_dir * 3.4
+				var fwd_query = PhysicsRayQueryParameters3D.create(r_start, r_end, 1, [get_rid()])
+				var fwd_hit = space_state.intersect_ray(fwd_query)
+				if not fwd_hit.is_empty() and fwd_hit.collider is StaticBody3D:
+					var l_dir = desired_dir.rotated(Vector3.UP, deg_to_rad(45.0))
+					var r_dir = desired_dir.rotated(Vector3.UP, deg_to_rad(-45.0))
+					var l_hit = space_state.intersect_ray(PhysicsRayQueryParameters3D.create(r_start, r_start + l_dir * 3.2, 1, [get_rid()]))
+					var r_hit = space_state.intersect_ray(PhysicsRayQueryParameters3D.create(r_start, r_start + r_dir * 3.2, 1, [get_rid()]))
+					if r_hit.is_empty() and not l_hit.is_empty():
+						desired_dir = desired_dir.rotated(Vector3.UP, deg_to_rad(-55.0))
+					elif l_hit.is_empty() and not r_hit.is_empty():
+						desired_dir = desired_dir.rotated(Vector3.UP, deg_to_rad(55.0))
+			
+			var new_velocity = desired_dir * speed
 			new_velocity.y = velocity.y
 			velocity = new_velocity
+			
+			# Ground lane confinement
+			if not can_wander_off_path():
+				var dist_to_lane = GameState.get_distance_to_nearest_lane(global_position)
+				if dist_to_lane > 10.5:
+					var lane_pull = GameState.get_vector_towards_nearest_lane(global_position)
+					var pull_strength = clamp((dist_to_lane - 10.5) * 1.5, 0.6, 2.8)
+					velocity += lane_pull * speed * pull_strength
 			is_moving = true
 		else:
 			# Stop and Heal
@@ -102,10 +131,19 @@ func _physics_process(delta):
 	if is_on_wall():
 		var wall_normal = get_wall_normal()
 		if wall_normal.length() < 0.1: wall_normal = Vector3.UP
-		var slide_vel = velocity.slide(wall_normal)
-		if slide_vel.length() < speed * 0.5:
-			var perp = Vector3(wall_normal.z, 0, -wall_normal.x)
-			velocity += perp * speed * 1.5
+		wall_normal.y = 0
+		if wall_normal.length_squared() > 0.01:
+			wall_normal = wall_normal.normalized()
+			var desired_fwd = velocity
+			desired_fwd.y = 0
+			if desired_fwd.length_squared() < 0.1 and is_instance_valid(current_target):
+				desired_fwd = current_target.global_position - global_position
+				desired_fwd.y = 0
+			var slide_t = desired_fwd.slide(wall_normal).normalized()
+			if slide_t.length_squared() < 0.1:
+				slide_t = Vector3(-wall_normal.z, 0, wall_normal.x)
+			velocity.x = slide_t.x * speed * 1.2
+			velocity.z = slide_t.z * speed * 1.2
 	
 	move_and_slide()
 	

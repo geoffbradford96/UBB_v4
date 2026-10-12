@@ -1202,7 +1202,7 @@ func _get_clear_hazard_pos(map_size: float) -> Vector3:
     return Vector3(randf_range(-map_size * 0.6, map_size * 0.6), 0.0, randf_range(-map_size * 0.6, map_size * 0.6))
 
 func _is_pos_clear(pos: Vector3, min_path_dist: float, min_struct_dist: float, self_radius: float = 3.0) -> bool:
-    var max_extent = 115.0 if GameState.map_selected == "Arena_6P.tscn" else 78.0
+    var max_extent = 120.0 if GameState.map_selected == "Arena_6P.tscn" else 82.0
     if abs(pos.x) > max_extent or abs(pos.z) > max_extent: return false
     
     var tree = get_tree()
@@ -1210,24 +1210,12 @@ func _is_pos_clear(pos: Vector3, min_path_dist: float, min_struct_dist: float, s
         for node in tree.get_nodes_in_group("Targetable"):
             if not is_instance_valid(node): continue
             if "Base" in node.name or "Tower" in node.name or "CommandBay" in node.name or "Structure" in node.name or "Nest" in node.name or "Hill" in node.name:
-                if pos.distance_to(node.global_position) < min_struct_dist + self_radius + 4.0:
+                if pos.distance_to(node.global_position) < min_struct_dist + self_radius + 2.0:
                     return false
                 
     if GameState.game_mode == "KOTH" or get_node_or_null("KotH_Zone") != null:
         if pos.distance_to(Vector3.ZERO) < 22.0 + self_radius:
             return false
-
-    # Check all explicit Path mesh nodes in Ground
-    var ground_node = get_node_or_null("Ground")
-    if ground_node:
-        for child in ground_node.get_children():
-            if child is MeshInstance3D and "Path" in child.name:
-                var p_trans = child.global_transform
-                var local_p = p_trans.affine_inverse() * pos
-                var safe_w = 14.0 + min_path_dist + self_radius
-                var safe_l = 85.0 + min_path_dist + self_radius
-                if abs(local_p.x) < safe_w and abs(local_p.z) < safe_l:
-                    return false
 
     if GameState.map_selected == "Arena_6P.tscn":
         if pos.length() < (22.0 + self_radius): return false
@@ -1237,14 +1225,20 @@ func _is_pos_clear(pos: Vector3, min_path_dist: float, min_struct_dist: float, s
             var target_rad = deg_to_rad(rad_deg)
             var diff = abs(angle_difference(angle, target_rad))
             var dist_to_lane = pos.length() * sin(diff)
-            if diff < PI / 4.0 and dist_to_lane < (14.0 + min_path_dist + self_radius):
+            if diff < PI / 3.0 and dist_to_lane < (13.0 + min_path_dist + self_radius):
                 return false
-    elif GameState.map_selected == "Arena_4P.tscn" or GameState.map_selected == "Arena.tscn":
-        if abs(pos.x) < (14.0 + min_path_dist + self_radius) and abs(pos.z) < 88.0:
+    elif GameState.map_selected == "Arena_4P.tscn":
+        if pos.length() < (18.0 + self_radius): return false
+        if abs(pos.x) < (13.0 + min_path_dist + self_radius) and abs(pos.z) < 85.0:
+            return false
+        if abs(pos.z) < (13.0 + min_path_dist + self_radius) and abs(pos.x) < 85.0:
+            return false
+    else: # 1v1 Arena
+        if abs(pos.x) < (13.0 + min_path_dist + self_radius) and abs(pos.z) < 85.0:
             return false
 
     for feat in placed_feature_records:
-        var min_sep = feat.get("radius", 3.0) + self_radius
+        var min_sep = feat.get("radius", 3.0) + self_radius + 2.0
         if pos.distance_to(feat.get("pos", Vector3.ZERO)) < min_sep:
             return false
                 
@@ -1364,41 +1358,96 @@ func _create_procedural_tree(parent: Node3D, pos: Vector3):
 func _generate_scorching_dunes(parent: Node3D):
     placed_feature_records.clear()
     
-    # 1. Higher Sand Dunes (14 to 18 obstacle dunes)
+    # 1. Scorpion Pits (2 territorial pits, each with 15 scorpions) - GUARANTEED PLACEMENT
+    var pit_angles = [deg_to_rad(0.0), deg_to_rad(180.0)] if GameState.map_selected == "Arena_6P.tscn" else ([deg_to_rad(45.0), deg_to_rad(225.0)] if GameState.map_selected == "Arena_4P.tscn" else [0.0, PI])
+    for i in range(2):
+        var placed = false
+        var attempts = 0
+        while not placed and attempts < 120:
+            attempts += 1
+            var candidate = Vector3.ZERO
+            if GameState.map_selected == "Arena_6P.tscn":
+                var base_ang = pit_angles[i] + randf_range(-0.15, 0.15)
+                var r = randf_range(58.0, 88.0)
+                candidate = Vector3(cos(base_ang) * r, 0.0, sin(base_ang) * r)
+            elif GameState.map_selected == "Arena_4P.tscn":
+                var base_ang = pit_angles[i] + randf_range(-0.18, 0.18)
+                var r = randf_range(48.0, 75.0)
+                candidate = Vector3(cos(base_ang) * r, 0.0, sin(base_ang) * r)
+            else: # 1v1 Arena
+                var side_x = -1.0 if i == 0 else 1.0
+                candidate = Vector3(side_x * randf_range(40.0, 68.0), 0.0, randf_range(-55.0, 55.0))
+                
+            if _is_pos_clear(candidate, 4.0, 10.0, 7.5):
+                _create_scorpion_pit(parent, candidate)
+                placed_feature_records.append({"pos": candidate, "radius": 7.5, "type": "pit"})
+                placed = true
+        if not placed:
+            # Deterministic guaranteed fallback position
+            var fallback = Vector3.ZERO
+            if GameState.map_selected == "Arena_6P.tscn":
+                var ang = pit_angles[i]
+                fallback = Vector3(cos(ang) * 70.0, 0.0, sin(ang) * 70.0)
+            elif GameState.map_selected == "Arena_4P.tscn":
+                var ang = pit_angles[i]
+                fallback = Vector3(cos(ang) * 58.0, 0.0, sin(ang) * 58.0)
+            else:
+                var side_x = -1.0 if i == 0 else 1.0
+                fallback = Vector3(side_x * 52.0, 0.0, 22.0 if i == 0 else -22.0)
+            _create_scorpion_pit(parent, fallback)
+            placed_feature_records.append({"pos": fallback, "radius": 7.5, "type": "pit"})
+
+    # 2. Ant Hills (2 territorial ant hills, each with 50 swarm ants) - GUARANTEED PLACEMENT
+    var hill_angles = [deg_to_rad(120.0), deg_to_rad(300.0)] if GameState.map_selected == "Arena_6P.tscn" else ([deg_to_rad(135.0), deg_to_rad(315.0)] if GameState.map_selected == "Arena_4P.tscn" else [0.0, PI])
+    for i in range(2):
+        var placed = false
+        var attempts = 0
+        while not placed and attempts < 120:
+            attempts += 1
+            var candidate = Vector3.ZERO
+            if GameState.map_selected == "Arena_6P.tscn":
+                var base_ang = hill_angles[i] + randf_range(-0.15, 0.15)
+                var r = randf_range(58.0, 88.0)
+                candidate = Vector3(cos(base_ang) * r, 0.0, sin(base_ang) * r)
+            elif GameState.map_selected == "Arena_4P.tscn":
+                var base_ang = hill_angles[i] + randf_range(-0.18, 0.18)
+                var r = randf_range(48.0, 75.0)
+                candidate = Vector3(cos(base_ang) * r, 0.0, sin(base_ang) * r)
+            else: # 1v1 Arena
+                var side_x = 1.0 if i == 0 else -1.0
+                candidate = Vector3(side_x * randf_range(42.0, 70.0), 0.0, randf_range(-55.0, 55.0))
+                
+            if _is_pos_clear(candidate, 4.0, 10.0, 6.5):
+                _create_ant_hill(parent, candidate)
+                placed_feature_records.append({"pos": candidate, "radius": 6.5, "type": "hill"})
+                placed = true
+        if not placed:
+            # Deterministic guaranteed fallback position
+            var fallback = Vector3.ZERO
+            if GameState.map_selected == "Arena_6P.tscn":
+                var ang = hill_angles[i]
+                fallback = Vector3(cos(ang) * 72.0, 0.0, sin(ang) * 72.0)
+            elif GameState.map_selected == "Arena_4P.tscn":
+                var ang = hill_angles[i]
+                fallback = Vector3(cos(ang) * 60.0, 0.0, sin(ang) * 60.0)
+            else:
+                var side_x = 1.0 if i == 0 else -1.0
+                fallback = Vector3(side_x * 54.0, 0.0, -26.0 if i == 0 else 26.0)
+            _create_ant_hill(parent, fallback)
+            placed_feature_records.append({"pos": fallback, "radius": 6.5, "type": "hill"})
+
+    # 3. Higher Sand Dunes (14 to 18 obstacle dunes in open desert)
     var dune_count = randi_range(14, 18)
     var attempts = 0
     var placed_dunes = 0
-    while placed_dunes < dune_count and attempts < 350:
+    var max_extent = 110.0 if GameState.map_selected == "Arena_6P.tscn" else 75.0
+    while placed_dunes < dune_count and attempts < 400:
         attempts += 1
-        var candidate = Vector3(randf_range(-72.0, 72.0), 0.0, randf_range(-72.0, 72.0))
-        if _is_pos_clear(candidate, 6.0, 16.0, 9.5):
+        var candidate = Vector3(randf_range(-max_extent, max_extent), 0.0, randf_range(-max_extent, max_extent))
+        if _is_pos_clear(candidate, 5.0, 14.0, 8.5):
             _create_sand_dune_blocker(parent, candidate)
-            placed_feature_records.append({"pos": candidate, "radius": 9.5, "type": "dune"})
+            placed_feature_records.append({"pos": candidate, "radius": 8.5, "type": "dune"})
             placed_dunes += 1
-            
-    # 2. Scorpion Pits (2 territorial pits, each with 15 scorpions)
-    for i in range(2):
-        var side_x = -1.0 if i == 0 else 1.0
-        attempts = 0
-        while attempts < 100:
-            attempts += 1
-            var pit_candidate = Vector3(side_x * randf_range(28.0, 52.0), 0.0, randf_range(-45.0, 45.0))
-            if _is_pos_clear(pit_candidate, 6.0, 16.0, 8.5):
-                _create_scorpion_pit(parent, pit_candidate)
-                placed_feature_records.append({"pos": pit_candidate, "radius": 8.5, "type": "pit"})
-                break
-        
-    # 3. Ant Hills (2 territorial ant hills, each with 50 swarm ants)
-    for i in range(2):
-        var side_x = 1.0 if i == 0 else -1.0
-        attempts = 0
-        while attempts < 100:
-            attempts += 1
-            var hill_candidate = Vector3(side_x * randf_range(25.0, 48.0), 0.0, randf_range(-38.0, 38.0))
-            if _is_pos_clear(hill_candidate, 6.0, 16.0, 8.0):
-                _create_ant_hill(parent, hill_candidate)
-                placed_feature_records.append({"pos": hill_candidate, "radius": 8.0, "type": "hill"})
-                break
 
 func _create_sand_dune_blocker(parent: Node3D, pos: Vector3):
     var dune = StaticBody3D.new()
@@ -1485,18 +1534,18 @@ func _create_scorpion_pit(parent: Node3D, pos: Vector3):
         rock.rotation = Vector3(randf() * 0.4, randf() * TAU, randf() * 0.4)
         pit_body.add_child(rock)
         
-    # Initial scorpions (5 scorpions)
-    for s in range(5):
-        var ang = randf() * TAU
-        var dist = randf_range(0.8, 3.8)
+    # Initial scorpions (15 scorpions)
+    for s in range(15):
+        var ang = (TAU / 15.0) * s + randf_range(-0.15, 0.15)
+        var dist = randf_range(1.0, 4.2)
         var scorp = TerritorialCreatureScript.new()
         scorp.configure_creature("Scorpion", pos)
         scorp.position = pos + Vector3(cos(ang) * dist, 0.2, sin(ang) * dist)
         parent.add_child(scorp)
         
-    # Slow spawn timer (adds 1 every 7.5s up to 8 max, stops when nest destroyed)
+    # Slow spawn timer (adds 1 every 6.0s up to 15 max, stops when nest destroyed)
     var spawn_timer = Timer.new()
-    spawn_timer.wait_time = 7.5
+    spawn_timer.wait_time = 6.0
     spawn_timer.autostart = true
     spawn_timer.timeout.connect(func():
         if not is_instance_valid(pit_body) or hc.is_dead:
@@ -1507,11 +1556,11 @@ func _create_scorpion_pit(parent: Node3D, pos: Vector3):
         for sc in parent.get_children():
             if sc is CharacterBody3D and sc.get("creature_type") == "Scorpion":
                 var shc = sc.get_node_or_null("HealthComponent")
-                if shc and not shc.is_dead and sc.get("home_position") != null and sc.home_position.distance_to(pos) < 12.0:
+                if shc and not shc.is_dead and sc.get("home_position") != null and sc.home_position.distance_to(pos) < 18.0:
                     living_scorpions += 1
-        if living_scorpions < 8:
+        if living_scorpions < 15:
             var ang = randf() * TAU
-            var dist = randf_range(0.8, 3.2)
+            var dist = randf_range(1.0, 3.8)
             var new_scorp = TerritorialCreatureScript.new()
             new_scorp.configure_creature("Scorpion", pos)
             new_scorp.position = pos + Vector3(cos(ang) * dist, 0.2, sin(ang) * dist)
@@ -1566,18 +1615,18 @@ func _create_ant_hill(parent: Node3D, pos: Vector3):
     hole.position.y = 1.82
     hill_body.add_child(hole)
     
-    # Initial swarm ants (8 ants)
-    for a in range(8):
-        var ang = randf() * TAU
-        var dist = randf_range(1.2, 4.0)
+    # Initial swarm ants (50 swarm ants)
+    for a in range(50):
+        var ang = (TAU / 50.0) * a + randf_range(-0.08, 0.08)
+        var dist = randf_range(1.2, 4.5)
         var ant = TerritorialCreatureScript.new()
         ant.configure_creature("SwarmAnt", pos)
         ant.position = pos + Vector3(cos(ang) * dist, 0.1, sin(ang) * dist)
         parent.add_child(ant)
         
-    # Slow spawn timer (adds 1 every 5.5s up to 14 max, stops when hill destroyed)
+    # Slow spawn timer (adds 1 every 3.5s up to 50 max, stops when hill destroyed)
     var spawn_timer = Timer.new()
-    spawn_timer.wait_time = 5.5
+    spawn_timer.wait_time = 3.5
     spawn_timer.autostart = true
     spawn_timer.timeout.connect(func():
         if not is_instance_valid(hill_body) or hc.is_dead:
@@ -1588,11 +1637,11 @@ func _create_ant_hill(parent: Node3D, pos: Vector3):
         for an in parent.get_children():
             if an is CharacterBody3D and an.get("creature_type") == "SwarmAnt":
                 var ahc = an.get_node_or_null("HealthComponent")
-                if ahc and not ahc.is_dead and an.get("home_position") != null and an.home_position.distance_to(pos) < 12.0:
+                if ahc and not ahc.is_dead and an.get("home_position") != null and an.home_position.distance_to(pos) < 18.0:
                     living_ants += 1
-        if living_ants < 14:
+        if living_ants < 50:
             var ang = randf() * TAU
-            var dist = randf_range(1.0, 3.5)
+            var dist = randf_range(1.2, 4.0)
             var new_ant = TerritorialCreatureScript.new()
             new_ant.configure_creature("SwarmAnt", pos)
             new_ant.position = pos + Vector3(cos(ang) * dist, 0.1, sin(ang) * dist)
