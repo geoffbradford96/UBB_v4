@@ -191,10 +191,16 @@ func setup_match():
         return # Do not spawn AIs in online PvP matches!
         
     var profiles_for_slots = ["Player1", "Guest1", "Guest2", "Guest3", "Guest4", "Guest5"]
+    var ai_pool = ["Dominion", "The Reach", "Pirates", "Rimworlders", "Void", "Chaos"]
     for i in range(start_bot_idx, total_slots):
         var bot = BotAI.new()
         bot.my_team = teams_for_ai[i]
         bot.profile = profiles_for_slots[i] if i < profiles_for_slots.size() else "Guest1"
+        bot.slot_index = i
+        
+        # Unified AI Pool: Dice roll (1d6) per bot slot
+        var chosen_archetype = ai_pool[randi() % ai_pool.size()]
+        bot.archetype = chosen_archetype
         
         # Pick enemy team
         bot.enemy_team = "SideB" if bot.my_team == "SideA" else "SideA"
@@ -212,7 +218,7 @@ func setup_match():
             bot.think_interval = 0.7
         
         add_child(bot)
-        print("Spawned BotAI for ", bot.my_team, " with profile ", bot.profile)
+        print("Spawned BotAI for ", bot.my_team, " [Slot ", i, "] Archetype: ", bot.archetype, " with profile ", bot.profile)
 
     var kz = get_node_or_null("KotH_Zone")
     if kz:
@@ -644,6 +650,27 @@ func sync_koth_points(team: String, points: int):
         koth_points[team] = points
 
 
+func _get_slot_faction(slot: int) -> String:
+    if slot < players.size():
+        var p = players[slot]
+        var deck = []
+        if GameState.player_decks.has(p.profile):
+            deck = GameState.player_decks[p.profile]
+        return _detect_faction_from_deck(deck)
+        
+    for child in get_children():
+        if child.get_script() and "BotAI" in child.get_script().resource_path:
+            if child.get("slot_index") == slot:
+                var arch = child.get("archetype")
+                if arch != null and arch != "":
+                    return arch
+                var deck = child.get("deck")
+                if deck != null and not deck.is_empty():
+                    return _detect_faction_from_deck(deck)
+                    
+    var opts = ["Dominion", "Void", "Rimworlders", "Pirates", "The Reach", "Chaos"]
+    return opts[randi() % opts.size()]
+
 func _get_team_faction(team: String) -> String:
     for p in players:
         if p.team == team:
@@ -655,6 +682,9 @@ func _get_team_faction(team: String) -> String:
     for child in get_children():
         if child.get_script() and "BotAI" in child.get_script().resource_path:
             if child.get("my_team") == team:
+                var arch = child.get("archetype")
+                if arch != null and arch != "":
+                    return arch
                 var deck = child.get("deck")
                 if deck != null and not deck.is_empty():
                     return _detect_faction_from_deck(deck)
@@ -662,7 +692,7 @@ func _get_team_faction(team: String) -> String:
                 if p_name != null and GameState.player_decks.has(p_name):
                     return _detect_faction_from_deck(GameState.player_decks[p_name])
                     
-    var opts = ["Dominion", "Void", "Rimworlders", "Pirates", "The Reach"]
+    var opts = ["Dominion", "Void", "Rimworlders", "Pirates", "The Reach", "Chaos"]
     return opts[randi() % opts.size()]
 
 func _detect_faction_from_deck(deck: Array) -> String:
@@ -674,6 +704,7 @@ func _detect_faction_from_deck(deck: Array) -> String:
         elif "Reach" in c: reach += 1
         else: d += 1
     var mx = max(d, max(v, max(r, max(pi, reach))))
+    if mx < 3 and deck.size() >= 5: return "Chaos"
     if mx == v and v > 0: return "Void"
     if mx == r and r > 0: return "Rimworlders"
     if mx == pi and pi > 0: return "Pirates"
@@ -684,6 +715,16 @@ func _apply_faction_visuals():
     if multiplayer.has_multiplayer_peer() and multiplayer.multiplayer_peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED:
         if not multiplayer.is_server():
             return
+            
+    var is_6p_mode = (GameState.map_selected == "Arena_6P.tscn")
+    if is_6p_mode:
+        for slot in range(6):
+            var slot_faction = _get_slot_faction(slot)
+            for node in get_tree().get_nodes_in_group("SideA") + get_tree().get_nodes_in_group("SideB"):
+                if ("Base_" + str(slot)) in node.name or ("Tower_" + str(slot)) in node.name:
+                    if "faction" in node: node.faction = slot_faction
+                    _build_structure_mesh(node, slot_faction, "Tower" in node.name)
+        return
             
     var teams = ["SideA", "SideB", "SideC", "SideD", "SideE", "SideF"]
     for team in teams:
@@ -703,7 +744,7 @@ func apply_local_faction(team: String, faction: String):
             if "faction" in node: node.faction = faction
             _build_structure_mesh(node, faction, "Tower" in node.name)
 
-func _build_structure_mesh(node, faction, is_tower):
+func _build_structure_mesh(node, faction: String, is_tower: bool):
     if node is CSGShape3D:
         var clear_mat = StandardMaterial3D.new()
         clear_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
@@ -720,10 +761,26 @@ func _build_structure_mesh(node, faction, is_tower):
     
     var is_bay = "CommandBay" in node.name
     
+    # Resolve faction type (supports substring matching, and Chaos/Random independent dice rolls per tower/base)
+    var f = faction
+    var f_type = "Dominion"
+    if "Void" in f:
+        f_type = "Void"
+    elif "Rimworld" in f:
+        f_type = "Rimworlders"
+    elif "Pirate" in f or "Scrap" in f:
+        f_type = "Pirates"
+    elif "Reach" in f:
+        f_type = "The Reach"
+    elif f == "Chaos" or f == "Random":
+        var all_factions = ["Dominion", "Void", "Rimworlders", "Pirates", "The Reach"]
+        f_type = all_factions[randi() % all_factions.size()]
+    node.set_meta("resolved_faction", f_type)
+    
     # ==========================================
     # 1. DOMINION OF SOL (MILITARY FORTRESS)
     # ==========================================
-    if faction == "Dominion":
+    if f_type == "Dominion":
         var steel_mat = StandardMaterial3D.new(); steel_mat.albedo_color = Color(0.25, 0.28, 0.3); steel_mat.metallic = 0.85; steel_mat.roughness = 0.35
         var camo_mat = StandardMaterial3D.new(); camo_mat.albedo_color = Color(0.22, 0.32, 0.18); camo_mat.roughness = 0.7
         var amber_mat = StandardMaterial3D.new(); amber_mat.albedo_color = Color(1.0, 0.6, 0.1); amber_mat.emission_enabled = true; amber_mat.emission = Color(1.0, 0.5, 0.0); amber_mat.emission_energy_multiplier = 2.0
@@ -780,7 +837,7 @@ func _build_structure_mesh(node, faction, is_tower):
     # ==========================================
     # 2. THE VOID SWARM (LIVING BIO-HORROR)
     # ==========================================
-    elif faction == "Void":
+    elif f_type == "Void":
         var flesh_mat = StandardMaterial3D.new(); flesh_mat.albedo_color = Color(0.18, 0.04, 0.28); flesh_mat.roughness = 0.4
         var chitin_mat = StandardMaterial3D.new(); chitin_mat.albedo_color = Color(0.06, 0.02, 0.1); chitin_mat.roughness = 0.2; chitin_mat.metallic = 0.4
         var eye_mat = StandardMaterial3D.new(); eye_mat.albedo_color = Color(1.0, 0.05, 0.85); eye_mat.emission_enabled = true; eye_mat.emission = Color(0.9, 0.0, 0.9); eye_mat.emission_energy_multiplier = 3.0
@@ -824,7 +881,7 @@ func _build_structure_mesh(node, faction, is_tower):
     # ==========================================
     # 3. THE RIMWORLDERS (PRIMITIVE BEAST CITADEL)
     # ==========================================
-    elif faction == "Rimworlders":
+    elif f_type == "Rimworlders":
         var stone_mat = StandardMaterial3D.new(); stone_mat.albedo_color = Color(0.35, 0.32, 0.28); stone_mat.roughness = 0.95
         var wood_mat = StandardMaterial3D.new(); wood_mat.albedo_color = Color(0.42, 0.26, 0.14); wood_mat.roughness = 0.85
         var bone_mat = StandardMaterial3D.new(); bone_mat.albedo_color = Color(0.9, 0.88, 0.78); bone_mat.roughness = 0.5
@@ -869,7 +926,7 @@ func _build_structure_mesh(node, faction, is_tower):
     # ==========================================
     # 4. PIRATE KINGDOMS (SCRAP CITADEL)
     # ==========================================
-    elif faction == "Pirates":
+    elif f_type == "Pirates":
         seed(node.name.hash())
         var rust_mat = StandardMaterial3D.new(); rust_mat.albedo_color = Color(0.55, 0.28, 0.12); rust_mat.metallic = 0.5; rust_mat.roughness = 0.9
         var dark_metal = StandardMaterial3D.new(); dark_metal.albedo_color = Color(0.2, 0.2, 0.2); dark_metal.metallic = 0.8
@@ -909,7 +966,7 @@ func _build_structure_mesh(node, faction, is_tower):
     # ==========================================
     # 5. THE REACH (PRISTINE CRYSTALLINE SPIRE)
     # ==========================================
-    elif faction == "The Reach":
+    elif f_type == "The Reach":
         var white_mat = StandardMaterial3D.new(); white_mat.albedo_color = Color(0.95, 0.97, 1.0); white_mat.roughness = 0.15; white_mat.metallic = 0.1
         var cyan_mat = StandardMaterial3D.new(); cyan_mat.albedo_color = Color(0.0, 0.88, 1.0); cyan_mat.emission_enabled = true; cyan_mat.emission = Color(0.0, 0.85, 1.0); cyan_mat.emission_energy_multiplier = 3.5
         
@@ -966,12 +1023,12 @@ func _start_beast_of_nothingness():
     beast_root.name = "BeastOfNothingness"
     add_child(beast_root)
     
-    var arena_rad = 90.0
-    if GameState.map_selected == "Arena_4P.tscn": arena_rad = 115.0
-    elif GameState.map_selected == "Arena_6P.tscn": arena_rad = 155.0
+    var arena_rad = 125.0
+    if GameState.map_selected == "Arena_4P.tscn": arena_rad = 145.0
+    elif GameState.map_selected == "Arena_6P.tscn": arena_rad = 205.0
 
     # 1. World-Encircling Segmented Leviathan Body
-    # Encircles the entire map perimeter with massive undulating body segments, void spines, and tentacles
+    # Encircles the entire map outer perimeter outside the arena boundaries
     var body_mat = StandardMaterial3D.new()
     body_mat.albedo_color = Color(0.10, 0.04, 0.16)
     body_mat.roughness = 0.35
@@ -992,9 +1049,9 @@ func _start_beast_of_nothingness():
         var seg_root = Node3D.new()
         seg_root.name = "BodySeg_" + str(i)
         
-        # Serpentine sinusoidal radius and height variation creating majestic rising arches
-        var r_wavy = arena_rad + sin(angle * 3.0) * 12.0
-        var base_y = -4.0 + sin(angle * 2.0) * 16.0
+        # Serpentine sinusoidal radius and height variation staying on the outer perimeter rim
+        var r_wavy = arena_rad + sin(angle * 3.0) * 8.0
+        var base_y = -2.0 + sin(angle * 2.0) * 14.0
         seg_root.position = Vector3(cos(angle) * r_wavy, base_y, sin(angle) * r_wavy)
         seg_root.set_meta("base_y", base_y)
         seg_root.set_meta("seg_phase", angle * 4.0)
@@ -1025,7 +1082,7 @@ func _start_beast_of_nothingness():
             spine.rotation.z = randf_range(-0.4, 0.4)
             seg_root.add_child(spine)
             
-        # Massive Arched Tentacles every few segments
+        # Massive Arched Tentacles every few segments pointing upward on outer rim
         if i % 5 == 0:
             var tentacle = MeshInstance3D.new()
             var cyl_t = CylinderMesh.new()
@@ -1035,19 +1092,19 @@ func _start_beast_of_nothingness():
             tentacle.mesh = cyl_t
             tentacle.material_override = body_mat
             tentacle.position = Vector3(0, 14.0, 0)
-            tentacle.rotation.x = sin(angle) * 0.5
-            tentacle.rotation.z = cos(angle) * 0.5
+            tentacle.rotation.x = sin(angle) * 0.3
+            tentacle.rotation.z = cos(angle) * 0.3
             seg_root.add_child(tentacle)
             
         beast_root.add_child(seg_root)
 
-    # 2. The Colossal Leviathan Head Looming Over the Arena
-    # Towering high at the edge of the arena looking hungrily inward across the entire battlefield
+    # 2. The Colossal Leviathan Head Looming High Over the Outer Rim
+    # Towering high at the outer edge of the arena looking hungrily inward across the entire battlefield
     var head_root = Node3D.new()
     head_root.name = "BeastColossalHead"
     var head_ang = PI * 0.75
-    var head_dist = arena_rad - 6.0
-    var base_hy = 20.0
+    var head_dist = arena_rad + 8.0
+    var base_hy = 36.0
     head_root.position = Vector3(cos(head_ang) * head_dist, base_hy, sin(head_ang) * head_dist)
     head_root.set_meta("is_head", true)
     head_root.set_meta("base_y", base_hy)
@@ -1110,7 +1167,7 @@ func _start_beast_of_nothingness():
         fang.mesh = f_cyl
         fang.material_override = fang_mat
         var f_x = -7.0 + (fi % 8) * 2.0
-        var f_z = -10.0 - (fi / 8) * 12.0
+        var f_z = -10.0 - (float(fi) / 8.0) * 12.0
         fang.position = Vector3(f_x, 0.0, f_z)
         jaw.add_child(fang)
         
@@ -1128,36 +1185,12 @@ func _start_beast_of_nothingness():
         emat.emission_energy_multiplier = 3.5
         eye.material_override = emat
         var side_eye = -1.0 if (ei % 2 == 0) else 1.0
-        var eye_row = float(ei / 2)
+        var eye_row = float(ei) / 2.0
         eye.position = Vector3(side_eye * (6.0 + eye_row * 1.4), 8.0 + eye_row * 1.0, -8.0 - eye_row * 4.0)
         head_root.add_child(eye)
 
-    # 3. Subterranean Abyssal Maw (Under-arena Maw Connection)
-    var torus = MeshInstance3D.new()
-    torus.mesh = TorusMesh.new()
-    torus.mesh.outer_radius = arena_rad * 0.75
-    torus.mesh.inner_radius = arena_rad * 0.45
-    torus.material_override = body_mat
-    torus.position = Vector3(0, -40.0, 0)
-    beast_root.add_child(torus)
-    
-    # Inner fangs framing the subterranean pit
-    for i in range(36):
-        var a = i * 10.0 * (PI / 180.0)
-        var tooth = MeshInstance3D.new()
-        var t_cyl = CylinderMesh.new()
-        t_cyl.top_radius = 0.0
-        t_cyl.bottom_radius = 2.4
-        t_cyl.height = 14.0
-        tooth.mesh = t_cyl
-        tooth.material_override = fang_mat
-        tooth.position = Vector3(cos(a) * (arena_rad * 0.5), -35.0, sin(a) * (arena_rad * 0.5))
-        tooth.rotation_degrees.x = -18
-        tooth.rotation_degrees.y = -a * (180.0 / PI)
-        beast_root.add_child(tooth)
-        
     var tw = create_tween()
-    tw.tween_property(beast_root, "position:y", 8.0, 25.0)
+    tw.tween_property(beast_root, "position:y", 4.0, 15.0)
 
 @rpc("authority", "call_local", "reliable")
 func sync_spawn_hazard(rx: float, rz: float, is_mouth: bool, unique_name: String):

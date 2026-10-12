@@ -1,4 +1,4 @@
-﻿extends "res://Scripts/Unit.gd"
+extends "res://Scripts/Unit.gd"
 
 var spike_nodes: Array = []
 
@@ -147,7 +147,8 @@ func find_new_target():
 		if is_instance_valid(e):
 			var hc = e.get_node_or_null("HealthComponent")
 			if hc and hc.is_dead: continue
-			if GameState.is_unit_stealthed_from(e, self): continue
+			var gs = _get_game_state()
+			if gs and gs.is_unit_stealthed_from(e, self): continue
 			var d = global_position.distance_to(e.global_position)
 			if d < closest:
 				closest = d

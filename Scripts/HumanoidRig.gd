@@ -54,7 +54,7 @@ func setup(p_unit: CharacterBody3D):
 	for child in visual_root.get_children():
 		if child.name == "HumanoidRigRoot":
 			child.queue_free()
-		elif child.name.begins_with("@MeshInstance3D") or child.name in ["LeftArm", "RightArm", "LeftLeg", "RightLeg", "Cosmetic_Helm", "Cosmetic_Spartan"]:
+		else:
 			child.visible = false
 			
 	_build_humanoid_anatomy(visual_root)
@@ -63,6 +63,7 @@ func setup(p_unit: CharacterBody3D):
 func _build_humanoid_anatomy(parent: Node3D):
 	rig_root = Node3D.new()
 	rig_root.name = "HumanoidRigRoot"
+	rig_root.rotation.y = PI # Align with Godot's forward vector (-Z) so infantry face where they walk and shoot!
 	parent.add_child(rig_root)
 	
 	# Determine Faction & Styling
@@ -72,8 +73,6 @@ func _build_humanoid_anatomy(parent: Node3D):
 	var is_rimworlder = "Rimworlder" in u_name
 	var is_medic = "Medic" in u_name or "Repair" in u_name
 	var is_commander = "Commander" in u_name or "Hero" in u_name
-	var is_sniper = "Sniper" in u_name or "Ranged" in u_name
-	var is_rocket = "Rocket" in u_name
 	var is_hunter = "Hunter" in u_name or "Assassin" in u_name
 	
 	# Materials

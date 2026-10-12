@@ -20,15 +20,16 @@ signal ui_card_selected(card_ui, ui_instance)
 func _ready():
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	
+	var exit_btn = get_node_or_null("ExitButton")
+	if exit_btn:
+		exit_btn.text = "Exit Match"
+		exit_btn.connect("pressed", Callable(self, "_on_exit_button_pressed"))
+	
 	if GameState.current_mode == "AI_VS_AI":
 		var bp = get_node_or_null("BottomPanel")
 		if bp: bp.visible = false
 		_build_spectator_hud()
 		_build_pause_menu()
-		var exit_btn = get_node_or_null("ExitButton")
-		if exit_btn:
-			exit_btn.text = "Exit Match"
-			exit_btn.connect("pressed", Callable(self, "_on_exit_button_pressed"))
 		return
 	
 	if GameState.player_decks.has(player_profile) and GameState.player_decks[player_profile].size() > 0:
@@ -40,12 +41,6 @@ func _ready():
 	for card_ui in hand_container.get_children():
 		card_ui.connect("card_clicked", Callable(self, "_on_card_clicked"))
 		draw_card(card_ui)
-		
-	var exit_btn = get_node_or_null("ExitButton")
-	if exit_btn:
-		if GameState.current_mode == "AI_VS_AI":
-			exit_btn.text = "Exit Match"
-		exit_btn.connect("pressed", Callable(self, "_on_exit_button_pressed"))
 		
 	# Create top panel for Enemy / Opponent Requisition display
 	_build_enemy_req_ui()

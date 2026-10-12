@@ -566,121 +566,28 @@ func _spawn_unit_corpse(parent: Node3D):
 	var corpse = Node3D.new()
 	corpse.name = "Corpse_" + str(parent.name)
 	
-	var is_mech = parent.get("unit_attribute") == "Mechanical" or "Tank" in parent.name or "Mech" in parent.name or "Plane" in parent.name or "Walker" in parent.name or "Spiker" in parent.name
-	var is_beast = parent.get("unit_attribute") == "Beast" or "Scorpion" in parent.name or "Ant" in parent.name or "Squid" in parent.name or "Octopus" in parent.name or "Jellyfish" in parent.name or "Beetle" in parent.name
-	
-	if is_mech:
-		var wreck_mat = StandardMaterial3D.new()
-		wreck_mat.albedo_color = Color(0.18, 0.17, 0.16)
-		wreck_mat.roughness = 0.95
-		wreck_mat.metallic = 0.4
-		
-		var hull = MeshInstance3D.new()
-		var hm = BoxMesh.new()
-		var hull_size = Vector3(1.6, 0.7, 2.2) if "Tank" in parent.name else Vector3(1.2, 0.8, 1.2)
-		hm.size = hull_size
-		hull.mesh = hm
-		hull.material_override = wreck_mat
-		hull.position.y = hull_size.y * 0.4
-		hull.rotation = Vector3(deg_to_rad(randf_range(-12.0, 12.0)), deg_to_rad(randf_range(-15.0, 15.0)), deg_to_rad(randf_range(-15.0, 15.0)))
-		corpse.add_child(hull)
-		
-		var turret = MeshInstance3D.new()
-		var tm = BoxMesh.new()
-		tm.size = Vector3(0.9, 0.5, 0.9)
-		turret.mesh = tm
-		turret.material_override = wreck_mat
-		turret.position = hull.position + Vector3(0.2, 0.4, -0.1)
-		turret.rotation = Vector3(deg_to_rad(25.0), deg_to_rad(45.0), deg_to_rad(15.0))
-		corpse.add_child(turret)
-		
-		var debris = MeshInstance3D.new()
-		var dm = CylinderMesh.new()
-		dm.top_radius = 0.12
-		dm.bottom_radius = 0.15
-		dm.height = 1.4
-		debris.mesh = dm
-		debris.material_override = wreck_mat
-		debris.position = hull.position + Vector3(-0.9, 0.1, 0.6)
-		debris.rotation = Vector3(deg_to_rad(85.0), deg_to_rad(30.0), deg_to_rad(60.0))
-		corpse.add_child(debris)
-		
-		var scorch = MeshInstance3D.new()
-		var sm_cyl = CylinderMesh.new()
-		sm_cyl.top_radius = 1.6
-		sm_cyl.bottom_radius = 1.7
-		sm_cyl.height = 0.02
-		var sc_mat = StandardMaterial3D.new()
-		sc_mat.albedo_color = Color(0.08, 0.08, 0.08, 0.85)
-		sc_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		scorch.mesh = sm_cyl
-		scorch.material_override = sc_mat
-		scorch.position.y = 0.02
-		corpse.add_child(scorch)
-		
-	elif is_beast:
-		var beast_mat = StandardMaterial3D.new()
-		beast_mat.albedo_color = Color(0.25, 0.22, 0.18)
-		beast_mat.roughness = 0.9
-		
-		var b_scale = 0.4 if "Ant" in parent.name else (0.8 if "Scorpion" in parent.name else 1.2)
-		corpse.scale = Vector3(b_scale, b_scale, b_scale)
-		
-		var carcass = MeshInstance3D.new()
-		var cm = SphereMesh.new()
-		cm.radius = 0.7
-		cm.height = 0.8
-		carcass.mesh = cm
-		carcass.material_override = beast_mat
-		carcass.position.y = 0.25
-		carcass.scale = Vector3(1.4, 0.6, 1.8)
-		carcass.rotation = Vector3(deg_to_rad(15.0), 0, deg_to_rad(40.0))
-		corpse.add_child(carcass)
-		
-		for i in range(3):
-			var frag = MeshInstance3D.new()
-			var fm = BoxMesh.new()
-			fm.size = Vector3(0.3, 0.1, 0.4)
-			frag.mesh = fm
-			frag.material_override = beast_mat
-			var a = i * 2.1
-			frag.position = Vector3(cos(a) * 0.9, 0.05, sin(a) * 0.9)
-			frag.rotation = Vector3(randf() * 0.5, randf() * TAU, randf() * 0.5)
-			corpse.add_child(frag)
-			
+	var p_name = parent.name
+	var is_humanoid = false
+	if parent.has_method("is_humanoid"):
+		is_humanoid = parent.is_humanoid()
+	elif parent.get_node_or_null("HumanoidRig") != null:
+		is_humanoid = true
 	else:
-		var body_mat = StandardMaterial3D.new()
-		body_mat.albedo_color = Color(0.18, 0.16, 0.15)
-		body_mat.roughness = 0.9
-		
-		var prone_body = MeshInstance3D.new()
-		var bm = BoxMesh.new()
-		bm.size = Vector3(0.5, 0.35, 1.3)
-		prone_body.mesh = bm
-		prone_body.material_override = body_mat
-		prone_body.position.y = 0.18
-		corpse.add_child(prone_body)
-		
-		var head = MeshInstance3D.new()
-		var hm = SphereMesh.new()
-		hm.radius = 0.22
-		hm.height = 0.4
-		head.mesh = hm
-		head.material_override = body_mat
-		head.position = Vector3(0, 0.2, -0.75)
-		corpse.add_child(head)
-		
-		var weapon = MeshInstance3D.new()
-		var wm = BoxMesh.new()
-		wm.size = Vector3(0.08, 0.08, 0.9)
-		weapon.mesh = wm
-		var w_mat = StandardMaterial3D.new()
-		w_mat.albedo_color = Color(0.1, 0.1, 0.1)
-		w_mat.metallic = 0.8
-		weapon.material_override = w_mat
-		weapon.position = Vector3(0.55, 0.06, 0.1)
-		weapon.rotation.y = deg_to_rad(28.0)
-		corpse.add_child(weapon)
+		var has_mech = "Tank" in p_name or "Mech" in p_name or "Plane" in p_name or "Walker" in p_name or "Spider" in p_name
+		var has_beast = "Ant" in p_name or "Scorpion" in p_name or "Squid" in p_name or "Octopus" in p_name or "Jellyfish" in p_name or "Beetle" in p_name or "Spiker" in p_name or "Leviathan" in p_name
+		if not has_mech and not has_beast:
+			is_humanoid = true
+
+	if is_humanoid:
+		_build_broken_humanoid(corpse, parent)
+	elif "Plane" in p_name:
+		_build_broken_aircraft(corpse, parent)
+	elif "Mech" in p_name or "Walker" in p_name:
+		_build_broken_mech(corpse, parent)
+	elif "Tank" in p_name or "Spider" in p_name:
+		_build_broken_tank(corpse, parent)
+	else:
+		_build_broken_beast(corpse, parent)
 
 	var tree = get_tree() if is_inside_tree() else null
 	var scene_root = tree.current_scene if (tree and tree.current_scene) else (parent.get_parent() if parent and parent.get_parent() else null)
@@ -801,7 +708,7 @@ func _setup_vehicle_smoke():
 	
 	parent.add_child(vehicle_smoke_emitter)
 
-func _update_vehicle_smoke(delta: float):
+func _update_vehicle_smoke(_delta: float):
 	var parent = get_parent()
 	if not parent or not is_instance_valid(parent): return
 	if not is_mechanical_entity(parent): return
@@ -839,3 +746,345 @@ func set_max_health(new_max: float):
 		hp_bar.value = current_health
 		update_health_bar_colors()
 	if hp_viewport: hp_viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
+
+
+func _build_broken_humanoid(corpse: Node3D, parent: Node3D):
+	var p_name = parent.name
+	var is_reach = "Reach" in p_name
+	var is_scrap = "Scrap" in p_name
+	var is_rimworlder = "Rimworlder" in p_name
+	var is_medic = "Medic" in p_name
+	var is_repair = "Repair" in p_name
+	var is_commander = "Commander" in p_name or "Hero" in p_name
+	var is_hunter = "Hunter" in p_name or "Assassin" in p_name
+	
+	var suit_mat = StandardMaterial3D.new()
+	var armor_mat = StandardMaterial3D.new()
+	var visor_mat = StandardMaterial3D.new()
+	var weapon_mat = StandardMaterial3D.new()
+	
+	if is_reach:
+		suit_mat.albedo_color = Color(0.88, 0.92, 0.96); suit_mat.roughness = 0.3
+		armor_mat.albedo_color = Color(0.75, 0.82, 0.90); armor_mat.metallic = 0.8
+		visor_mat.albedo_color = Color(0.0, 0.7, 0.85); visor_mat.emission_enabled = true; visor_mat.emission = Color(0.0, 0.6, 0.8); visor_mat.emission_energy_multiplier = 0.8
+		weapon_mat.albedo_color = Color(0.2, 0.25, 0.3); weapon_mat.metallic = 0.9
+	elif is_scrap:
+		suit_mat.albedo_color = Color(0.35, 0.22, 0.16); suit_mat.roughness = 0.9
+		armor_mat.albedo_color = Color(0.55, 0.32, 0.18); armor_mat.metallic = 0.6; armor_mat.roughness = 0.9
+		visor_mat.albedo_color = Color(0.8, 0.5, 0.1); visor_mat.roughness = 0.8
+		weapon_mat.albedo_color = Color(0.25, 0.2, 0.18); weapon_mat.metallic = 0.7
+	elif is_rimworlder:
+		suit_mat.albedo_color = Color(0.38, 0.28, 0.18); suit_mat.roughness = 0.9
+		armor_mat.albedo_color = Color(0.48, 0.36, 0.24); armor_mat.roughness = 0.8
+		visor_mat.albedo_color = Color(0.85, 0.8, 0.7); visor_mat.roughness = 0.6
+		weapon_mat.albedo_color = Color(0.25, 0.2, 0.18); weapon_mat.metallic = 0.5
+	elif is_medic:
+		suit_mat.albedo_color = Color(0.82, 0.82, 0.84); suit_mat.roughness = 0.6
+		armor_mat.albedo_color = Color(0.75, 0.15, 0.15); armor_mat.roughness = 0.5
+		visor_mat.albedo_color = Color(0.1, 0.7, 0.3); visor_mat.emission_enabled = true; visor_mat.emission = Color(0.1, 0.6, 0.25); visor_mat.emission_energy_multiplier = 0.6
+		weapon_mat.albedo_color = Color(0.25, 0.25, 0.25); weapon_mat.metallic = 0.8
+	elif is_hunter or "Assassin" in p_name:
+		suit_mat.albedo_color = Color(0.12, 0.12, 0.14); suit_mat.roughness = 0.7
+		armor_mat.albedo_color = Color(0.18, 0.18, 0.22); armor_mat.roughness = 0.6
+		visor_mat.albedo_color = Color(0.65, 0.12, 0.8); visor_mat.emission_enabled = true; visor_mat.emission = Color(0.5, 0.1, 0.65); visor_mat.emission_energy_multiplier = 0.8
+		weapon_mat.albedo_color = Color(0.12, 0.12, 0.14); weapon_mat.metallic = 0.9
+	elif is_commander:
+		suit_mat.albedo_color = Color(0.18, 0.22, 0.28); suit_mat.metallic = 0.6
+		armor_mat.albedo_color = Color(0.85, 0.7, 0.18); armor_mat.metallic = 0.9; armor_mat.roughness = 0.3
+		visor_mat.albedo_color = Color(0.9, 0.75, 0.25); visor_mat.emission_enabled = true; visor_mat.emission = Color(0.8, 0.65, 0.2); visor_mat.emission_energy_multiplier = 0.8
+		weapon_mat.albedo_color = Color(0.8, 0.7, 0.2); weapon_mat.metallic = 0.9
+	else:
+		suit_mat.albedo_color = Color(0.22, 0.28, 0.18); suit_mat.roughness = 0.7
+		armor_mat.albedo_color = Color(0.16, 0.22, 0.14); armor_mat.metallic = 0.4
+		visor_mat.albedo_color = Color(0.18, 0.6, 0.8); visor_mat.emission_enabled = true; visor_mat.emission = Color(0.15, 0.5, 0.7); visor_mat.emission_energy_multiplier = 0.8
+		weapon_mat.albedo_color = Color(0.18, 0.18, 0.18); weapon_mat.metallic = 0.8
+
+	# Fallen Torso lying on the ground
+	var torso_mesh = MeshInstance3D.new()
+	var tm = BoxMesh.new(); tm.size = Vector3(0.48, 0.24, 0.65)
+	torso_mesh.mesh = tm
+	torso_mesh.material_override = suit_mat
+	torso_mesh.position = Vector3(0, 0.12, 0)
+	torso_mesh.rotation = Vector3(deg_to_rad(randf_range(-8, 8)), deg_to_rad(randf_range(-15, 15)), deg_to_rad(randf_range(-12, 12)))
+	corpse.add_child(torso_mesh)
+	
+	# Cracked Armor Plate
+	var ap_mesh = MeshInstance3D.new()
+	var apm = BoxMesh.new(); apm.size = Vector3(0.52, 0.14, 0.45)
+	ap_mesh.mesh = apm
+	ap_mesh.material_override = armor_mat
+	ap_mesh.position = torso_mesh.position + Vector3(0, 0.1, 0)
+	corpse.add_child(ap_mesh)
+	
+	# Helmet tilted on ground with cracked visor
+	var head_mesh = MeshInstance3D.new()
+	var hm = SphereMesh.new(); hm.radius = 0.19; hm.height = 0.36
+	head_mesh.mesh = hm
+	head_mesh.material_override = armor_mat
+	head_mesh.position = torso_mesh.position + Vector3(0.05, 0.08, -0.48)
+	head_mesh.rotation = Vector3(deg_to_rad(15), deg_to_rad(30), deg_to_rad(-25))
+	corpse.add_child(head_mesh)
+	
+	var visor_m = MeshInstance3D.new()
+	var vm = BoxMesh.new(); vm.size = Vector3(0.22, 0.06, 0.12)
+	visor_m.mesh = vm
+	visor_m.material_override = visor_mat
+	visor_m.position = head_mesh.position + Vector3(0.04, 0.02, -0.12)
+	visor_m.rotation = head_mesh.rotation
+	corpse.add_child(visor_m)
+	
+	# Limp arms splayed on ground
+	for s in [-1.0, 1.0]:
+		var arm = MeshInstance3D.new()
+		var am = CapsuleMesh.new(); am.radius = 0.08; am.height = 0.52
+		arm.mesh = am
+		arm.material_override = suit_mat
+		arm.position = torso_mesh.position + Vector3(s * 0.38, -0.02, randf_range(-0.1, 0.1))
+		arm.rotation = Vector3(deg_to_rad(randf_range(65, 85)), deg_to_rad(s * randf_range(25, 55)), deg_to_rad(s * 30))
+		corpse.add_child(arm)
+		
+	# Legs splayed naturally on the ground
+	for s in [-1.0, 1.0]:
+		var leg = MeshInstance3D.new()
+		var lm = CapsuleMesh.new(); lm.radius = 0.09; lm.height = 0.58
+		leg.mesh = lm
+		leg.material_override = suit_mat
+		leg.position = torso_mesh.position + Vector3(s * 0.22, -0.02, 0.55)
+		leg.rotation = Vector3(deg_to_rad(randf_range(75, 95)), deg_to_rad(s * randf_range(10, 25)), 0)
+		corpse.add_child(leg)
+		
+		var boot = MeshInstance3D.new()
+		var bm = BoxMesh.new(); bm.size = Vector3(0.16, 0.14, 0.24)
+		boot.mesh = bm
+		boot.material_override = weapon_mat
+		boot.position = leg.position + Vector3(s * 0.04, 0.0, 0.32)
+		corpse.add_child(boot)
+
+	# Dropped unit-specific weapon lying right beside hand
+	var weapon = MeshInstance3D.new()
+	var w_pos = torso_mesh.position + Vector3(0.65, 0.05, -0.05)
+	if "Sniper" in p_name or "ReachRanged" in p_name or "ScrapRanged" in p_name:
+		var rifle = BoxMesh.new(); rifle.size = Vector3(0.08, 0.1, 1.1)
+		weapon.mesh = rifle; weapon.material_override = weapon_mat
+		weapon.position = w_pos; weapon.rotation = Vector3(0, deg_to_rad(randf_range(25, 45)), 0)
+	elif "Rocket" in p_name:
+		var tube = CylinderMesh.new(); tube.top_radius = 0.12; tube.bottom_radius = 0.12; tube.height = 1.1
+		weapon.mesh = tube; weapon.material_override = weapon_mat
+		weapon.position = w_pos; weapon.rotation = Vector3(0, deg_to_rad(randf_range(30, 60)), deg_to_rad(85))
+	elif is_medic or is_repair:
+		var tool = BoxMesh.new(); tool.size = Vector3(0.12, 0.12, 0.45)
+		weapon.mesh = tool; weapon.material_override = weapon_mat
+		weapon.position = w_pos; weapon.rotation = Vector3(0, deg_to_rad(randf_range(15, 45)), 0)
+	elif is_commander or "Melee" in p_name:
+		var blade = BoxMesh.new(); blade.size = Vector3(0.04, 0.12, 0.95)
+		weapon.mesh = blade; weapon.material_override = weapon_mat
+		weapon.position = w_pos; weapon.rotation = Vector3(0, deg_to_rad(randf_range(35, 75)), 0)
+	elif is_hunter or "Assassin" in p_name:
+		var dagger = BoxMesh.new(); dagger.size = Vector3(0.03, 0.08, 0.45)
+		weapon.mesh = dagger; weapon.material_override = weapon_mat
+		weapon.position = w_pos; weapon.rotation = Vector3(0, deg_to_rad(randf_range(20, 50)), 0)
+	else:
+		var carbine = BoxMesh.new(); carbine.size = Vector3(0.08, 0.08, 0.75)
+		weapon.mesh = carbine; weapon.material_override = weapon_mat
+		weapon.position = w_pos; weapon.rotation = Vector3(0, deg_to_rad(randf_range(30, 50)), 0)
+	corpse.add_child(weapon)
+
+	# Ground blood / scorch stain
+	var pool = MeshInstance3D.new()
+	var pm = CylinderMesh.new(); pm.top_radius = 0.75; pm.bottom_radius = 0.8; pm.height = 0.02
+	pool.mesh = pm
+	var pmat = StandardMaterial3D.new()
+	pmat.albedo_color = Color(0.08, 0.06, 0.06, 0.85) if not is_reach else Color(0.05, 0.2, 0.25, 0.7)
+	pmat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	pool.material_override = pmat
+	pool.position = Vector3(0, 0.01, 0)
+	corpse.add_child(pool)
+
+func _build_broken_tank(corpse: Node3D, parent: Node3D):
+	var p_name = parent.name
+	var is_reach = "Reach" in p_name
+	var is_scrap = "Scrap" in p_name
+	var is_heavy = "Heavy" in p_name
+	
+	var wreck_mat = StandardMaterial3D.new()
+	var accent_mat = StandardMaterial3D.new()
+	
+	if is_reach:
+		wreck_mat.albedo_color = Color(0.75, 0.80, 0.85); wreck_mat.metallic = 0.7; wreck_mat.roughness = 0.4
+		accent_mat.albedo_color = Color(0.0, 0.6, 0.8); accent_mat.emission_enabled = true; accent_mat.emission = Color(0.0, 0.5, 0.7); accent_mat.emission_energy_multiplier = 0.6
+	elif is_scrap:
+		wreck_mat.albedo_color = Color(0.42, 0.24, 0.14); wreck_mat.metallic = 0.5; wreck_mat.roughness = 0.95
+		accent_mat.albedo_color = Color(0.65, 0.48, 0.12); accent_mat.roughness = 0.9
+	else:
+		wreck_mat.albedo_color = Color(0.18, 0.22, 0.16); wreck_mat.metallic = 0.6; wreck_mat.roughness = 0.85
+		accent_mat.albedo_color = Color(0.12, 0.14, 0.12); accent_mat.metallic = 0.8
+		
+	# Shattered/ruptured hull
+	var hull = MeshInstance3D.new()
+	var hm = BoxMesh.new()
+	hm.size = Vector3(2.4, 0.7, 2.8) if is_heavy else Vector3(1.7, 0.65, 2.2)
+	hull.mesh = hm
+	hull.material_override = wreck_mat
+	hull.position.y = 0.35
+	hull.rotation = Vector3(deg_to_rad(randf_range(-10, 10)), deg_to_rad(randf_range(-20, 20)), deg_to_rad(randf_range(-8, 8)))
+	corpse.add_child(hull)
+	
+	# Dislodged turret
+	var turret = MeshInstance3D.new()
+	var tm = BoxMesh.new()
+	tm.size = Vector3(1.3, 0.6, 1.3) if is_heavy else Vector3(0.9, 0.5, 0.9)
+	turret.mesh = tm
+	turret.material_override = accent_mat
+	turret.position = hull.position + Vector3(0.35, 0.45, -0.2)
+	turret.rotation = Vector3(deg_to_rad(32), deg_to_rad(55), deg_to_rad(18))
+	corpse.add_child(turret)
+	
+	# Broken cannon barrel / railgun accelerator
+	var cannon = MeshInstance3D.new()
+	var cm = CylinderMesh.new()
+	cm.top_radius = 0.12; cm.bottom_radius = 0.16; cm.height = 1.8
+	cannon.mesh = cm
+	cannon.material_override = wreck_mat
+	cannon.position = hull.position + Vector3(-1.1, 0.12, 0.7)
+	cannon.rotation = Vector3(deg_to_rad(85), deg_to_rad(28), deg_to_rad(45))
+	corpse.add_child(cannon)
+	
+	# Blast scorch decal
+	var scorch = MeshInstance3D.new()
+	var sm = CylinderMesh.new(); sm.top_radius = 2.4; sm.bottom_radius = 2.5; sm.height = 0.02
+	scorch.mesh = sm
+	var scmat = StandardMaterial3D.new(); scmat.albedo_color = Color(0.06, 0.06, 0.06, 0.9); scmat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	scorch.material_override = scmat
+	scorch.position = Vector3(0, 0.01, 0)
+	corpse.add_child(scorch)
+
+func _build_broken_mech(corpse: Node3D, parent: Node3D):
+	var p_name = parent.name
+	var is_reach = "Reach" in p_name
+	var is_scrap = "Scrap" in p_name
+	
+	var mech_mat = StandardMaterial3D.new()
+	if is_reach:
+		mech_mat.albedo_color = Color(0.8, 0.85, 0.9); mech_mat.metallic = 0.8; mech_mat.roughness = 0.3
+	elif is_scrap:
+		mech_mat.albedo_color = Color(0.45, 0.25, 0.15); mech_mat.metallic = 0.5; mech_mat.roughness = 0.9
+	else:
+		mech_mat.albedo_color = Color(0.22, 0.26, 0.28); mech_mat.metallic = 0.7; mech_mat.roughness = 0.6
+		
+	# Collapsed upper chassis tilted forward on knee
+	var torso = MeshInstance3D.new()
+	var tm = BoxMesh.new(); tm.size = Vector3(1.8, 1.4, 1.4)
+	torso.mesh = tm
+	torso.material_override = mech_mat
+	torso.position = Vector3(0, 0.8, 0)
+	torso.rotation = Vector3(deg_to_rad(35), deg_to_rad(15), deg_to_rad(-18))
+	corpse.add_child(torso)
+	
+	# Severed mech weapon arm lying on the ground
+	var arm = MeshInstance3D.new()
+	var am = BoxMesh.new(); am.size = Vector3(0.4, 0.4, 1.6)
+	arm.mesh = am
+	arm.material_override = mech_mat
+	arm.position = Vector3(1.4, 0.2, 0.3)
+	arm.rotation = Vector3(deg_to_rad(10), deg_to_rad(45), deg_to_rad(80))
+	corpse.add_child(arm)
+	
+	# Crumpled mechanical legs
+	for s in [-1.0, 1.0]:
+		var leg = MeshInstance3D.new()
+		var lm = CylinderMesh.new(); lm.top_radius = 0.22; lm.bottom_radius = 0.28; lm.height = 1.2
+		leg.mesh = lm
+		leg.material_override = mech_mat
+		leg.position = Vector3(s * 0.7, 0.4, 0.2)
+		leg.rotation = Vector3(deg_to_rad(65), 0, deg_to_rad(s * 35))
+		corpse.add_child(leg)
+
+func _build_broken_aircraft(corpse: Node3D, parent: Node3D):
+	var craft_mat = StandardMaterial3D.new()
+	craft_mat.albedo_color = Color(0.2, 0.22, 0.25)
+	craft_mat.metallic = 0.8
+	craft_mat.roughness = 0.6
+	
+	# Fuselage crashed nose-down into the dirt
+	var body = MeshInstance3D.new()
+	var bm = CylinderMesh.new(); bm.top_radius = 0.15; bm.bottom_radius = 0.55; bm.height = 3.2
+	body.mesh = bm
+	body.material_override = craft_mat
+	body.position = Vector3(0, 0.8, 0)
+	body.rotation = Vector3(deg_to_rad(125), deg_to_rad(20), 0)
+	corpse.add_child(body)
+	
+	# One wing intact, one snapped wing lying nearby
+	var wing1 = MeshInstance3D.new()
+	var wm1 = BoxMesh.new(); wm1.size = Vector3(2.4, 0.08, 0.8)
+	wing1.mesh = wm1
+	wing1.material_override = craft_mat
+	wing1.position = body.position + Vector3(1.2, 0.3, 0)
+	wing1.rotation = body.rotation
+	corpse.add_child(wing1)
+	
+	var wing2 = MeshInstance3D.new()
+	var wm2 = BoxMesh.new(); wm2.size = Vector3(1.8, 0.08, 0.7)
+	wing2.mesh = wm2
+	wing2.material_override = craft_mat
+	wing2.position = Vector3(-1.8, 0.1, 0.8)
+	wing2.rotation = Vector3(deg_to_rad(15), deg_to_rad(55), 0)
+	corpse.add_child(wing2)
+	
+	# Skid trail scorch mark
+	var skid = MeshInstance3D.new()
+	var sm = BoxMesh.new(); sm.size = Vector3(1.2, 0.02, 4.5)
+	skid.mesh = sm
+	var skmat = StandardMaterial3D.new(); skmat.albedo_color = Color(0.06, 0.06, 0.06, 0.85); skmat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	skid.material_override = skmat
+	skid.position = Vector3(0, 0.01, 1.8)
+	corpse.add_child(skid)
+
+func _build_broken_beast(corpse: Node3D, parent: Node3D):
+	var p_name = parent.name
+	var is_ant = "Ant" in p_name
+	var is_scorpion = "Scorpion" in p_name
+	var is_spiker = "Spiker" in p_name
+	var is_leviathan = "Leviathan" in p_name
+	
+	var beast_mat = StandardMaterial3D.new()
+	if is_spiker or "Void" in p_name:
+		beast_mat.albedo_color = Color(0.18, 0.04, 0.28); beast_mat.metallic = 0.5
+	else:
+		beast_mat.albedo_color = Color(0.28, 0.22, 0.16); beast_mat.roughness = 0.9
+		
+	var b_scale = 0.45 if is_ant else (0.85 if is_scorpion else (2.4 if is_leviathan else 1.2))
+	corpse.scale = Vector3(b_scale, b_scale, b_scale)
+	
+	# Carcass thorax/mantle
+	var carcass = MeshInstance3D.new()
+	var cm = SphereMesh.new(); cm.radius = 0.7; cm.height = 0.9
+	carcass.mesh = cm
+	carcass.material_override = beast_mat
+	carcass.position.y = 0.25
+	carcass.scale = Vector3(1.3, 0.65, 1.7)
+	carcass.rotation = Vector3(deg_to_rad(18), deg_to_rad(randf_range(-15, 15)), deg_to_rad(randf_range(25, 45)))
+	corpse.add_child(carcass)
+	
+	# Broken legs / chitin fragments
+	for i in range(4):
+		var frag = MeshInstance3D.new()
+		var fm = CylinderMesh.new(); fm.top_radius = 0.04; fm.bottom_radius = 0.12; fm.height = 0.8
+		frag.mesh = fm
+		frag.material_override = beast_mat
+		var a = i * 1.5
+		frag.position = Vector3(cos(a) * 0.95, 0.08, sin(a) * 0.95)
+		frag.rotation = Vector3(deg_to_rad(randf_range(65, 85)), randf() * TAU, deg_to_rad(randf_range(-30, 30)))
+		corpse.add_child(frag)
+		
+	if is_spiker:
+		var shard_mat = StandardMaterial3D.new()
+		shard_mat.albedo_color = Color(0.85, 0.15, 0.95); shard_mat.emission_enabled = true; shard_mat.emission = Color(0.7, 0.1, 0.8)
+		for s in range(3):
+			var shard = MeshInstance3D.new()
+			var shm = PrismMesh.new(); shm.size = Vector3(0.3, 0.8, 0.3)
+			shard.mesh = shm
+			shard.material_override = shard_mat
+			shard.position = Vector3(randf_range(-1.2, 1.2), 0.15, randf_range(-1.2, 1.2))
+			shard.rotation = Vector3(randf() * TAU, randf() * TAU, randf() * TAU)
+			corpse.add_child(shard)
